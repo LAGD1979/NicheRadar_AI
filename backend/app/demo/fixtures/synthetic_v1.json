@@ -1,0 +1,184 @@
+{
+  "dataset": "synthetic_v1",
+  "label": "DATOS SINTÉTICOS — no corresponden a canales, videos ni estadísticas reales",
+  "defaults": {
+    "provider": "synthetic_fixture",
+    "observed_at": "2026-10-20T00:00:00+00:00",
+    "run_id": "syn-run-demo-01",
+    "source_data_type": "SYNTHETIC"
+  },
+  "run": {
+    "id": "syn-run-demo-01",
+    "kind": "demo",
+    "status": "COMPLETED",
+    "params_json": {"dataset": "synthetic_v1", "network": false},
+    "algorithm_version": "m0-demo-1",
+    "policy_mode": "restricted",
+    "started_at": "2026-10-20T00:00:00+00:00",
+    "finished_at": "2026-10-20T00:00:05+00:00",
+    "errors_json": [
+      {"provider": "vidiq_api", "code": "NOT_CONFIGURED", "detail": "Adaptador deshabilitado: sin método autorizado."},
+      {"provider": "google_trends", "code": "DISABLED", "detail": "Proveedor opcional desactivado en configuración."}
+    ],
+    "coverage_json": {"note": "Cobertura sintética; no representa el universo de YouTube."},
+    "budget_json": {"youtube_search_calls": 0, "ai_usd": 0}
+  },
+  "niches": [
+    {"id": "syn-niche-01", "canonical_name_es": "Historia explicada con mapas", "definition": "Análisis de conflictos históricos apoyado en mapas.", "exclusions_json": ["biografías de celebridades"], "taxonomy_version": "2026.10-syn1"},
+    {"id": "syn-niche-02", "canonical_name_es": "Finanzas personales para principiantes", "definition": "Presupuesto y ahorro explicados de forma general.", "exclusions_json": ["recomendaciones de inversión"], "taxonomy_version": "2026.10-syn1"},
+    {"id": "syn-niche-03", "canonical_name_es": "Reparación de electrónica casera", "definition": "Diagnóstico y reparación de electrodomésticos pequeños.", "exclusions_json": ["productos de marca"], "taxonomy_version": "2026.10-syn1"},
+    {"id": "syn-niche-04", "canonical_name_es": "Ciencia de cocina experimental", "definition": "Experimentos caseros sobre técnicas culinarias.", "exclusions_json": [], "taxonomy_version": "2026.10-syn1"},
+    {"id": "syn-niche-05", "canonical_name_es": "Resúmenes de películas", "definition": "Resúmenes narrados de largometrajes existentes.", "exclusions_json": ["contenido con metraje ajeno sin licencia"], "taxonomy_version": "2026.10-syn1"}
+  ],
+  "formats": [
+    {"id": "syn-fmt-01", "canonical_name_es": "Relato narrado con ilustraciones estáticas", "story_structure": "Narración cronológica en tres actos.", "visual_grammar": "Ilustraciones originales con movimiento de cámara.", "audio_grammar": "Narración en off y música de fondo licenciada.", "min_assets": 25, "requirements_json": {"faceless": true}, "taxonomy_version": "2026.10-syn1"},
+    {"id": "syn-fmt-02", "canonical_name_es": "Explicación con pizarra animada", "story_structure": "Pregunta, hipótesis y comprobación.", "visual_grammar": "Pizarra animada con trazos.", "audio_grammar": "Narración en off.", "min_assets": 12, "requirements_json": {"faceless": true}, "taxonomy_version": "2026.10-syn1"},
+    {"id": "syn-fmt-03", "canonical_name_es": "Tutorial con recortes de material propio", "story_structure": "Problema, diagnóstico y reparación paso a paso.", "visual_grammar": "Grabaciones de manos y herramientas.", "audio_grammar": "Narración y sonido directo.", "min_assets": 40, "requirements_json": {"faceless": false}, "taxonomy_version": "2026.10-syn1"},
+    {"id": "syn-fmt-04", "canonical_name_es": "Reportaje con fragmentos de archivo ajeno", "story_structure": "Cronología con citas de archivo.", "visual_grammar": "Material de archivo de terceros.", "audio_grammar": "Narración y audio de archivo.", "min_assets": 30, "requirements_json": {"faceless": true}, "taxonomy_version": "2026.10-syn1"}
+  ],
+  "channels": [
+    {"id": "syn-ch-01", "youtube_channel_id": "SYNCH01", "title_current": "Canal Sintético Alfa", "subscriber_count": 1200, "subscriber_band": "[1000,10000)", "language_state": "pt", "region_declared": null},
+    {"id": "syn-ch-02", "youtube_channel_id": "SYNCH02", "title_current": "Canal Sintético Beta", "subscriber_count": 3400, "subscriber_band": "[1000,10000)", "language_state": "pt", "region_declared": null},
+    {"id": "syn-ch-03", "youtube_channel_id": "SYNCH03", "title_current": "Canal Sintético Gamma", "subscriber_count": 8700, "subscriber_band": "[1000,10000)", "language_state": "fr", "region_declared": null},
+    {"id": "syn-ch-04", "youtube_channel_id": "SYNCH04", "title_current": "Canal Sintético Delta", "subscriber_count": 0, "subscriber_band": "[0,1000)", "language_state": "ja", "region_declared": null},
+    {"id": "syn-ch-05", "youtube_channel_id": "SYNCH05", "title_current": "Canal Sintético Épsilon", "subscriber_count": null, "subscriber_band": "UNKNOWN", "language_state": "en", "region_declared": null},
+    {"id": "syn-ch-06", "youtube_channel_id": "SYNCH06", "title_current": "Canal Sintético Zeta", "subscriber_count": 15400, "subscriber_band": "[10000,50000)", "language_state": "en", "region_declared": null},
+    {"id": "syn-ch-07", "youtube_channel_id": "SYNCH07", "title_current": "Canal Sintético Eta", "subscriber_count": 6100, "subscriber_band": "[1000,10000)", "language_state": "pt", "region_declared": null},
+    {"id": "syn-ch-08", "youtube_channel_id": "SYNCH08", "title_current": "Canal Sintético Theta", "subscriber_count": 2300, "subscriber_band": "[1000,10000)", "language_state": "fr", "region_declared": null},
+    {"id": "syn-ch-09", "youtube_channel_id": "SYNCH09", "title_current": "Canal Sintético Control 1", "subscriber_count": 850000, "subscriber_band": ">=100000", "language_state": "en", "region_declared": null},
+    {"id": "syn-ch-10", "youtube_channel_id": "SYNCH10", "title_current": "Canal Sintético Control 2", "subscriber_count": 420000, "subscriber_band": ">=100000", "language_state": "ja", "region_declared": null}
+  ],
+  "videos": [
+    {"id": "syn-vid-01", "youtube_video_id": "SYNV01", "channel_id": "syn-ch-01", "title": "[SINTÉTICO] Conflicto del valle, mapa 1", "published_at": "2026-08-03T12:00:00+00:00", "duration_seconds": 1140, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "pt", "language_confidence": "HIGH", "view_count": 64000},
+    {"id": "syn-vid-02", "youtube_video_id": "SYNV02", "channel_id": "syn-ch-01", "title": "[SINTÉTICO] Conflicto del valle, mapa 2", "published_at": "2026-09-10T12:00:00+00:00", "duration_seconds": 1260, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "pt", "language_confidence": "HIGH", "view_count": 51000},
+    {"id": "syn-vid-03", "youtube_video_id": "SYNV03", "channel_id": "syn-ch-02", "title": "[SINTÉTICO] Frontera perdida", "published_at": "2026-09-22T12:00:00+00:00", "duration_seconds": 1020, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "pt", "language_confidence": "HIGH", "view_count": 58000},
+    {"id": "syn-vid-04", "youtube_video_id": "SYNV04", "channel_id": "syn-ch-03", "title": "[SINTÉTICO] Guerra de los mapas", "published_at": "2026-10-05T12:00:00+00:00", "duration_seconds": 1500, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "fr", "language_confidence": "HIGH", "view_count": 72000},
+    {"id": "syn-vid-05", "youtube_video_id": "SYNV05", "channel_id": "syn-ch-07", "title": "[SINTÉTICO] Ciudad sitiada", "published_at": "2026-08-18T12:00:00+00:00", "duration_seconds": 1380, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "pt", "language_confidence": "HIGH", "view_count": 47000},
+    {"id": "syn-vid-06", "youtube_video_id": "SYNV06", "channel_id": "syn-ch-08", "title": "[SINTÉTICO] Imperio en mapas", "published_at": "2026-09-01T12:00:00+00:00", "duration_seconds": 1200, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "fr", "language_confidence": "HIGH", "view_count": 39000},
+    {"id": "syn-vid-07", "youtube_video_id": "SYNV07", "channel_id": "syn-ch-06", "title": "[SINTÉTICO] Ahorro en 30 días", "published_at": "2026-09-15T12:00:00+00:00", "duration_seconds": 960, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "en", "language_confidence": "HIGH", "view_count": 210000},
+    {"id": "syn-vid-08", "youtube_video_id": "SYNV08", "channel_id": "syn-ch-06", "title": "[SINTÉTICO] Presupuesto simple", "published_at": "2026-10-12T12:00:00+00:00", "duration_seconds": 840, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "en", "language_confidence": "HIGH", "view_count": 88000},
+    {"id": "syn-vid-09", "youtube_video_id": "SYNV09", "channel_id": "syn-ch-05", "title": "[SINTÉTICO] Deudas, paso a paso", "published_at": "2026-08-28T12:00:00+00:00", "duration_seconds": 900, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "en", "language_confidence": "HIGH", "view_count": 36000},
+    {"id": "syn-vid-10", "youtube_video_id": "SYNV10", "channel_id": "syn-ch-04", "title": "[SINTÉTICO] Diagnóstico de placa", "published_at": "2026-09-05T12:00:00+00:00", "duration_seconds": 780, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "ja", "language_confidence": "HIGH", "view_count": 22000},
+    {"id": "syn-vid-11", "youtube_video_id": "SYNV11", "channel_id": "syn-ch-04", "title": "[SINTÉTICO] Reparar fuente de poder", "published_at": "2026-10-01T12:00:00+00:00", "duration_seconds": 1080, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "ja", "language_confidence": "HIGH", "view_count": null},
+    {"id": "syn-vid-12", "youtube_video_id": "SYNV12", "channel_id": "syn-ch-02", "title": "[SINTÉTICO] Taller de cafetera", "published_at": "2026-08-10T12:00:00+00:00", "duration_seconds": 1320, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "pt", "language_confidence": "MEDIUM", "view_count": 9800},
+    {"id": "syn-vid-13", "youtube_video_id": "SYNV13", "channel_id": "syn-ch-09", "title": "[SINTÉTICO] Control: documental de 40 min", "published_at": "2026-09-30T12:00:00+00:00", "duration_seconds": 2400, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "en", "language_confidence": "HIGH", "view_count": 1400000},
+    {"id": "syn-vid-14", "youtube_video_id": "SYNV14", "channel_id": "syn-ch-10", "title": "[SINTÉTICO] Control: cocina de laboratorio", "published_at": "2026-10-08T12:00:00+00:00", "duration_seconds": 1800, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "ja", "language_confidence": "HIGH", "view_count": 620000},
+    {"id": "syn-vid-15", "youtube_video_id": "SYNV15", "channel_id": "syn-ch-03", "title": "[SINTÉTICO] Pizarra: el átomo", "published_at": "2026-09-18T12:00:00+00:00", "duration_seconds": 1140, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "fr", "language_confidence": "HIGH", "view_count": 44000},
+    {"id": "syn-vid-16", "youtube_video_id": "SYNV16", "channel_id": "syn-ch-05", "title": "[SINTÉTICO] Cocina con nitrógeno líquido", "published_at": "2026-10-14T12:00:00+00:00", "duration_seconds": 1020, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "en", "language_confidence": "HIGH", "view_count": 91000},
+    {"id": "syn-vid-17", "youtube_video_id": "SYNV17", "channel_id": "syn-ch-07", "title": "[SINTÉTICO] Título en español, audio en portugués", "published_at": "2026-09-25T12:00:00+00:00", "duration_seconds": 1200, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "UNKNOWN", "language_confidence": "CONFLICT", "view_count": 17000},
+    {"id": "syn-vid-18", "youtube_video_id": "SYNV18", "channel_id": "syn-ch-08", "title": "[SINTÉTICO] Archivo de guerra, parte 1", "published_at": "2026-08-22T12:00:00+00:00", "duration_seconds": 1560, "video_type": "LONG", "video_type_evidence": "duración > 3 min; clasificación de fuente simulada", "language_state": "fr", "language_confidence": "HIGH", "view_count": 29000},
+    {"id": "syn-vid-19", "youtube_video_id": "SYNV19", "channel_id": "syn-ch-06", "title": "[SINTÉTICO] Ahorro en 60 segundos", "published_at": "2026-10-18T12:00:00+00:00", "duration_seconds": 100, "video_type": "UNKNOWN", "video_type_evidence": "duración 100 s; sin confirmación de clasificación Short", "language_state": "en", "language_confidence": "HIGH", "view_count": 300000},
+    {"id": "syn-vid-20", "youtube_video_id": "SYNV20", "channel_id": "syn-ch-01", "title": "[SINTÉTICO] Largo de 12 minutos", "published_at": "2026-10-16T12:00:00+00:00", "duration_seconds": 720, "video_type": "LONG", "video_type_evidence": "duración 720 s; clasificación de fuente simulada", "language_state": "pt", "language_confidence": "HIGH", "view_count": 5200}
+  ],
+  "opportunities": [
+    {
+      "id": "syn-opp-01", "niche_id": "syn-niche-01", "format_id": "syn-fmt-01", "video_type": "LONG", "source_languages_json": ["pt", "fr"], "status": "ES_VALIDATION_IN_PROGRESS", "owner_notes": "Oportunidad sintética: replicación internacional con demanda ES indicativa.",
+      "evaluation": {
+        "id": "syn-eval-01", "evaluation_version": 1,
+        "international": {"replication_state": "REPLICATED", "independent_channels_observed": 3, "relevant_videos_observed": 8, "sample_bias_warning": "coverage_nonrepresentative"},
+        "spanish": {"saturation_state": "LOW", "spanish_demand_state": "INDICATIVE", "entry_decision": "POTENTIAL_GAP", "query_coverage_count": 7, "match_precision_reviewed": false},
+        "feasibility": {"faceless_state": "FACELESS_LIKELY", "complexity_1_to_5": 2, "rights_risk": "LOW", "usd_per_video_scenarios": {"low": 2.1, "base": 3.2, "high": 4.8}, "costs_are_estimates": true},
+        "scores": {"international": null, "spanish": null, "feasibility": null, "integrated": null},
+        "confidence": "MEDIUM", "reason_codes": ["ES_DEMAND_INDICATIVE_ONLY"], "recommendation": "VALIDATE_DEMAND_PILOT", "metric_policy_state": "RESTRICTED"
+      },
+      "evidence": [
+        {"id": "syn-ev-01", "entity_type": "VIDEO", "entity_id": "SYNV01", "market": "SOURCE_MARKET", "role": "INTL_EXAMPLE", "evidence_text": "Video sintético con replicación en el mismo formato.", "source": "synthetic_fixture", "support_strength": "STRONG", "availability": "AVAILABLE"},
+        {"id": "syn-ev-02", "entity_type": "VIDEO", "entity_id": "SYNV04", "market": "SOURCE_MARKET", "role": "INTL_EXAMPLE", "evidence_text": "Segundo canal independiente, mismo formato.", "source": "synthetic_fixture", "support_strength": "STRONG", "availability": "AVAILABLE"},
+        {"id": "syn-ev-03", "entity_type": "VIDEO", "entity_id": "SYNV05", "market": "SPANISH_MARKET", "role": "DEMAND_SIGNAL", "evidence_text": "Señal indicativa de consumo, no concluyente.", "source": "synthetic_fixture", "support_strength": "WEAK", "availability": "AVAILABLE"},
+        {"id": "syn-ev-04", "entity_type": "VIDEO", "entity_id": "SYNV18", "market": "SOURCE_MARKET", "role": "INTL_EXAMPLE", "evidence_text": "Fuente caducada: refrescar antes de decidir (plazo de retención).", "source": "synthetic_fixture", "support_strength": "WEAK", "availability": "EXPIRED"}
+      ]
+    },
+    {
+      "id": "syn-opp-02", "niche_id": "syn-niche-02", "format_id": "syn-fmt-02", "video_type": "LONG", "source_languages_json": ["en"], "status": "ES_COMPETITIVE", "owner_notes": "Oportunidad sintética saturada.",
+      "evaluation": {
+        "id": "syn-eval-02", "evaluation_version": 1,
+        "international": {"replication_state": "PROMISING", "independent_channels_observed": 2, "relevant_videos_observed": 5, "sample_bias_warning": "coverage_nonrepresentative"},
+        "spanish": {"saturation_state": "HIGH", "spanish_demand_state": "OBSERVED", "entry_decision": "CROWDED", "query_coverage_count": 9, "match_precision_reviewed": true},
+        "feasibility": {"faceless_state": "FACELESS_CONFIRMED", "complexity_1_to_5": 2, "rights_risk": "LOW", "usd_per_video_scenarios": {"low": null, "base": 2.4, "high": null}, "costs_are_estimates": true},
+        "scores": {"international": null, "spanish": null, "feasibility": null, "integrated": null},
+        "confidence": "MEDIUM", "reason_codes": ["ES_SATURATED_EXACT_MATCH"], "recommendation": "WATCHLIST", "metric_policy_state": "RESTRICTED"
+      },
+      "evidence": [
+        {"id": "syn-ev-05", "entity_type": "VIDEO", "entity_id": "SYNV07", "market": "SOURCE_MARKET", "role": "INTL_EXAMPLE", "evidence_text": "Éxito sintético en canal mediano.", "source": "synthetic_fixture", "support_strength": "STRONG", "availability": "AVAILABLE"},
+        {"id": "syn-ev-06", "entity_type": "VIDEO", "entity_id": "SYNV08", "market": "SPANISH_MARKET", "role": "ES_COMPETITOR_EXACT", "evidence_text": "Competidor directo en español con formato equivalente.", "source": "synthetic_fixture", "support_strength": "STRONG", "availability": "AVAILABLE"}
+      ]
+    },
+    {
+      "id": "syn-opp-03", "niche_id": "syn-niche-03", "format_id": "syn-fmt-03", "video_type": "LONG", "source_languages_json": ["ja"], "status": "ES_DEMAND_UNPROVEN", "owner_notes": "Oportunidad sintética sin demanda española demostrada.",
+      "evaluation": {
+        "id": "syn-eval-03", "evaluation_version": 1,
+        "international": {"replication_state": "PROMISING", "independent_channels_observed": 2, "relevant_videos_observed": 4, "sample_bias_warning": "coverage_nonrepresentative"},
+        "spanish": {"saturation_state": "UNKNOWN", "spanish_demand_state": "UNPROVEN", "entry_decision": "DEMAND_UNPROVEN", "query_coverage_count": 8, "match_precision_reviewed": false},
+        "feasibility": {"faceless_state": "NOT_FACELESS", "complexity_1_to_5": 4, "rights_risk": "MEDIUM", "usd_per_video_scenarios": {"low": null, "base": null, "high": null}, "costs_are_estimates": true},
+        "scores": {"international": null, "spanish": null, "feasibility": null, "integrated": null},
+        "confidence": "LOW", "reason_codes": ["ES_DEMAND_NOT_MEASURED", "PRODUCTION_REQUIRES_OWN_FOOTAGE"], "recommendation": "MORE_RESEARCH", "metric_policy_state": "RESTRICTED"
+      },
+      "evidence": [
+        {"id": "syn-ev-07", "entity_type": "CHANNEL", "entity_id": "SYNCH04", "market": "SOURCE_MARKET", "role": "INTL_EXAMPLE", "evidence_text": "Canal pequeño sin suscriptores visibles.", "source": "synthetic_fixture", "support_strength": "MEDIUM", "availability": "AVAILABLE"}
+      ]
+    },
+    {
+      "id": "syn-opp-04", "niche_id": "syn-niche-04", "format_id": "syn-fmt-02", "video_type": "LONG", "source_languages_json": ["en", "ja"], "status": "INSUFFICIENT_EVIDENCE", "owner_notes": "Éxito viral aislado: no es replicación.",
+      "evaluation": {
+        "id": "syn-eval-04", "evaluation_version": 1,
+        "international": {"replication_state": "SINGLE_OUTLIER", "independent_channels_observed": 1, "relevant_videos_observed": 1, "sample_bias_warning": "coverage_nonrepresentative"},
+        "spanish": {"saturation_state": "UNKNOWN", "spanish_demand_state": "NOT_OBSERVED", "entry_decision": "INSUFFICIENT_EVIDENCE", "query_coverage_count": 3, "match_precision_reviewed": false},
+        "feasibility": {"faceless_state": "UNKNOWN", "complexity_1_to_5": null, "rights_risk": "UNKNOWN", "usd_per_video_scenarios": {"low": null, "base": null, "high": null}, "costs_are_estimates": true},
+        "scores": {"international": null, "spanish": null, "feasibility": null, "integrated": null},
+        "confidence": "LOW", "reason_codes": ["SINGLE_OUTLIER", "ES_QUERY_COVERAGE_LOW"], "recommendation": "MORE_RESEARCH", "metric_policy_state": "RESTRICTED"
+      },
+      "evidence": [
+        {"id": "syn-ev-08", "entity_type": "VIDEO", "entity_id": "SYNV14", "market": "SOURCE_MARKET", "role": "INTL_EXAMPLE", "evidence_text": "Viral de canal grande de control; no cuenta como replicación.", "source": "synthetic_fixture", "support_strength": "WEAK", "availability": "AVAILABLE"}
+      ]
+    },
+    {
+      "id": "syn-opp-05", "niche_id": "syn-niche-05", "format_id": "syn-fmt-04", "video_type": "LONG", "source_languages_json": ["en"], "status": "FEASIBILITY_PENDING", "owner_notes": "Alta dependencia de metraje ajeno: riesgo de derechos alto.",
+      "evaluation": {
+        "id": "syn-eval-05", "evaluation_version": 1,
+        "international": {"replication_state": "REPLICATED", "independent_channels_observed": 4, "relevant_videos_observed": 9, "sample_bias_warning": "coverage_nonrepresentative"},
+        "spanish": {"saturation_state": "MEDIUM", "spanish_demand_state": "INDICATIVE", "entry_decision": "POTENTIAL_GAP", "query_coverage_count": 6, "match_precision_reviewed": false},
+        "feasibility": {"faceless_state": "NOT_FACELESS", "complexity_1_to_5": 5, "rights_risk": "HIGH", "usd_per_video_scenarios": {"low": null, "base": null, "high": null}, "costs_are_estimates": true},
+        "scores": {"international": null, "spanish": null, "feasibility": null, "integrated": null},
+        "confidence": "MEDIUM", "reason_codes": ["HIGH_COPYRIGHT_RISK"], "recommendation": "REJECT", "metric_policy_state": "RESTRICTED"
+      },
+      "evidence": [
+        {"id": "syn-ev-09", "entity_type": "VIDEO", "entity_id": "SYNV13", "market": "SOURCE_MARKET", "role": "INTL_EXAMPLE", "evidence_text": "Control grande con material de archivo.", "source": "synthetic_fixture", "support_strength": "STRONG", "availability": "AVAILABLE"}
+      ]
+    },
+    {
+      "id": "syn-opp-06", "niche_id": "syn-niche-01", "format_id": "syn-fmt-02", "video_type": "LONG", "source_languages_json": ["fr"], "status": "SCREENED", "owner_notes": "Sin evaluación todavía: no tiene campos derivados.",
+      "evaluation": null,
+      "evidence": [
+        {"id": "syn-ev-10", "entity_type": "VIDEO", "entity_id": "SYNV06", "market": "SOURCE_MARKET", "role": "INTL_EXAMPLE", "evidence_text": "Candidato descubierto; aún no evaluado.", "source": "synthetic_fixture", "support_strength": "WEAK", "availability": "AVAILABLE"}
+      ]
+    },
+    {
+      "id": "syn-opp-07", "niche_id": "syn-niche-04", "format_id": "syn-fmt-04", "video_type": "LONG", "source_languages_json": ["ja"], "status": "ES_UNCHECKED", "owner_notes": "Evaluación parcial: costos y complejidad sin dato.",
+      "evaluation": {
+        "id": "syn-eval-07", "evaluation_version": 1,
+        "international": {"replication_state": "PROMISING", "independent_channels_observed": 2, "relevant_videos_observed": 4, "sample_bias_warning": "coverage_nonrepresentative"},
+        "spanish": {"saturation_state": "UNKNOWN", "spanish_demand_state": "NOT_OBSERVED", "entry_decision": "INSUFFICIENT_EVIDENCE", "query_coverage_count": 2, "match_precision_reviewed": false},
+        "feasibility": {"faceless_state": "MIXED", "complexity_1_to_5": null, "rights_risk": "MEDIUM", "usd_per_video_scenarios": {"low": null, "base": null, "high": null}, "costs_are_estimates": true},
+        "scores": {"international": null, "spanish": null, "feasibility": null, "integrated": null},
+        "confidence": "LOW", "reason_codes": ["ES_QUERY_COVERAGE_LOW"], "recommendation": "MORE_RESEARCH", "metric_policy_state": "RESTRICTED"
+      },
+      "evidence": [
+        {"id": "syn-ev-11", "entity_type": "VIDEO", "entity_id": "SYNV10", "market": "SOURCE_MARKET", "role": "INTL_EXAMPLE", "evidence_text": "Canal pequeño con formato parecido.", "source": "synthetic_fixture", "support_strength": "MEDIUM", "availability": "AVAILABLE"}
+      ]
+    },
+    {
+      "id": "syn-opp-08", "niche_id": "syn-niche-03", "format_id": "syn-fmt-01", "video_type": "LONG", "source_languages_json": ["pt"], "status": "WATCHLIST", "owner_notes": "Vigilar: señal internacional nueva, demanda ES por confirmar.",
+      "evaluation": {
+        "id": "syn-eval-08", "evaluation_version": 1,
+        "international": {"replication_state": "PROMISING", "independent_channels_observed": 2, "relevant_videos_observed": 5, "sample_bias_warning": "coverage_nonrepresentative"},
+        "spanish": {"saturation_state": "MEDIUM", "spanish_demand_state": "UNPROVEN", "entry_decision": "DEMAND_UNPROVEN", "query_coverage_count": 6, "match_precision_reviewed": false},
+        "feasibility": {"faceless_state": "FACELESS_LIKELY", "complexity_1_to_5": 3, "rights_risk": "LOW", "usd_per_video_scenarios": {"low": 1.5, "base": 2.0, "high": null}, "costs_are_estimates": true},
+        "scores": {"international": null, "spanish": null, "feasibility": null, "integrated": null},
+        "confidence": "LOW", "reason_codes": ["ES_DEMAND_NOT_MEASURED"], "recommendation": "WATCHLIST", "metric_policy_state": "RESTRICTED"
+      },
+      "evidence": [
+        {"id": "syn-ev-12", "entity_type": "VIDEO", "entity_id": "SYNV03", "market": "SOURCE_MARKET", "role": "INTL_EXAMPLE", "evidence_text": "Señal internacional nueva en formato de relato ilustrado.", "source": "synthetic_fixture", "support_strength": "MEDIUM", "availability": "AVAILABLE"}
+      ]
+    }
+  ]
+}

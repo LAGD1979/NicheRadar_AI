@@ -1,0 +1,96 @@
+name: nicheradar
+
+x-backend: &backend
+  build: ./backend
+  env_file:
+    - path: .env
+      required: false
+  environment:
+    DATABASE_URL: postgresql+psycopg://nicheradar:nicheradar@db:5432/nicheradar
+    RESEARCH_CONFIG_PATH: /config/research.yaml
+    TZ: America/Santiago
+    PYTHONUTF8: "1"
+  volumes:
+    - ./config:/config:ro
+  depends_on:
+    db:
+      condition: service_healthy
+
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: nicheradar
+      POSTGRES_PASSWORD: nicheradar
+      POSTGRES_DB: nicheradar
+    ports:
+      - "127.0.0.1:${DB_HOST_PORT:-15432}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nicheradar -d nicheradar"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    <<: *backend
+    command: sh -c "alembic upgrade head && python -m app.demo.seed"
+    restart: "no"
+
+  api:
+    <<: *backend
+    command: uvicorn app.main:app --host 0.0.0.0 --port 8000
+    ports:
+      - "127.0.0.1:${API_HOST_PORT:-8000}:8000"
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/health/live', timeout=3)"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  worker:
+    <<: *backend
+    command: python -m app.jobs.worker
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+
+  frontend:
+    build: ./frontend
+    command: sh -c "npm install && npm run dev -- --host 0.0.0.0 --port 5173"
+    environment:
+      VITE_API_PROXY_TARGET: http://api:8000
+      CHOKIDAR_USEPOLLING: "true"
+    ports:
+      - "127.0.0.1:${FRONTEND_HOST_PORT:-5173}:5173"
+    volumes:
+      - ./frontend:/app
+      - frontend_node_modules:/app/node_modules
+    depends_on:
+      - api
+
+  e2e:
+    image: mcr.microsoft.com/playwright:v1.49.1-jammy
+    profiles: ["e2e"]
+    working_dir: /work
+    command: sh -c "npm install && npx playwright test"
+    environment:
+      E2E_BASE_URL: http://frontend:5173
+    volumes:
+      - ./frontend:/work
+      - e2e_node_modules:/work/node_modules
+    depends_on:
+      - frontend
+
+volumes:
+  pgdata:
+  frontend_node_modules:
+  e2e_node_modules:

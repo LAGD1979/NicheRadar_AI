@@ -1,0 +1,51 @@
+research:
+  target_language: es
+  lookback_days: 90
+  video_types: [LONG]
+  languages: [en, pt, fr, de, it, ar, hi, ja, ko, tr, ru, id, vi, zh-Hans, zh-Hant]
+  candidate_channel_subscribers_soft_max: 50000
+  priority_channel_subscribers_soft_max: 10000
+  long_video_views_soft_min: 50000
+  exclude_live: true
+  discovery_strategy: rotating_language_coverage
+  allow_unknown_language: true
+  spanish_regions: [ALL_ES, LATAM, ES]
+  spanish_query_variants_min: 6
+  spanish_demand_requires_independent_signals: 2
+  minimum_independent_creators_for_replicated: 3
+  minimum_distinct_weeks_for_replicated: 3
+  minimum_comparable_channel_videos_for_outlier: 5
+  max_compare_items: 8
+quota:
+  youtube_search_daily_soft_cap: 80
+  youtube_other_daily_soft_cap: 8000
+  reserve_spanish_pct: 35
+  reserve_international_pct: 50
+  reserve_manual_pct: 15
+  ai_run_usd_soft_cap: 5.0
+compliance:
+  mode: restricted
+  advanced_metrics_enabled: false
+  max_unauthorized_api_cache_days: 29
+  purge_interval_hours: 24
+  require_explicit_approval_record: true
+  permit_unlicensed_scraping: false
+providers:
+  youtube_official:
+    enabled: true
+  vidiq_import:
+    enabled: true
+    require_license_confirmation: true
+  vidiq_api:
+    enabled: false
+  trends:
+    enabled: false
+models:
+  analysis_provider: anthropic
+  model_id: ''
+  structured_output_required: true
+  temperature: 0
+ui:
+  locale: es-CL
+  timezone: America/Santiago
+  synthetic_demo_banner: true

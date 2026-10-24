@@ -1,0 +1,41 @@
+name: CI
+
+# Sin secretos: todo corre con datos sintéticos. No se llama a YouTube ni a ningún proveedor.
+on:
+  push:
+  pull_request:
+
+jobs:
+  backend:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Levantar PostgreSQL y construir la imagen de la API
+        run: |
+          docker compose up -d db
+          docker compose build api
+      - name: Lint y tipos
+        run: docker compose run --rm --no-deps api sh -c "ruff check app tests && ruff format --check app tests && mypy app"
+      - name: Pruebas (unitarias e integración con PostgreSQL)
+        run: docker compose run --rm --no-deps api pytest -q
+      - name: Apagar
+        if: always()
+        run: docker compose down -v
+
+  frontend:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+      - run: npm ci
+      - run: npx eslint .
+      - run: npx tsc --noEmit
+      - run: npx vitest run
+      - run: npx vite build
