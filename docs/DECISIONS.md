@@ -64,3 +64,36 @@ M0 cubre los casos T02, T03, T04 (parcial, a nivel de dato), T17, T21, T22, T23 
 
 ## D-21 · Preflight de entorno
 `scripts/check_environment.py` del plan original no se implementó: Docker Compose ya se verificó a mano y el stack arranca. Queda para cuando haya un entorno nuevo que validar.
+
+---
+
+## M1 — ingesta oficial de YouTube
+
+### D-22 · La cuota se mide en unidades, no en llamadas (corrige la especificación)
+§5.2 de la especificación dice «100 llamadas diarias a `search.list` (costo 1 cada una)». Eso no coincide con la documentación oficial: `search.list` cuesta **100 unidades** y el pool diario por defecto es **10 000 unidades compartidas** por todos los métodos (`videos.list`, `channels.list`, `playlistItems.list` cuestan 1 unidad cada uno). Fuentes: [Determine quota cost](https://developers.google.com/youtube/v3/determine_quota_cost) y [YouTube Data API overview](https://developers.google.com/youtube/v3/getting-started).
+
+Consecuencia: el límite se controla en unidades (`YOUTUBE_DAILY_UNITS_LIMIT=10000`, corte blando al 90 % = 9 000). Con 80 búsquedas de 100 unidades ya se consumen 8 000, así que la cuota restante para detalles es pequeña. **Conviene confirmar la cuota real de su proyecto en Google Cloud Console** antes de programar búsquedas grandes.
+
+### D-23 · El día de cuota es el de Pacific Time
+La cuota se reinicia a medianoche de Pacific Time, no UTC (D-22 y documentación oficial). `quota_service.quota_day_start` lo calcula; hay pruebas de la frontera.
+
+### D-24 · Clave de YouTube: solo por entorno
+`YOUTUBE_API_KEY` llega a `api` y `worker` desde la variable de entorno del host o desde `.env` (Compose la interpola). Nunca se escribe en el repositorio ni en respuestas, y `httpx` se silencia a `WARNING` para que no registre la URL con la clave. Las pruebas la anulan explícitamente (`conftest.py`), así que nunca salen a la red aunque la clave exista en el equipo.
+
+### D-25 · Sin clave, no hay búsqueda y no hay datos de respaldo
+Sin clave, `POST /research-runs` con `kind=discovery` responde 409 `PROVIDER_NOT_CONFIGURED`. No se inventan datos ni se marca como éxito. Los datos sintéticos siguen siendo solo DEMO.
+
+### D-26 · Pausa y reanudación por cuota
+Un 403 `quotaExceeded` o el corte local deja la corrida en `PAUSED_QUOTA`, con el progreso (consultas completadas) guardado en la tarea. `POST /research-runs/{id}/resume` la reanuda y solo ejecuta lo pendiente. Un 403 de credencial (`forbidden`, `keyInvalid`) no pausa: falla la corrida, porque requiere acción humana (§9.3).
+
+### D-27 · Retención de datos de terceros: 29 días
+Todo lo que viene de la API o de una importación se guarda con `owner_authorized=false` y `retention_deadline = observado + 29 días` (§5.5). La purga (`kind=purge`) deja los valores en NULL, marca `EXPIRED` y cambia el título a «[Dato caducado]». **La purga no corre sola**: se lanza manualmente hasta M5.
+
+### D-28 · Importación JSON/CSV con confirmación de licencia
+`POST /imports/provider-file` exige `license_confirmed=true`. Valida fila por fila, acepta las válidas, devuelve los errores de las demás (fila, campo, motivo) y es idempotente por `(proveedor, idempotency_key)`. Los valores como `=HYPERLINK(...)` se guardan como texto; la exportación los neutralizará en M3 (T20).
+
+### D-29 · Lo que M1 no implementa todavía
+- **Observations** (tabla de la especificación §6): la procedencia y la retención viven en las columnas de `videos` y `channels`. La tabla completa se evaluará en M2.
+- **Expansión por canal** (`playlistItems` para uploads): el servicio existe y está probado (T06), pero no hay ruta HTTP para dispararlo.
+- **Scheduler automático**: todo es manual (D-26). Lo automático llega en M5.
+- **Detección de idioma por el título**: solo se usan `defaultAudioLanguage` y `defaultLanguage`. Sin ellos el idioma queda `UNKNOWN`.

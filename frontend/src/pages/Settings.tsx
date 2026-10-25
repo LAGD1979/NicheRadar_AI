@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../api";
-import { formatField, label, stateFor } from "../format";
+import { formatDateTime, formatField, formatNumber, label, stateFor } from "../format";
 
 // Un límite ausente se muestra como «Sin dato», no como 0 llamadas.
 function formatSoftCap(value: number | undefined): string {
@@ -12,10 +12,27 @@ export function Settings() {
   const config = useQuery({ queryKey: ["config"], queryFn: api.config });
   const providers = useQuery({ queryKey: ["providers"], queryFn: api.providers });
   const capabilities = useQuery({ queryKey: ["capabilities"], queryFn: api.capabilities });
+  const usage = useQuery({ queryKey: ["usage"], queryFn: api.usage, refetchInterval: 30_000 });
 
   return (
     <section aria-labelledby="titulo-config">
       <h1 id="titulo-config">Configuración</h1>
+
+      <h2>Cuota de YouTube</h2>
+      {usage.isPending && <p>Cargando consumo…</p>}
+      {usage.isError && <p role="alert">No se pudo leer el consumo: {usage.error.message}.</p>}
+      {usage.isSuccess && (
+        <dl className="facts">
+          <dt>Unidades usadas hoy</dt>
+          <dd>{formatNumber(usage.data.units_used)}</dd>
+          <dt>Presupuesto blando del día</dt>
+          <dd>{formatNumber(usage.data.units_budget_soft)} (límite real: {formatNumber(usage.data.units_limit_hard)})</dd>
+          <dt>Restante del presupuesto blando</dt>
+          <dd>{formatNumber(usage.data.units_remaining_soft)}</dd>
+          <dt>Se reinicia</dt>
+          <dd>{formatDateTime(usage.data.resets_at_utc)} (medianoche de Pacific Time)</dd>
+        </dl>
+      )}
 
       <h2>Parámetros de investigación</h2>
       {config.isPending && <p>Cargando…</p>}

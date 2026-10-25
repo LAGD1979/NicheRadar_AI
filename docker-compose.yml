@@ -8,6 +8,8 @@ x-backend: &backend
   environment:
     DATABASE_URL: postgresql+psycopg://nicheradar:nicheradar@db:5432/nicheradar
     RESEARCH_CONFIG_PATH: /config/research.yaml
+    # Se toma de la variable de entorno del host o de .env. Nunca se escribe en el repositorio.
+    YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
     TZ: America/Santiago
     PYTHONUTF8: "1"
   volumes:

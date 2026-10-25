@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Any
 
 from sqlalchemy import (
+    Boolean,
     DateTime,
     ForeignKey,
     Index,
@@ -61,6 +62,10 @@ class Channel(Base):
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     run_id: Mapped[str | None] = mapped_column(String(36))
     source_data_type: Mapped[str] = mapped_column(String(20))
+    uploads_playlist_id: Mapped[str | None] = mapped_column(String(64))
+    owner_authorized: Mapped[bool] = mapped_column(Boolean, default=False)
+    retention_deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_refreshed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
@@ -87,7 +92,64 @@ class Video(Base):
     run_id: Mapped[str | None] = mapped_column(String(36))
     source_data_type: Mapped[str] = mapped_column(String(20))
     availability: Mapped[str] = mapped_column(String(20), default="AVAILABLE")
+    owner_authorized: Mapped[bool] = mapped_column(Boolean, default=False)
+    retention_deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_refreshed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class SourceQuery(Base):
+    """Búsqueda exacta ejecutada (sin claves). Permite auditar qué produjo cada video."""
+
+    __tablename__ = "source_queries"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("research_runs.id"), index=True)
+    provider: Mapped[str] = mapped_column(String(60))
+    language_requested: Mapped[str] = mapped_column(String(20))
+    region: Mapped[str | None] = mapped_column(String(10))
+    query_text: Mapped[str] = mapped_column(String(300))
+    window_code: Mapped[str] = mapped_column(String(10))
+    params_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    executed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    result_count: Mapped[int] = mapped_column(Integer, default=0)
+    pages: Mapped[int] = mapped_column(Integer, default=0)
+    status: Mapped[str] = mapped_column(String(20))
+    warnings_json: Mapped[list[str]] = mapped_column(JSONB, default=list)
+
+
+class DiscoveryMatch(Base):
+    """Un video encontrado por una búsqueda. Un mismo video puede tener varios matches (T01)."""
+
+    __tablename__ = "discovery_matches"
+    __table_args__ = (UniqueConstraint("query_id", "video_id", name="uq_discovery_match"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    run_id: Mapped[str] = mapped_column(ForeignKey("research_runs.id"), index=True)
+    query_id: Mapped[str] = mapped_column(ForeignKey("source_queries.id"))
+    video_id: Mapped[str] = mapped_column(ForeignKey("videos.id"), index=True)
+    position: Mapped[int] = mapped_column(Integer)
+    strategy: Mapped[str] = mapped_column(String(40))
+    match_quality: Mapped[str] = mapped_column(String(20), default="UNREVIEWED")
+    is_spanish_market: Mapped[bool] = mapped_column(Boolean, default=False)
+
+
+class ProviderUsage(Base):
+    """Unidades de cuota consumidas por llamada. El día de cuota se calcula en Pacific Time."""
+
+    __tablename__ = "provider_usage"
+    __table_args__ = (
+        Index("ix_provider_usage_bucket_time", "provider", "quota_bucket", "started_at"),
+    )
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    run_id: Mapped[str | None] = mapped_column(String(36))
+    provider: Mapped[str] = mapped_column(String(60))
+    endpoint: Mapped[str] = mapped_column(String(40))
+    quota_bucket: Mapped[str] = mapped_column(String(40))
+    units: Mapped[int] = mapped_column(Integer)
+    started_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    status: Mapped[str] = mapped_column(String(20))
 
 
 class Opportunity(Base):

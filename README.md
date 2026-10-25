@@ -57,6 +57,18 @@ docker compose up -d --build
 
 `down -v` borra el volumen de la base de datos. Como solo hay datos sintéticos, no se pierde nada real. Repetir `docker compose run --rm migrate` vuelve a aplicar migraciones y seed sin duplicar filas.
 
+## M1: búsqueda real en YouTube
+
+Requiere una clave de YouTube Data API v3 en `YOUTUBE_API_KEY` (variable de entorno del usuario de Windows o línea en `.env`). Sin clave, la búsqueda queda deshabilitada y no se inventan datos.
+
+Desde la pantalla **Corridas** se lanza una búsqueda: idioma, consulta, ventana (0–7, 8–30 o 31–90 días) y número máximo de búsquedas. Cada búsqueda cuesta 100 unidades de cuota (ver `docs/DECISIONS.md`, D-22). El **consumo del día** aparece en **Configuración**.
+
+Si se agota la cuota, la corrida queda en **Pausada por cuota**. Use el botón **Reanudar** al día siguiente: solo se ejecuta lo pendiente.
+
+Para importar un archivo exportado con derecho de reutilización (JSON o CSV), use `POST /api/v1/imports/provider-file` con `license_confirmed: true`. Las filas válidas se guardan y las inválidas se devuelven con su motivo. Repetir la misma `idempotency_key` no duplica nada.
+
+Los datos de YouTube caducan a los 29 días. La purga se lanza manualmente con `kind=purge` hasta que exista el planificador (M5).
+
 ## Qué funciona en M0
 
 - Resumen con contadores; las métricas no habilitadas aparecen como «No habilitado», nunca como 0.
@@ -69,8 +81,8 @@ docker compose up -d --build
 
 ## Qué no funciona todavía (y por qué)
 
-- **No hay ingesta real de YouTube.** Es el hito M1 y requiere una clave autorizada.
 - **No hay análisis IA ni búsqueda real en español.** Son M2 y M3; el demo muestra los campos como datos sintéticos.
+- **No hay scheduler automático.** Las búsquedas y la purga se lanzan a mano (M5 lo automatiza).
 - **Las puntuaciones compuestas están bloqueadas.** Con `COMPLIANCE_MODE=restricted` ninguna variable de entorno las habilita; el desbloqueo exigirá un registro en `policy_approvals` (M4).
 - **No hay exportación CSV/JSON.** Llega en M3.
 - **No hay autenticación.** Está previsto como modo local; `APP_ENV=production` se rechaza hasta implementarla.

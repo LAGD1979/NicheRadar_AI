@@ -144,6 +144,18 @@ export interface RunOut {
   coverage: Record<string, unknown>;
   errors: Array<Record<string, unknown>>;
   budget: Record<string, unknown>;
+  events?: Array<{ event_type: string; actor: string; created_at: string | null }>;
+}
+
+export interface UsageOut {
+  provider: string;
+  quota_bucket: string;
+  day_start_utc: string;
+  resets_at_utc: string;
+  units_used: number;
+  units_budget_soft: number;
+  units_limit_hard: number;
+  units_remaining_soft: number;
 }
 
 export interface ProviderOut {

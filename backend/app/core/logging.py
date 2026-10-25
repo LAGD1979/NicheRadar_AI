@@ -21,6 +21,8 @@ def redact_secrets(
 def configure_logging(level: str) -> None:
     numeric_level = getattr(logging, level.upper(), logging.INFO)
     logging.basicConfig(format="%(message)s", stream=sys.stdout, level=numeric_level)
+    # httpx registra la URL completa de cada petición, y la URL de YouTube lleva la clave.
+    logging.getLogger("httpx").setLevel(logging.WARNING)
     structlog.configure(
         processors=[
             structlog.contextvars.merge_contextvars,

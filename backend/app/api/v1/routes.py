@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import Annotated, Any
 
 from fastapi import APIRouter, Depends, Query
@@ -6,9 +7,13 @@ from sqlalchemy.orm import Session
 
 from app.api.v1.schemas import (
     CapabilityOut,
+    ChannelOut,
     CompareRequest,
     CompareResponse,
     ConfigPublic,
+    DiscoveryPayload,
+    ImportRequest,
+    ImportSummary,
     OpportunityDetail,
     OpportunityItem,
     Page,
@@ -16,6 +21,7 @@ from app.api.v1.schemas import (
     RunAccepted,
     RunCreate,
     RunOut,
+    UsageOut,
     VideoItem,
 )
 from app.core.config import Settings, get_settings
@@ -25,14 +31,22 @@ from app.db import models as m
 from app.db.session import get_session
 from app.domain.rules import age_hours
 from app.services import opportunity_service as opp_svc
+from app.services import quota_service
 from app.services.compliance_service import all_decisions, decide
+from app.services.import_service import import_rows
 from app.services.providers_service import list_providers
-from app.services.research_service import enqueue_demo_run, get_run
+from app.services.research_service import (
+    enqueue_run,
+    get_run,
+    resume_run,
+    run_events,
+)
 
 router = APIRouter()
 
 SessionDep = Annotated[Session, Depends(get_session)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]
+UNIT_COST_SEARCH = 100
 
 
 @router.get("/config/public", response_model=ConfigPublic)
@@ -53,6 +67,7 @@ def config_public(settings: SettingsDep) -> ConfigPublic:
         quota_soft_caps={
             "youtube_search_daily": q["youtube_search_daily_soft_cap"],
             "youtube_other_daily": q["youtube_other_daily_soft_cap"],
+            "youtube_units_daily_budget": quota_service.daily_budget(settings),
             "reserve_spanish_pct": q["reserve_spanish_pct"],
             "ai_run_usd": q["ai_run_usd_soft_cap"],
         },
@@ -68,6 +83,11 @@ def config_public(settings: SettingsDep) -> ConfigPublic:
 @router.get("/providers", response_model=list[ProviderOut])
 def providers(settings: SettingsDep) -> list[ProviderOut]:
     return list_providers(settings)
+
+
+@router.get("/usage", response_model=UsageOut)
+def usage(session: SessionDep, settings: SettingsDep) -> UsageOut:
+    return UsageOut(**quota_service.snapshot(session, settings, datetime.now(UTC)))
 
 
 @router.get("/policy/capabilities", response_model=list[CapabilityOut])
@@ -134,7 +154,7 @@ def opportunity_detail(
 def opportunity_scores(settings: SettingsDep) -> None:
     """Puntuaciones compuestas: bloqueadas en restricted (T17). Sin bypass por frontend.
 
-    Si la compuerta se abriera (M4), aquí se calcularía el score; en M0 nunca se alcanza.
+    Si la compuerta se abriera (M4), aquí se calcularía el score; en M1 nunca se alcanza.
     """
     decision = decide("advanced_scores", settings)
     if not decision.allowed:
@@ -147,6 +167,39 @@ def compare(body: CompareRequest, session: SessionDep, settings: SettingsDep) ->
     return opp_svc.compare(session, settings, body.opportunity_ids)
 
 
+def _age_or_none(published_at: Any, observed_at: Any) -> float | None:
+    try:
+        return age_hours(published_at, observed_at)
+    except ValueError:
+        return None
+
+
+def _video_item(v: m.Video, c: m.Channel) -> VideoItem:
+    return VideoItem(
+        id=v.id,
+        youtube_video_id=v.youtube_video_id,
+        title=v.title,
+        channel_title=c.title_current,
+        subscriber_band=c.subscriber_band,
+        published_at=v.published_at,
+        age_hours=_age_or_none(v.published_at, v.observed_at),
+        duration_seconds=v.duration_seconds,
+        video_type=v.video_type,
+        video_type_evidence=v.video_type_evidence,
+        language_state=v.language_state,
+        language_confidence=v.language_confidence,
+        view_count=v.view_count,
+        url=v.url,
+        provider=v.provider,
+        observed_at=v.observed_at,
+        source_data_type=v.source_data_type,
+        availability=v.availability,
+        owner_authorized=v.owner_authorized,
+        retention_deadline=v.retention_deadline,
+        last_refreshed_at=v.last_refreshed_at,
+    )
+
+
 @router.get("/videos", response_model=Page[VideoItem])
 def list_videos(
     session: SessionDep,
@@ -155,6 +208,7 @@ def list_videos(
     q: Annotated[str | None, Query(max_length=100)] = None,
     video_type: Annotated[str | None, Query(max_length=10)] = None,
     language_state: Annotated[str | None, Query(max_length=20)] = None,
+    source_data_type: Annotated[str | None, Query(max_length=20)] = None,
 ) -> Page[VideoItem]:
     stmt = select(m.Video, m.Channel).join(m.Channel, m.Channel.id == m.Video.channel_id)
     if q:
@@ -168,46 +222,70 @@ def list_videos(
         stmt = stmt.where(m.Video.video_type == video_type)
     if language_state:
         stmt = stmt.where(m.Video.language_state == language_state)
+    if source_data_type:
+        stmt = stmt.where(m.Video.source_data_type == source_data_type)
     total = session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
     rows = session.execute(
         stmt.order_by(m.Video.published_at.desc(), m.Video.id)
         .offset((page - 1) * page_size)
         .limit(page_size)
     ).all()
-    items = [
-        VideoItem(
-            id=v.id,
-            youtube_video_id=v.youtube_video_id,
-            title=v.title,
-            channel_title=c.title_current,
-            subscriber_band=c.subscriber_band,
-            published_at=v.published_at,
-            age_hours=_age_or_none(v.published_at, v.observed_at),
-            duration_seconds=v.duration_seconds,
-            video_type=v.video_type,
-            video_type_evidence=v.video_type_evidence,
-            language_state=v.language_state,
-            language_confidence=v.language_confidence,
-            view_count=v.view_count,
-            url=v.url,
-            provider=v.provider,
-            observed_at=v.observed_at,
-            source_data_type=v.source_data_type,
-            availability=v.availability,
-        )
-        for v, c in rows
-    ]
+    items = [_video_item(v, c) for v, c in rows]
     return Page[VideoItem](items=items, page=page, page_size=page_size, total=int(total))
 
 
-def _age_or_none(published_at: Any, observed_at: Any) -> float | None:
-    try:
-        return age_hours(published_at, observed_at)
-    except ValueError:
-        return None
+@router.get("/channels/{channel_id}", response_model=ChannelOut)
+def channel_detail(channel_id: str, session: SessionDep) -> ChannelOut:
+    channel = session.scalars(
+        select(m.Channel).where(
+            or_(m.Channel.id == channel_id, m.Channel.youtube_channel_id == channel_id)
+        )
+    ).first()
+    if channel is None:
+        raise ProblemError(404, "CHANNEL_NOT_FOUND", "Canal no encontrado")
+    video_count = (
+        session.scalar(
+            select(func.count()).select_from(m.Video).where(m.Video.channel_id == channel.id)
+        )
+        or 0
+    )
+    return ChannelOut(
+        id=channel.id,
+        youtube_channel_id=channel.youtube_channel_id,
+        title=channel.title_current,
+        subscriber_count=channel.subscriber_count,
+        subscriber_band=channel.subscriber_band,
+        uploads_playlist_id=channel.uploads_playlist_id,
+        provider=channel.provider,
+        observed_at=channel.observed_at,
+        source_data_type=channel.source_data_type,
+        owner_authorized=channel.owner_authorized,
+        retention_deadline=channel.retention_deadline,
+        last_refreshed_at=channel.last_refreshed_at,
+        video_count=int(video_count),
+    )
 
 
-def _run_out(run: m.ResearchRun) -> RunOut:
+@router.post("/imports/provider-file", response_model=ImportSummary)
+def import_provider_file(
+    body: ImportRequest, session: SessionDep, settings: SettingsDep
+) -> ImportSummary:
+    """Importa CSV/JSON exportado con derecho de reutilización. Errores por fila; idempotente."""
+    summary = import_rows(
+        session,
+        settings,
+        provider=body.provider,
+        idempotency_key=body.idempotency_key,
+        license_confirmed=body.license_confirmed,
+        source_schema_version=body.source_schema_version,
+        rows=body.rows,
+        csv_text=body.csv_text,
+    )
+    session.commit()
+    return ImportSummary(**summary)
+
+
+def _run_out(session: Session, run: m.ResearchRun) -> RunOut:
     return RunOut(
         id=run.id,
         kind=run.kind,
@@ -220,6 +298,7 @@ def _run_out(run: m.ResearchRun) -> RunOut:
         coverage=run.coverage_json,
         errors=run.errors_json,
         budget=run.budget_json,
+        events=run_events(session, run.id),
     )
 
 
@@ -237,7 +316,7 @@ def list_runs(
         .limit(page_size)
     ).all()
     return Page[RunOut](
-        items=[_run_out(r) for r in runs],
+        items=[_run_out(session, r) for r in runs],
         page=page,
         page_size=page_size,
         total=int(total),
@@ -246,12 +325,72 @@ def list_runs(
 
 @router.get("/research-runs/{run_id}", response_model=RunOut)
 def run_detail(run_id: str, session: SessionDep) -> RunOut:
-    return _run_out(get_run(session, run_id))
+    return _run_out(session, get_run(session, run_id))
+
+
+def _discovery_budget(payload: DiscoveryPayload) -> dict[str, Any]:
+    return {
+        "max_search_calls": payload.max_search_calls,
+        "youtube_units_estimate": payload.max_search_calls * UNIT_COST_SEARCH,
+        "ai_usd": 0,
+    }
 
 
 @router.post("/research-runs", response_model=RunAccepted, status_code=202)
 def create_run(body: RunCreate, session: SessionDep, settings: SettingsDep) -> RunAccepted:
-    """Encola la corrida y responde 202: el trabajo lo ejecuta el worker, no el request."""
-    run = enqueue_demo_run(session, settings.compliance_mode)
+    """Encola la corrida y responde 202. El worker la ejecuta; el request no espera."""
+    if body.kind == "demo":
+        run = enqueue_run(
+            session,
+            kind="demo",
+            policy_mode=settings.compliance_mode,
+            payload={"dataset": "synthetic_v1"},
+            params={"dataset": "synthetic_v1", "network": False},
+            algorithm_version="m0-demo-1",
+            budget={"youtube_units": 0, "ai_usd": 0},
+        )
+    elif body.kind == "discovery":
+        if body.payload is None:
+            raise ProblemError(
+                422, "PAYLOAD_REQUIRED", "La búsqueda necesita queries y presupuesto"
+            )
+        if not settings.youtube_api_key.get_secret_value():
+            raise ProblemError(
+                409,
+                "PROVIDER_NOT_CONFIGURED",
+                "YouTube no está configurado",
+                "Defina YOUTUBE_API_KEY y reinicie la API y el worker.",
+            )
+        payload = body.payload.model_dump()
+        run = enqueue_run(
+            session,
+            kind="discovery",
+            policy_mode=settings.compliance_mode,
+            payload=payload,
+            params={
+                "queries_total": len(payload["queries"]),
+                "pages_per_query": payload["pages_per_query"],
+                "max_search_calls": payload["max_search_calls"],
+            },
+            algorithm_version="m1-ingest-1",
+            budget=_discovery_budget(body.payload),
+        )
+    else:
+        run = enqueue_run(
+            session,
+            kind="purge",
+            policy_mode=settings.compliance_mode,
+            payload={},
+            params={"purge": "retention"},
+            algorithm_version="m1-purge-1",
+            budget={},
+        )
+    session.commit()
+    return RunAccepted(id=run.id, kind=run.kind, status=run.status)
+
+
+@router.post("/research-runs/{run_id}/resume", response_model=RunAccepted, status_code=202)
+def resume(run_id: str, session: SessionDep) -> RunAccepted:
+    run = resume_run(session, run_id)
     session.commit()
     return RunAccepted(id=run.id, kind=run.kind, status=run.status)

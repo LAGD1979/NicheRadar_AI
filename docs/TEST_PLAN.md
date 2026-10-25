@@ -2,58 +2,60 @@
 
 ## Cómo se ejecutan
 
-| Capa | Comando | Qué cubre | Estado último |
+| Capa | Comando | Qué cubre | Último resultado |
 |---|---|---|---|
-| Backend (unitarias + integración) | `docker compose run --rm --no-deps api pytest -q` | Reglas de dominio, compuerta de políticas, migraciones, seed, API, worker | **47 pasan** |
+| Backend (unitarias + integración) | `docker compose run --rm --no-deps api pytest -q` | Dominio, cliente de YouTube (simulado), ingesta, cuota, importación, purga, API, worker | **117 pasan** |
 | Backend (lint y tipos) | `docker compose run --rm --no-deps api sh -c "ruff check app tests && ruff format --check app tests && mypy app"` | Estilo y tipos estrictos | **pasa** |
-| Frontend (lint y tipos) | `docker compose run --rm --no-deps frontend sh -c "npx eslint . && npx tsc --noEmit"` | ESLint estricto, TypeScript estricto | **pasa** |
-| Frontend (unitarias) | `docker compose run --rm --no-deps frontend npx vitest run` | Formato de nulos, selección 2–8, parseo de URL | **10 pasan** |
-| Frontend (build) | `docker compose run --rm --no-deps frontend npx vite build` | Build de producción | **pasa** |
-| E2E | `docker compose --profile e2e run --rm e2e` | Tres flujos en escritorio y móvil (390 px) y desbordamiento horizontal | **7 pasan, 1 omitido** (ver abajo) |
+| Frontend (lint, tipos) | `docker compose run --rm --no-deps frontend sh -c "npx eslint . && npx tsc --noEmit"` | ESLint estricto, TypeScript estricto | **pasa** |
+| Frontend (unitarias) | `docker compose run --rm --no-deps frontend npx vitest run` | Formato de nulos, selección 2–8, URL, formulario de búsqueda | **15 pasan** |
+| E2E | `docker compose --profile e2e run --rm e2e` | Flujos de M0 en escritorio y móvil (390 px) | **7 pasan, 1 omitido** (solo aplica al móvil) |
 
-El caso omitido es «ninguna página produce desplazamiento horizontal» en escritorio: esa comprobación solo corre en el proyecto móvil, a propósito.
+Ninguna prueba automática llama a YouTube: el fixture anula `YOUTUBE_API_KEY` y el cliente se prueba con un transporte simulado (`httpx.MockTransport`).
+
+**Prueba real (fuera de la suite):** una búsqueda contra la API oficial con una consulta y una página (ver `IMPLEMENTATION_PROGRESS.md`).
 
 ## Matriz T01–T25 (§14.1)
 
-Estado: **✔ cubierto en M0** · **◐ parcial** · **— pendiente** (indica el hito).
+Estado: **✔ cubierto** · **◐ parcial** · **— pendiente** (indica el hito).
 
 | ID | Caso | Estado | Dónde / por qué |
 |---|---|---|---|
-| T01 | Dos fuentes, mismo ID de YouTube | — | M1 (ingesta). `videos.youtube_video_id` es único y los matches van en tabla aparte. |
-| T02 | Canal sin suscriptores visibles → NULL | ✔ | `test_nulls_and_zeros_are_kept_distinct`, `test_videos_hidden_subscribers_show_unknown_band`, `subscriber_band` |
-| T03 | Video publicado hoy → edad positiva | ✔ | `test_age_for_video_published_now_is_positive_and_bounded` |
-| T04 | Idioma de título ≠ audio | ◐ | Dato en conflicto (`UNKNOWN`/`CONFLICT`) verificado; la detección real llega en M1–M2. |
-| T05 | Paginación de `search.list` | — | M1 (sin `search.list` en M0). |
-| T06 | Uploads playlist en lugar de `search.list` | — | M1. |
-| T07 | Viral aislado → no replicado | ◐ | El dato `SINGLE_OUTLIER` existe; la regla de replicación es M2. |
+| T01 | Dos fuentes, mismo ID de YouTube | ✔ | `test_same_video_from_two_queries_is_one_row_with_two_matches` |
+| T02 | Canal sin suscriptores visibles → NULL | ✔ | `test_hidden_subscribers_are_null_and_zero_stays_zero`, `test_hidden_subscribers_are_null_and_zero_is_kept`, `test_counts_never_turn_missing_into_zero` |
+| T03 | Video publicado hoy → edad positiva | ✔ | `test_age_for_video_published_now_is_positive_and_bounded` (M0) |
+| T04 | Idioma de título ≠ audio | ✔ | `test_language_conflict_from_api_is_stored_unknown`, `test_language_conflict_is_unknown_not_forced`. El idioma por título no existe aún (D-29). |
+| T05 | `search.list` con página siguiente | ✔ | `test_pagination_uses_second_page_within_page_budget`, `test_search_sends_window_and_language_and_returns_next_page` |
+| T06 | Uploads por `playlistItems`, no `search` | ✔ | `test_uploads_are_loaded_by_playlist_not_by_search`, `test_uploads_use_playlist_items_not_search` |
+| T07 | Viral aislado → no replicado | — | M2 (regla de replicación). |
 | T08 | Mismo formato, varios idiomas | — | M2. |
-| T09 | Mismo formato, nicho distinto → dos oportunidades | ✔ | Fixture: `syn-opp-02` y `syn-opp-04` comparten formato y son oportunidades distintas (clave única nicho+formato+idioma+tipo). |
+| T09 | Mismo formato, nicho distinto | ✔ | Fixture M0 (`syn-opp-02`, `syn-opp-04`). |
 | T10 | Ningún competidor ES → `UNKNOWN` | — | M2 (búsqueda ES). |
-| T11 | Búsquedas ES sin demanda → `DEMAND_UNPROVEN` | ◐ | Dato existente (`syn-opp-03`); la regla que lo produce es M2. |
+| T11 | Búsquedas ES sin demanda | ◐ | Dato existente (`syn-opp-03`); la regla es M2. |
 | T12 | Canal espejo multilingüe | — | M2. |
-| T13 | IA inventa URL o score | — | M2 (validación de salida IA). |
+| T13 | IA inventa URL o score | — | M2. |
 | T14 | Prompt injection en título | — | M2. |
-| T15 | Costo TTS ausente → NULL | ◐ | `syn-opp-07` tiene costos NULL; el desglose de TTS es M3. |
-| T16 | Datos expirados → UI dice expirado | ◐ | Evidencia `EXPIRED` visible en ficha (`test_detail_includes_expired_evidence_flagged`); purga es M5. |
-| T17 | Score bloqueado en restricted | ✔ | `test_scores_endpoint_is_forbidden_in_restricted_mode`, `test_env_flag_alone_does_not_unlock_restricted_capability`, E2E de Resumen |
-| T18 | Autorización de derived metrics expira | — | M4. |
-| T19 | 403 de cuota → pausa proveedor | — | M1. |
-| T20 | CSV con fórmula `=…` | — | M3 (exportación). |
-| T21 | Corrida reintentada sin duplicados | ✔ | `test_worker_completes_demo_run_once`, `test_repeated_requests_create_separate_runs_without_duplicate_work`, `test_seed_is_idempotent`, `test_stale_running_task_is_recovered` |
-| T22 | Demo activo → banner y ningún origen real | ✔ | `test_every_record_is_labelled_synthetic`, `test_config_public_is_demo_and_restricted`, banner en E2E |
-| T23 | Comparación de 8 ítems | ✔ | `test_compare_eight_items_keeps_nulls_and_restrictions` (API). La UI con 8 se cubre a mano; E2E cubre 4. |
-| T24 | Sin permisos → no puede iniciar acciones ni ver secretos | ◐ | `test_providers_never_expose_secret_values`. Autenticación no implementada (ver D-10). |
+| T15 | Costo TTS ausente → NULL | ◐ | Costos NULL en el fixture; el desglose es M3. |
+| T16 | Datos caducados → UI dice caducado | ✔ | `test_purge_expires_old_third_party_data_without_zeros`, `test_purge_leaves_fresh_and_authorized_data_alone`, `test_purge_is_idempotent`. La UI muestra «Caducada». |
+| T17 | Score bloqueado en restricted | ✔ | `test_env_flag_alone_does_not_unlock_restricted_capability`, `test_scores_endpoint_is_forbidden_in_restricted_mode` |
+| T18 | Autorización de métricas derivadas expira | — | M4. |
+| T19 | 403 de cuota → pausa, continúa donde puede | ✔ | `test_quota_403_maps_to_paused_quota_and_never_leaks_key`, `test_quota_budget_pauses_and_keeps_progress`, `test_quota_pause_then_resume_completes_remaining_work` |
+| T20 | CSV con fórmula `=…` | ◐ | La importación guarda la fórmula como texto (`test_csv_with_formula_text_is_stored_as_plain_text`). La neutralización en la **exportación** es M3. |
+| T21 | Corrida reintentada sin duplicados | ✔ | `test_reingesting_the_same_results_creates_no_duplicates`, `test_reimporting_same_key_is_idempotent`, `test_worker_completes_demo_run_once`, `test_stale_running_task_is_recovered` |
+| T22 | Demo activo → banner y sin origen real | ◐ | Los datos sintéticos siguen rotulados. Tras la prueba real aparecen videos `OFFICIAL` en la misma base; el banner todavía no distingue datos mixtos (ver progreso). |
+| T23 | Comparación de 8 ítems | ✔ | `test_compare_eight_items_keeps_nulls_and_restrictions` (API) |
+| T24 | Sin permisos → no inicia acciones ni ve secretos | ◐ | Sin clave, la búsqueda responde 409 (`test_discovery_without_key_is_refused_before_queueing`); los endpoints no exponen claves (`test_providers_never_expose_secret_values`). Sin autenticación todavía. |
 | T25 | Valor observado antes de cambio de política | — | M4/M5. |
 
 ## Pruebas no funcionales cubiertas
 
-- **Secretos:** las claves se leen como `SecretStr`; los logs redactan campos sensibles (`test_log_redaction_hides_secret_like_keys`).
-- **Inyección SQL:** los parámetros de búsqueda son parámetros ligados; un texto con metacaracteres se trata como texto (`test_sql_metacharacters_in_search_are_plain_text`). El orden se valida contra una lista blanca (`test_invalid_sort_is_problem_json`).
-- **Migraciones reproducibles:** la base de pruebas se recrea y se compara con los modelos (`test_migrations_match_models`).
-- **Accesibilidad y responsive:** E2E comprueba que ninguna página principal tiene desplazamiento horizontal en 390 px. Contraste y teclado no se han medido automáticamente.
+- **Secretos:** la clave no aparece en logs ni en respuestas. Comprobado con la clave real: `clave en logs: False`, `clave en respuestas de la API: False`.
+- **Errores de proveedor:** 429/5xx con reintento y backoff; 400 sin reintento; timeouts; ningún mensaje contiene URL ni clave.
+- **Inyección SQL:** búsquedas con metacaracteres se tratan como texto; orden validado contra lista blanca.
+- **Migraciones:** la base de pruebas se recrea y se compara con los modelos (`test_migrations_match_models`).
+- **Zona horaria de cuota:** la frontera de medianoche Pacific Time (`test_quota_day_starts_at_pacific_midnight`).
 
 ## Pendiente de verificar
 
-- Playwright en el navegador real del usuario: solo se probó en el contenedor oficial de Playwright.
-- CI en GitHub Actions: el archivo `.github/workflows/ci.yml` no se ha ejecutado en GitHub.
-- Restauración de copias de seguridad: pertenece a M5.
+- Una búsqueda real repetida y la purga de datos reales en un día distinto (solo se ejecutó una vez).
+- Playwright en el navegador del usuario (solo en el contenedor oficial).
+- CI en GitHub Actions (no ejecutado remotamente).

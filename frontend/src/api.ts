@@ -8,6 +8,7 @@ import type {
   ProblemBody,
   ProviderOut,
   RunOut,
+  UsageOut,
   VideoItem,
 } from "./types";
 
@@ -67,4 +68,15 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ kind: "demo" }),
     }),
+  createRun: (body: unknown) =>
+    request<{ id: string; kind: string; status: string }>("/research-runs", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  resumeRun: (id: string) =>
+    request<{ id: string; kind: string; status: string }>(
+      `/research-runs/${encodeURIComponent(id)}/resume`,
+      { method: "POST" },
+    ),
+  usage: () => request<UsageOut>("/usage"),
 };

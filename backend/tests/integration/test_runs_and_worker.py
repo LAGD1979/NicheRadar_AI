@@ -80,7 +80,7 @@ def test_failing_task_is_retried_then_marks_run_failed(
 ) -> None:
     run_id = client.post("/api/v1/research-runs", json={"kind": "demo"}).json()["id"]
 
-    def boom(session: Session, run_id: str) -> dict[str, Any]:
+    def boom(session: Session, task: Any, ctx: Any) -> str:
         raise RuntimeError("fallo simulado")
 
     monkeypatch.setitem(worker.HANDLERS, "demo_research", boom)

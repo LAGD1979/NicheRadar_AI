@@ -28,8 +28,15 @@ class Settings(BaseSettings):
     ai_provider: Literal["none", "anthropic", "openai"] = "none"
     demo_mode: bool = True
 
-    youtube_search_daily_soft_limit: int = 80
-    youtube_other_daily_soft_limit: int = 8000
+    # Cuota de YouTube Data API: pool diario compartido en unidades (search.list = 100 u.).
+    # El día de cuota es el de Pacific Time; ver docs/DECISIONS.md (D-22).
+    youtube_api_base_url: str = "https://www.googleapis.com/youtube/v3"
+    youtube_timeout_seconds: float = 15.0
+    youtube_max_retries: int = 3
+    youtube_daily_units_limit: int = 10_000
+    youtube_daily_units_soft_pct: float = 0.9
+    # Datos de terceros no autorizados: plazo máximo de caché (spec §5.5, 30 días menos margen).
+    unauthorized_cache_days: int = 29
 
 
 @lru_cache

@@ -144,6 +144,75 @@ class VideoItem(BaseModel):
     observed_at: datetime
     source_data_type: str
     availability: str
+    owner_authorized: bool
+    retention_deadline: datetime | None
+    last_refreshed_at: datetime | None
+
+
+class ChannelOut(BaseModel):
+    id: str
+    youtube_channel_id: str
+    title: str
+    subscriber_count: int | None
+    subscriber_band: str
+    uploads_playlist_id: str | None
+    provider: str
+    observed_at: datetime
+    source_data_type: str
+    owner_authorized: bool
+    retention_deadline: datetime | None
+    last_refreshed_at: datetime | None
+    video_count: int
+
+
+class QuerySpec(BaseModel):
+    language: str = Field(pattern=r"^[a-z]{2,3}(-(Hans|Hant|[A-Z]{2}))?$", max_length=12)
+    query: str = Field(min_length=2, max_length=200)
+    window: Literal["0-7", "8-30", "31-90"]
+    region: str | None = Field(default=None, pattern=r"^[A-Z]{2}$")
+
+
+class DiscoveryPayload(BaseModel):
+    queries: list[QuerySpec] = Field(min_length=1, max_length=50)
+    max_search_calls: int = Field(default=10, ge=1, le=80)
+    pages_per_query: int = Field(default=1, ge=1, le=3)
+
+
+class ImportRequest(BaseModel):
+    source_schema_version: str = Field(max_length=10)
+    provider: Literal["vidiq_import", "manual_import"]
+    idempotency_key: str = Field(min_length=1, max_length=80)
+    license_confirmed: bool
+    rows: list[dict[str, Any]] | None = Field(default=None, max_length=5000)
+    csv_text: str | None = Field(default=None, max_length=5_000_000)
+
+
+class ImportError(BaseModel):
+    row: int
+    field: str
+    message: str
+
+
+class ImportSummary(BaseModel):
+    provider: str
+    idempotency_key: str
+    source_schema_version: str
+    received: int
+    accepted: int
+    rejected: int
+    errors: list[ImportError]
+    idempotent_replay: bool
+
+
+class UsageOut(BaseModel):
+    provider: str
+    quota_bucket: str
+    day_start_utc: str
+    resets_at_utc: str
+    units_used: int
+    units_budget_soft: int
+    units_limit_hard: int
+    units_remaining_soft: int
 
 
 class RunOut(BaseModel):
@@ -158,10 +227,12 @@ class RunOut(BaseModel):
     coverage: dict[str, Any]
     errors: list[dict[str, Any]]
     budget: dict[str, Any]
+    events: list[dict[str, Any]] = Field(default_factory=list)
 
 
 class RunCreate(BaseModel):
-    kind: Literal["demo"]
+    kind: Literal["demo", "discovery", "purge"]
+    payload: DiscoveryPayload | None = None
 
 
 class RunAccepted(BaseModel):
