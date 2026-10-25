@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.api.v1.m2_routes import router as m2_router
 from app.api.v1.m3_routes import router as m3_router
+from app.api.v1.m4_routes import router as m4_router
 from app.api.v1.schemas import (
     CapabilityOut,
     ChannelOut,
@@ -34,7 +35,7 @@ from app.db.session import get_session
 from app.domain.rules import age_hours
 from app.services import opportunity_service as opp_svc
 from app.services import quota_service
-from app.services.compliance_service import all_decisions, decide
+from app.services.compliance_service import all_decisions
 from app.services.import_service import import_rows
 from app.services.providers_service import list_providers
 from app.services.research_service import (
@@ -47,6 +48,7 @@ from app.services.research_service import (
 router = APIRouter()
 router.include_router(m2_router)
 router.include_router(m3_router)
+router.include_router(m4_router)
 
 SessionDep = Annotated[Session, Depends(get_session)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]
@@ -95,7 +97,7 @@ def usage(session: SessionDep, settings: SettingsDep) -> UsageOut:
 
 
 @router.get("/policy/capabilities", response_model=list[CapabilityOut])
-def capabilities(settings: SettingsDep) -> list[CapabilityOut]:
+def capabilities(session: SessionDep, settings: SettingsDep) -> list[CapabilityOut]:
     return [
         CapabilityOut(
             id=d.capability,
@@ -104,7 +106,7 @@ def capabilities(settings: SettingsDep) -> list[CapabilityOut]:
             state=d.state,
             reason=d.reason,
         )
-        for d in all_decisions(settings)
+        for d in all_decisions(settings, session)
     ]
 
 
@@ -152,18 +154,6 @@ def opportunity_detail(
     opportunity_id: str, session: SessionDep, settings: SettingsDep
 ) -> OpportunityDetail:
     return opp_svc.get_opportunity_detail(session, settings, opportunity_id)
-
-
-@router.get("/opportunities/{opportunity_id}/scores")
-def opportunity_scores(settings: SettingsDep) -> None:
-    """Puntuaciones compuestas: bloqueadas en restricted (T17). Sin bypass por frontend.
-
-    Si la compuerta se abriera (M4), aquí se calcularía el score; en M1 nunca se alcanza.
-    """
-    decision = decide("advanced_scores", settings)
-    if not decision.allowed:
-        raise ProblemError(403, "POLICY_RESTRICTED", "Puntuación no habilitada", decision.reason)
-    raise ProblemError(501, "NOT_IMPLEMENTED", "Cálculo de scores pendiente de M4")
 
 
 @router.post("/compare", response_model=CompareResponse)

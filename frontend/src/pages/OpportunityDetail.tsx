@@ -221,8 +221,15 @@ function asText(value: unknown): string | null {
   return typeof value === "string" ? value : null;
 }
 
+// Un índice sin dato muestra su motivo (qué dimensión falta); nunca se muestra como 0.
 function scoreText(score: ScoreOut): string {
-  return score.state === "RESTRICTED" ? `${NOT_ENABLED} (${score.reason ?? "política"})` : formatField(score.value, score.state);
+  if (score.state === "RESTRICTED") {
+    return `${NOT_ENABLED} (${score.reason ?? "política"})`;
+  }
+  if (score.value === null) {
+    return `Sin dato${score.reason ? ` (${score.reason})` : ""}`;
+  }
+  return formatField(score.value, score.state);
 }
 
 function Audit({ opp }: { opp: Detail }) {

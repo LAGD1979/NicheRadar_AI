@@ -170,3 +170,51 @@ El fixture sintético `syn-opp-01` declara demanda indicativa y confianza media.
 
 ### D-46 · Recomendaciones del fixture hasta que haya una evaluación nueva
 Las oportunidades sintéticas muestran la recomendación del fixture hasta que se registra una evaluación nueva. Ahí se recalcula con las reglas de arriba.
+
+---
+
+## Proveedor de IA: OpenAI además de Anthropic
+
+### D-47 · Dos adaptadores con la misma interfaz
+`AI_PROVIDER=anthropic` o `AI_PROVIDER=openai`, con `AI_MODEL` y la clave correspondiente. El adaptador de OpenAI usa Chat Completions con `response_format: json_object`, `temperature: 0` y `max_completion_tokens`. Ambos comparten reintentos (3 intentos ante 429, 5xx y timeouts; sin reintento ante 400) y no muestran la clave en los errores.
+
+**No probado contra la API real**: no hay clave de ninguno de los dos proveedores configurada en el equipo. Los modelos de razonamiento pueden rechazar `temperature: 0`; en ese caso la llamada devuelve error y habrá que ajustar el adaptador.
+
+**Sin pausa entre reintentos de IA**: a diferencia de YouTube, los reintentos de IA no esperan (`2^n` segundos). Conviene añadir espera antes de usarlo en lote.
+
+---
+
+## M4 — motor analítico avanzado (detrás de la compuerta)
+
+M4 es condicional (spec §13). Se construyó completo, pero **bloqueado**: no hay ninguna aprobación registrada, así que ningún índice se calcula ni se muestra.
+
+### D-48 · Compuerta de tres condiciones a la vez
+`decide()` abre una capacidad solo si se cumplen todas:
+1. `COMPLIANCE_MODE=approved_scope` (en `restricted` nunca se abre).
+2. `ADVANCED_ANALYTICS_ENABLED=true`.
+3. Un registro en `policy_approvals`, con estado `ACTIVE`, ya en vigor y no vencido, para la capacidad.
+
+Una variable de entorno sola no basta (T17). Una aprobación caducada o revocada cierra la compuerta de nuevo (T18). Hay pruebas para cada caso, y en vivo `POST …/scores` responde 403 sin aprobación.
+
+### D-49 · Las aprobaciones solo se registran por línea de comandos
+`python -m app.jobs.policy_cli grant …` exige referencia documental, revisor y fecha de caducidad futura. No hay endpoint ni pantalla para conceder aprobaciones: así ninguna vía de la interfaz desbloquea nada (CLAUDE.md: «no permitir bypass desde UI»). También existen `revoke` y `list`.
+
+### D-50 · Índices con dimensiones NULL
+Pesos de la especificación: internacional 35 %, español 40 %, operativa 25 % (`score-v1`). Cada dimensión es un cociente entre 0 y 1, o NULL si falta el dato. Un subíndice es NULL si le falta una dimensión, y el integrado es NULL si le falta un subíndice. Ninguna dimensión ausente cuenta como 0.
+
+En los datos actuales la **resiliencia temporal** no tiene serie (requiere histórico licenciado), así que el índice internacional y el integrado quedan NULL por diseño. Es el resultado correcto según §3.8.
+
+### D-51 · Costo normalizado dentro de la cohorte
+El costo puntúa en relación con el mínimo y el máximo de la cohorte (el más barato puntúa 1). Sin cohorte con al menos dos valores, no hay puntuación de costo.
+
+### D-52 · Cálculo como evaluación nueva, con fuente propia
+Cada cálculo crea una evaluación nueva con `source_data_type=CALCULATED`, la versión de fórmula, las dimensiones y las faltantes. Así el historial queda auditable.
+
+### D-53 · Ranking de cohortes
+`POST /cohorts/ranking` ordena por índice integrado. Los NULL van al final y los empates se ordenan por ID, de forma estable. Está protegido por la misma compuerta.
+
+### Qué queda fuera de M4
+- Histórico licenciado y series temporales (resiliencia temporal).
+- Diferenciación editorial y mantenibilidad: requieren juicio humano registrado.
+- Análisis de sensibilidad y evolución temporal.
+- Cualquier cálculo real sobre datos de la API: solo cuando exista una aprobación documentada.

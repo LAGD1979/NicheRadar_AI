@@ -22,8 +22,9 @@ class Settings(BaseSettings):
     openai_api_key: SecretStr = SecretStr("")
     app_secret_key: SecretStr = SecretStr("")
 
-    # Solo "restricted" existe en M0. Otros modos llegarán con policy_approvals (M4).
-    compliance_mode: Literal["restricted"] = "restricted"
+    # "restricted" por defecto. "approved_scope" solo abre capacidades con un registro vigente
+    # en policy_approvals (M4). Cambiar la variable sin registro no habilita nada.
+    compliance_mode: Literal["restricted", "approved_scope"] = "restricted"
     advanced_analytics_enabled: bool = False
     ai_provider: Literal["none", "anthropic", "openai"] = "none"
     # Modelo configurable por entorno; vacío = no hay modelo y la IA no se ejecuta (spec §17).

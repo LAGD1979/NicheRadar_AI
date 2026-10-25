@@ -56,6 +56,7 @@ def append_evaluation(
     international: dict[str, Any] | None = None,
     feasibility: dict[str, Any] | None = None,
     confidence: str | None = None,
+    scores: dict[str, Any] | None = None,
 ) -> m.Evaluation:
     opp = session.get(m.Opportunity, opportunity_id)
     if opp is None:
@@ -84,7 +85,9 @@ def append_evaluation(
         international_json=international_json,
         spanish_json=spanish_json,
         feasibility_json=feasibility_json,
-        scores_json=dict(previous.scores_json) if previous else {},
+        scores_json=scores
+        if scores is not None
+        else (dict(previous.scores_json) if previous else {}),
         confidence=confidence_value,
         reason_codes_json=decision.gates,
         recommendation=decision.recommendation,

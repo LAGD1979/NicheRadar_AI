@@ -10,7 +10,7 @@
 | **M1 — ingesta oficial, cuota, importación** | ✔ Completado (commit `29ce8bc`) | Búsqueda real probada. Ver «Límites» de M1 en el historial. |
 | **M2 — mercado español y planes de búsqueda** | ✔ Completado con límites (sin commit) | Validación real probada una vez. IA sin probar en vivo. Sin fuentes de demanda. |
 | M3 — factibilidad, decisiones, comparador completo, export | — pendiente | Export CSV/JSON, watchlist, costos. |
-| M4 — analítica avanzada (condicional) | — bloqueado | Requiere `policy_approvals` documentado. |
+| M4 — analítica avanzada (condicional) | ◐ Construido y bloqueado | Compuerta de tres condiciones (D-48). Sin aprobación documentada no se calcula nada. **Pendiente:** la conclusión de que el uso personal no requiere autorización la debe confirmar el responsable con el texto oficial; el asistente no la acepta como cumplimiento, y no se ha registrado ninguna aprobación. |
 | M5 — radar continuo | — pendiente | Scheduler, purga automática, alertas. |
 
 ## M3: costos, factibilidad, recomendación y exportación (sin commit)

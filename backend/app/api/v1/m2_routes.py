@@ -53,9 +53,13 @@ class MatchReview(BaseModel):
 
 
 def _ai_configured(settings: Settings) -> bool:
+    keys = {
+        "anthropic": settings.anthropic_api_key.get_secret_value(),
+        "openai": settings.openai_api_key.get_secret_value(),
+    }
     return (
-        settings.ai_provider == "anthropic"
-        and bool(settings.anthropic_api_key.get_secret_value())
+        settings.ai_provider in keys
+        and bool(keys[settings.ai_provider])
         and bool(settings.ai_model)
     )
 

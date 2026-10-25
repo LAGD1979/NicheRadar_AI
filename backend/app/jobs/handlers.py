@@ -14,7 +14,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.db import models as m
-from app.providers.ai import AnthropicClient, build_ai_client
+from app.providers.ai import AIClient, build_ai_client
 from app.providers.base import ProviderError
 from app.services import retention_service, spanish_service
 from app.services.ingestion_service import DiscoverySource, QueryPlan, run_discovery
@@ -24,7 +24,7 @@ from app.services.ingestion_service import DiscoverySource, QueryPlan, run_disco
 class HandlerContext:
     settings: Settings
     make_source: Callable[[], DiscoverySource]
-    make_ai: Callable[[], AnthropicClient] = field(default=lambda: build_ai_client(get_settings()))
+    make_ai: Callable[[], AIClient] = field(default=lambda: build_ai_client(get_settings()))
 
 
 def _audit(session: Session, run_id: str, event_type: str, details: dict[str, Any]) -> None:

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import Any
 
 from sqlalchemy import Select, and_, func, or_, select
@@ -221,11 +222,35 @@ def _to_item(
     )
 
 
-def _restricted_scores(settings: Settings) -> dict[str, ScoreOut]:
-    decision = decide("advanced_scores", settings)
-    return {
-        key: ScoreOut(value=None, state="RESTRICTED", reason=decision.reason) for key in SCORE_KEYS
-    }
+def _scores_out(
+    session: Session, settings: Settings, ev: m.Evaluation | None, now: datetime | None = None
+) -> dict[str, ScoreOut]:
+    """Índices de la evaluación: bloqueados por la compuerta, o con su valor y sus faltantes."""
+    decision = decide("advanced_scores", settings, session, now)
+    if not decision.allowed:
+        return {
+            key: ScoreOut(value=None, state="RESTRICTED", reason=decision.reason)
+            for key in SCORE_KEYS
+        }
+    if ev is None or not ev.scores_json:
+        return {
+            key: ScoreOut(
+                value=None, state="NOT_AVAILABLE", reason="Sin cálculo: ejecute el cálculo."
+            )
+            for key in SCORE_KEYS
+        }
+    out: dict[str, ScoreOut] = {}
+    for key in SCORE_KEYS:
+        part = ev.scores_json.get(key) or {}
+        raw = part.get("value")
+        value = float(raw) if isinstance(raw, int | float) else None
+        missing = part.get("missing") or []
+        out[key] = ScoreOut(
+            value=value,
+            state="AVAILABLE" if value is not None else "NOT_AVAILABLE",
+            reason=None if value is not None else "Falta: " + ", ".join(missing),
+        )
+    return out
 
 
 def get_opportunity_detail(
@@ -245,7 +270,7 @@ def get_opportunity_detail(
             international=ev.international_json,
             spanish=ev.spanish_json,
             feasibility=ev.feasibility_json,
-            scores=_restricted_scores(settings),
+            scores=_scores_out(session, settings, ev),
             data_source=ev.source_data_type,
             observed_at=ev.observed_at,
             run_id=ev.run_id,
@@ -332,7 +357,7 @@ def compare(session: Session, settings: Settings, ids: list[str]) -> CompareResp
         raise ProblemError(
             422, "DUPLICATE_OPPORTUNITY", "Oportunidades repetidas en la comparación"
         )
-    decision = decide("advanced_scores", settings)
+    decision = decide("advanced_scores", settings, session)
     fields = [FieldDef(key=k, label=label, group=group) for k, label, group, _ in COMPARE_FIELDS]
 
     items: list[CompareItem] = []
@@ -368,9 +393,14 @@ def compare(session: Session, settings: Settings, ids: list[str]) -> CompareResp
         values: dict[str, FieldValue] = {}
         for key, _label, _group, path in COMPARE_FIELDS:
             if key.startswith("scores."):
+                score_key = key.removeprefix("scores.")
+                part = (ev.scores_json.get(score_key) or {}) if ev and decision.allowed else {}
+                score_value = part.get("value")
                 values[key] = FieldValue(
-                    value=None,
-                    state="RESTRICTED",
+                    value=score_value,
+                    state="RESTRICTED"
+                    if not decision.allowed
+                    else ("AVAILABLE" if score_value is not None else "NOT_AVAILABLE"),
                     source=ev_source,
                     observed_at=ev_observed,
                     reason=decision.reason,
