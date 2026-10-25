@@ -189,7 +189,7 @@ DB_HOST_PORT=15432</code></pre>
 
       <section id="arranque">
         <h2><span class="num">5</span>Arranque</h2>
-        <p>Desde PowerShell, en la carpeta del proyecto (o con <code>--project-directory</code> desde cualquier carpeta):</p>
+        <p>Desde PowerShell, en la carpeta del proyecto (o con <code>--project-directory</code> desde cualquier carpeta). En los comandos de este manual, <code>&lt;ruta&gt;</code> es la carpeta del proyecto, por ejemplo <code>C:\Luis\Dropbox\Negocios\202608_Youtube\2026\NicheRadar_AI_Claude_Code\NicheRadar_AI</code>.</p>
 
         <ol class="steps">
           <li>
@@ -202,8 +202,8 @@ DB_HOST_PORT=15432</code></pre>
           </li>
           <li>
             <strong>Esperar a que la base esté sana y la migración termine con código 0.</strong>
-            <pre><code>docker compose --project-directory "<ruta>" ps
-docker compose --project-directory "<ruta>" logs migrate</code></pre>
+            <pre><code>docker compose --project-directory "&lt;ruta&gt;" ps
+docker compose --project-directory "&lt;ruta&gt;" logs migrate</code></pre>
           </li>
           <li>
             <strong>Comprobar la salud de la API.</strong>
@@ -222,7 +222,7 @@ docker compose --project-directory "<ruta>" logs migrate</code></pre>
 
         <h3>Reiniciar un servicio después de cambiar configuración</h3>
         <p>Los cambios en variables de entorno requieren recrear los contenedores que las usan:</p>
-        <pre><code>docker compose --project-directory "<ruta>" up -d api worker</code></pre>
+        <pre><code>docker compose --project-directory "&lt;ruta&gt;" up -d api worker</code></pre>
       </section>
 
       <section id="operacion">
@@ -491,6 +491,7 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/v1/research-runs -
           <li><strong>Sin fuente de demanda con licencia.</strong> Ninguna oportunidad pasa de «demanda no demostrada» con datos reales (D-35).</li>
           <li><strong>IA sin probar contra APIs reales.</strong> Los adaptadores están probados con transporte simulado. Algunos modelos de razonamiento pueden rechazar <code>temperature=0</code> (D-47).</li>
           <li><strong>Índices cerrados por falta de datos.</strong> La resiliencia temporal requiere un histórico licenciado; sin él, los índices integrados quedan en NULL (D-50).</li>
+          <li><strong>Pendientes de producto.</strong> Scheduler automático y purga programada (M5), watchlist, detección de canales espejo y revisión humana de 30 a 50 videos para medir precisión. Lista completa en <code>docs/HANDOFF.md</code>.</li>
           <li><strong>Banner fijo.</strong> El banner «DATOS SINTÉTICOS · DEMO» no distingue todavía datos mixtos.</li>
           <li><strong>Sin autenticación.</strong> La API y la interfaz solo se deben exponer en 127.0.0.1.</li>
           <li><strong>Datos de demostración en la base.</strong> <code>syn-opp-06</code> mezcla un video real con datos sintéticos.</li>
@@ -501,6 +502,6 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/v1/research-runs -
     </main>
   </div>
 
-  <footer class="footer">NicheRadar AI · Manual técnico · Versión del repositorio: rama <code>master</code>.</footer>
+  <footer class="footer">NicheRadar AI · Manual técnico · Documento del repositorio; ver <code>docs/IMPLEMENTATION_PROGRESS.md</code> para el estado vigente.</footer>
 </body>
 </html>

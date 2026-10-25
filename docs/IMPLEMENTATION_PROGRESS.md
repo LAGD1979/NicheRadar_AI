@@ -1,6 +1,6 @@
 # Progreso de implementación
 
-Última actualización: 2026-10-25.
+Última actualización: 2026-10-25. Para retomar el trabajo, lea primero `docs/HANDOFF.md`.
 
 ## Hitos
 
@@ -8,12 +8,14 @@
 |---|---|---|
 | **M0 — cimientos y demo sintético** | ✔ Completado (commit `b8762f9`) | Compose, API, worker, migraciones, seed, dashboard, E2E, CI. |
 | **M1 — ingesta oficial, cuota, importación** | ✔ Completado (commit `29ce8bc`) | Búsqueda real probada. Ver «Límites» de M1 en el historial. |
-| **M2 — mercado español y planes de búsqueda** | ✔ Completado con límites (sin commit) | Validación real probada una vez. IA sin probar en vivo. Sin fuentes de demanda. |
-| M3 — factibilidad, decisiones, comparador completo, export | — pendiente | Export CSV/JSON, watchlist, costos. |
-| M4 — analítica avanzada (condicional) | ◐ Construido y bloqueado | Compuerta de tres condiciones (D-48). Sin aprobación documentada no se calcula nada. **Pendiente:** la conclusión de que el uso personal no requiere autorización la debe confirmar el responsable con el texto oficial; el asistente no la acepta como cumplimiento, y no se ha registrado ninguna aprobación. |
-| M5 — radar continuo | — pendiente | Scheduler, purga automática, alertas. |
+| **M2 — mercado español y planes de búsqueda** | ✔ Completado con límites (commit `349fcee`) | Validación real probada una vez. IA sin probar en vivo. Sin fuentes de demanda. |
+| **M3 — factibilidad, decisiones, comparador, export** | ✔ Completado con límites (commit `86c3ae8`) | Costos, factibilidad, recomendación con compuertas, export CSV/JSON. Sin watchlist (Seguimiento). |
+| **M4 — analítica avanzada (condicional)** | ◐ Construido y abierto en este equipo (commits `fbc07d0`, `ad9bcdb`) | Compuerta de tres condiciones (D-48). El responsable registró las aprobaciones (D-54); no son una autorización de YouTube. Los índices siguen en NULL por falta de histórico licenciado. |
+| M5 — radar continuo | — pendiente | Scheduler, purga automática, alertas, watchlist. |
 
-## M3: costos, factibilidad, recomendación y exportación (sin commit)
+Documentación: manuales de uso y técnico en `frontend/public/manual/` (commit `ea5195e`); traspaso en `docs/HANDOFF.md`.
+
+## M3: costos, factibilidad, recomendación y exportación
 
 - **Costos** (`domain/costs.py`): precios por escenario escritos por una persona; un precio faltante deja el total en NULL (T15). Versionado en `cost_models`.
 - **Factibilidad**: valoración humana con motivo obligatorio (faceless y riesgo de derechos).
@@ -75,8 +77,11 @@ Datos reales en la base: el video real «Stalingrado: la batalla que cambió…�
 - **Datos mezclados**: ver la nota de `syn-opp-06` arriba.
 - **Banner DEMO**: sigue diciendo «DATOS SINTÉTICOS · DEMO» aunque haya datos reales (ver M1).
 - **Sin autenticación**: la API acepta peticiones desde `127.0.0.1` sin login.
-- **Git**: M2 no tiene commit todavía.
+
+## Estado de verificación actual
+
+229 pruebas de backend, 15 de frontend y 7 E2E pasando (1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
 
 ## Siguiente paso
 
-Decidir si M2 se commitea. Después, las dos cosas que más limitan el radar: una fuente de señales de demanda en español (con licencia) y una prueba real de la IA con clave de Anthropic.
+Las dos cosas que más limitan el radar: una fuente de señales de demanda en español (con licencia) y una prueba real de la IA con clave. En paralelo, iniciar M5 (scheduler, purga programada, watchlist). Pendientes completos: `docs/HANDOFF.md` §7.

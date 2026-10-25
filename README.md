@@ -1,8 +1,10 @@
-# NicheRadar AI — M0 (demo sintético)
+# NicheRadar AI
 
-Radar local de oportunidades de contenido para YouTube en español. **Esta versión (M0) es una demo con datos sintéticos rotulados.** No consulta YouTube, no usa claves de API ni servicios de pago, y no contiene investigación real de nichos.
+Radar local de oportunidades de contenido para YouTube en español. **Estado: hitos M0 a M4 construidos** (ver [docs/IMPLEMENTATION_PROGRESS.md](docs/IMPLEMENTATION_PROGRESS.md)). Sin clave de YouTube la aplicación funciona solo con datos sintéticos rotulados DEMO; con clave puede buscar videos reales. No contiene investigación real de nichos.
 
-Documentos de referencia: [ESPECIFICACION_NICHERADAR_AI.md](ESPECIFICACION_NICHERADAR_AI.md), [CLAUDE.md](CLAUDE.md), [docs/IMPLEMENTATION_PROGRESS.md](docs/IMPLEMENTATION_PROGRESS.md), [docs/DECISIONS.md](docs/DECISIONS.md), [docs/TEST_PLAN.md](docs/TEST_PLAN.md).
+Manuales: [uso](frontend/public/manual/funcional.html) y [técnico](frontend/public/manual/tecnico.html) (también en http://localhost:5173/manual/). Para retomar el trabajo: [docs/HANDOFF.md](docs/HANDOFF.md).
+
+Documentos de referencia: [ESPECIFICACION_NICHERADAR_AI.md](ESPECIFICACION_NICHERADAR_AI.md), [CLAUDE.md](CLAUDE.md), [docs/IMPLEMENTATION_PROGRESS.md](docs/IMPLEMENTATION_PROGRESS.md), [docs/DECISIONS.md](docs/DECISIONS.md), [docs/HANDOFF.md](docs/HANDOFF.md), [docs/TEST_PLAN.md](docs/TEST_PLAN.md).
 
 ## Requisitos
 
@@ -69,7 +71,7 @@ Para importar un archivo exportado con derecho de reutilización (JSON o CSV), u
 
 Los datos de YouTube caducan a los 29 días. La purga se lanza manualmente con `kind=purge` hasta que exista el planificador (M5).
 
-## Qué funciona en M0
+## Qué funciona (M0 a M4)
 
 - Resumen con contadores; las métricas no habilitadas aparecen como «No habilitado», nunca como 0.
 - Radar de oportunidades: búsqueda, filtros, orden, paginación en servidor y selección de hasta 8.
@@ -78,14 +80,18 @@ Los datos de YouTube caducan a los 29 días. La purga se lanza manualmente con `
 - Videos sintéticos con antigüedad, conflicto de idioma y tipo ambiguo.
 - Corridas DEMO en cola: la API responde 202 y el worker las completa sin red.
 - Configuración, proveedores y capacidades condicionadas, con su motivo de bloqueo.
+- M2: planes de búsqueda en español, validación y revisión humana de competidores.
+- M3: costos por escenario, factibilidad, recomendación con compuertas, exportación CSV/JSON.
+- M4: índices avanzados detrás de una compuerta de tres condiciones (cerrada por defecto).
 
 ## Qué no funciona todavía (y por qué)
 
-- **No hay análisis IA ni búsqueda real en español.** Son M2 y M3; el demo muestra los campos como datos sintéticos.
-- **No hay scheduler automático.** Las búsquedas y la purga se lanzan a mano (M5 lo automatiza).
-- **Las puntuaciones compuestas están bloqueadas.** Con `COMPLIANCE_MODE=restricted` ninguna variable de entorno las habilita; el desbloqueo exigirá un registro en `policy_approvals` (M4).
-- **No hay exportación CSV/JSON.** Llega en M3.
-- **No hay autenticación.** Está previsto como modo local; `APP_ENV=production` se rechaza hasta implementarla.
+- **Sin fuente de demanda en español**: ninguna oportunidad real pasa de «demanda no demostrada».
+- **IA sin probar con clave real** (Anthropic y OpenAI).
+- **No hay scheduler automático ni purga programada** (M5). Búsquedas y purga se lanzan a mano.
+- **Índices avanzados en NULL**: falta histórico licenciado; la compuerta (D-48) está cerrada por defecto.
+- **No hay watchlist (Seguimiento)**, ni detección de canales espejo (T12).
+- **No hay autenticación.** `APP_ENV=production` se rechaza; exponer solo en 127.0.0.1.
 
 ## Estructura
 
@@ -93,12 +99,10 @@ Los datos de YouTube caducan a los 29 días. La purga se lanza manualmente con `
 backend/   FastAPI, SQLAlchemy 2, Alembic, worker, tests (pytest)
 frontend/  React + TypeScript + Vite, TanStack Query/Table, Vitest, Playwright
 config/    research.yaml (parámetros editables; no son límites del proveedor)
-docs/      progreso, decisiones, plan de pruebas
+docs/      progreso, decisiones, plan de pruebas, traspaso
 .github/   CI sin secretos
 ```
 
 ## Variables de entorno
 
 Vea [.env.example](.env.example). Ninguna clave es necesaria para el demo. Los valores de claves nunca se muestran en la API ni en los logs; los logs redactan campos con `key`, `secret`, `token` o `password`.
-
-## Solo es una prueba
