@@ -191,6 +191,12 @@ export function Opportunities() {
         >
           Comparar seleccionadas
         </button>
+        <span className="export-links">
+          Exportar con estos filtros:{" "}
+          <a href={`/api/v1/exports/opportunities.csv?${params.toString()}`}>CSV</a>
+          {" · "}
+          <a href={`/api/v1/exports/opportunities.json?${params.toString()}`}>JSON</a>
+        </span>
       </div>
 
       {query.isPending && <p>Cargando oportunidades…</p>}

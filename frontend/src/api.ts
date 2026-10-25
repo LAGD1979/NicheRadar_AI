@@ -8,6 +8,7 @@ import type {
   ProblemBody,
   ProviderOut,
   Competition,
+  CostModelOut,
   RunOut,
   SearchPlan,
   UsageOut,
@@ -105,6 +106,18 @@ export const api = {
     ),
   competition: (opportunityId: string) =>
     request<Competition>(`/opportunities/${encodeURIComponent(opportunityId)}/competition`),
+  costModel: (opportunityId: string) =>
+    request<CostModelOut>(`/opportunities/${encodeURIComponent(opportunityId)}/cost-model`),
+  saveCostModel: (opportunityId: string, body: unknown) =>
+    request<{ version: number }>(`/opportunities/${encodeURIComponent(opportunityId)}/cost-model`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  saveFeasibility: (opportunityId: string, body: unknown) =>
+    request<{ evaluation_version: number; recommendation: string; gates: string[] }>(
+      `/opportunities/${encodeURIComponent(opportunityId)}/feasibility`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
   reviewMatch: (matchId: string, matchQuality: string) =>
     request<{ id: string; match_quality: string }>(`/matches/${encodeURIComponent(matchId)}`, {
       method: "PATCH",

@@ -36,6 +36,7 @@ class FormatOut(BaseModel):
 
 class OpportunityItem(BaseModel):
     id: str
+    recommendation: str | None = None
     niche: str
     format: str
     target_lang: str

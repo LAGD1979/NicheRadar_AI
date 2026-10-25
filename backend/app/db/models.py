@@ -173,6 +173,22 @@ class SpanishSearchPlan(Base):
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class CostModel(Base):
+    """Modelo de costo por video. Versión nueva en cada cambio; sin precio, el total es NULL."""
+
+    __tablename__ = "cost_models"
+    __table_args__ = (UniqueConstraint("opportunity_id", "version", name="uq_cost_model_version"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    opportunity_id: Mapped[str] = mapped_column(ForeignKey("opportunities.id"), index=True)
+    version: Mapped[int] = mapped_column(Integer)
+    params_json: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    scenarios_json: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    missing_json: Mapped[dict[str, Any]] = mapped_column(JSONB)
+    created_by: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class ProviderUsage(Base):
     """Unidades de cuota consumidas por llamada. El día de cuota se calcula en Pacific Time."""
 

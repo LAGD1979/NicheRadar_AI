@@ -135,3 +135,38 @@ Cada validación o revisión añade una versión nueva de la evaluación. Las ve
 
 ### D-38 · Resultados de búsqueda como muestra, no como censo
 Los contadores de cobertura son lo que devolvió YouTube para esas consultas. No representan el total de competidores (§3.6).
+
+---
+
+## M3 — costos, factibilidad, recomendación y exportación
+
+### D-39 · Costos sin precios inventados
+Cada línea de costo tiene cantidad y un precio por escenario (bajo, base, alto), escrito por una persona. Si falta un precio en un escenario, el total de ese escenario es NULL y se lista la línea faltante (T15). Un precio vacío nunca se convierte en 0. Las cantidades 0 también necesitan precio.
+
+### D-40 · Modelo de costo versionado
+`cost_models` es append-only. Cada guardado crea una versión nueva y actualiza los costos de la evaluación vigente (`usd_per_video_scenarios`), marcados como estimación.
+
+### D-41 · Factibilidad con motivo obligatorio
+El faceless y el riesgo de derechos los valora una persona (`assessed_by`). El motivo del faceless tiene al menos 20 caracteres. Un riesgo de derechos medio o alto exige una explicación de 20 caracteres o más. Nada se deduce de una miniatura o un título (§0).
+
+### D-42 · Compuertas y recomendación deterministas
+`domain/decision.py` calcula la recomendación y las compuertas. Las compuertas son `INSUFFICIENT_EVIDENCE`, `DEMAND_UNPROVEN`, `HIGH_COPYRIGHT_RISK`, `RIGHTS_NOT_ASSESSED`, `FACELESS_NOT_ASSESSED` y `COMPLEXITY_NOT_ASSESSED`. Orden de las reglas:
+- Riesgo alto de derechos → `REJECT`.
+- Saturación española «saturada» → `WATCHLIST`.
+- Replicación internacional débil o ausente → `MORE_RESEARCH`.
+- Cobertura insuficiente → `MORE_RESEARCH`.
+- Demanda no demostrada → `VALIDATE_DEMAND_PILOT` (§3.6: piloto de validación, no lanzamiento).
+- Cualquier otra compuerta → `MORE_RESEARCH`.
+- `READY_FOR_PILOT` solo si no hay compuertas, la entrada es «posible brecha», la demanda es observada o indicativa, la confianza es media o alta, el faceless es confirmado o probable, la complejidad es 3 o menos y el riesgo de derechos es bajo o medio.
+
+### D-43 · La recomendación se recalcula en cada versión
+`evaluation_service.append_evaluation` recalcula recomendación y compuertas con la versión resultante. La validación en español (M2) también usa este servicio, así que una revisión de competidor actualiza la recomendación.
+
+### D-44 · Exportación con neutralización de fórmulas
+`GET /exports/opportunities.csv|json` exporta lo que se ve con los filtros activos (hasta 1000 filas). Las celdas que empiezan por `=`, `+`, `-`, `@`, tabulador o retorno se prefijan con `'` (T20). Cada fila y cada JSON llevan la advertencia de caducidad de 29 días.
+
+### D-45 · Datos de demo con recomendación alta
+El fixture sintético `syn-opp-01` declara demanda indicativa y confianza media. Con factibilidad FACELESS_LIKELY, complejidad 2 y riesgo bajo, su recomendación pasa a `READY_FOR_PILOT`. **Es un dato de demo rotulado como sintético, no una señal real.** Ninguna oportunidad real puede llegar ahí sin una fuente de demanda.
+
+### D-46 · Recomendaciones del fixture hasta que haya una evaluación nueva
+Las oportunidades sintéticas muestran la recomendación del fixture hasta que se registra una evaluación nueva. Ahí se recalcula con las reglas de arriba.

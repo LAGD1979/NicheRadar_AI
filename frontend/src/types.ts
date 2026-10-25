@@ -13,6 +13,7 @@ export interface Page<T> {
 
 export interface OpportunityItem {
   id: string;
+  recommendation: string | null;
   niche: string;
   format: string;
   target_lang: string;
@@ -194,6 +195,25 @@ export interface Competition {
     exact_matches: number;
   };
   matches: CompetitionMatch[];
+}
+
+export interface CostModelOut {
+  version: number;
+  params: {
+    duration_minutes: number;
+    words_per_minute: number;
+    planned_words: number;
+    lines: Array<{
+      name: string;
+      unit: string;
+      quantity: number;
+      prices: Record<string, number | null>;
+    }>;
+  };
+  scenarios: { usd_per_video: Record<string, number | null>; currency: string; estimated: boolean };
+  missing: Record<string, string[]>;
+  created_by: string;
+  created_at: string;
 }
 
 export interface UsageOut {

@@ -13,6 +13,23 @@
 | M4 — analítica avanzada (condicional) | — bloqueado | Requiere `policy_approvals` documentado. |
 | M5 — radar continuo | — pendiente | Scheduler, purga automática, alertas. |
 
+## M3: costos, factibilidad, recomendación y exportación (sin commit)
+
+- **Costos** (`domain/costs.py`): precios por escenario escritos por una persona; un precio faltante deja el total en NULL (T15). Versionado en `cost_models`.
+- **Factibilidad**: valoración humana con motivo obligatorio (faceless y riesgo de derechos).
+- **Recomendación con compuertas** (`domain/decision.py`): `REJECT`, `WATCHLIST`, `MORE_RESEARCH`, `VALIDATE_DEMAND_PILOT` y `READY_FOR_PILOT`, con sus motivos. Se recalcula en cada versión de evaluación (`services/evaluation_service.py`).
+- **Exportación** CSV y JSON con los filtros activos, neutralización de fórmulas (T20) y advertencia de caducidad.
+- **Comparador**: recomendación, compuertas y minutos humanos por video.
+- **Interfaz**: panel de producción con costo y valoración en la ficha; contadores de «listas para piloto» y «validar demanda» en Resumen; enlaces de exportación en el radar.
+
+Verificación de M3: **194 pruebas backend** (160 al cierre de M2 + 34 de M3), lint y tipos limpios, **15 pruebas frontend**, **7 E2E** de M0 (1 omitido), migración 0004 aplicada sobre la base de la demo.
+
+Limitaciones de M3:
+- **`READY_FOR_PILOT` aparece para `syn-opp-01`** porque su fixture sintético declara demanda indicativa (D-45). No es una señal real.
+- **Las recomendaciones del fixture** se muestran tal cual hasta que hay una evaluación nueva (D-46).
+- **P4 y P5 (IA de factibilidad)** no se implementaron: la factibilidad la valora una persona. Sin clave de Anthropic no hay nada que probar en vivo.
+- **Sin watchlist** (Seguimiento) ni **sin pantalla de política** nueva: se mantiene la de Configuración.
+
 ## M2: qué se construyó
 
 - **Oportunidades y anotaciones:** un video confirmado (LONG o SHORT) se asigna a nicho + formato. Varias anotaciones forman un solo grupo (T08). Mismo formato en otro nicho es otra oportunidad (T09).

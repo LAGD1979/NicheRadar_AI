@@ -50,6 +50,8 @@ COMPARE_FIELDS: list[tuple[str, str, str, str]] = [
     ("target_lang", "Idioma destino", "Resumen", ""),
     ("status", "Estado", "Resumen", ""),
     ("confidence", "Confianza", "Resumen", "confidence"),
+    ("recommendation", "Recomendación", "Decisión", "recommendation"),
+    ("gates", "Compuertas que bloquean", "Decisión", "gates"),
     (
         "international.replication_state",
         "Replicación internacional",
@@ -85,6 +87,12 @@ COMPARE_FIELDS: list[tuple[str, str, str, str]] = [
         "feasibility.complexity_1_to_5",
     ),
     ("feasibility.rights_risk", "Riesgo de derechos", "Producción", "feasibility.rights_risk"),
+    (
+        "feasibility.human_minutes_per_video",
+        "Minutos humanos por video",
+        "Producción",
+        "feasibility.human_minutes_per_video",
+    ),
     (
         "feasibility.usd_per_video_scenarios.low",
         "USD por video (bajo)",
@@ -194,6 +202,7 @@ def _to_item(
     international = ev.international_json if ev else None
     return OpportunityItem(
         id=opp.id,
+        recommendation=ev.recommendation if ev else None,
         niche=niche.canonical_name_es,
         format=fmt.canonical_name_es,
         target_lang=opp.target_lang,
@@ -346,6 +355,8 @@ def compare(session: Session, settings: Settings, ids: list[str]) -> CompareResp
         ev_json: dict[str, Any] = (
             {
                 "confidence": ev.confidence,
+                "recommendation": ev.recommendation,
+                "gates": ", ".join(ev.reason_codes_json),
                 "international": ev.international_json,
                 "spanish": ev.spanish_json,
                 "feasibility": ev.feasibility_json,

@@ -15,6 +15,8 @@ export function Summary() {
   const items = opportunities.data?.items ?? [];
   const evaluated = items.filter((o) => o.confidence !== null).length;
   const latestRun = runs.data?.items[0];
+  const readyForPilot = items.filter((o) => o.recommendation === "READY_FOR_PILOT").length;
+  const validateDemand = items.filter((o) => o.recommendation === "VALIDATE_DEMAND_PILOT").length;
 
   return (
     <section aria-labelledby="titulo-resumen">
@@ -26,6 +28,8 @@ export function Summary() {
       <div className="cards">
         <Card label="Oportunidades" value={opportunities.data ? formatNumber(opportunities.data.total) : "…"} />
         <Card label="Con evaluación" value={opportunities.data ? formatNumber(evaluated) : "…"} />
+        <Card label="Listas para piloto" value={opportunities.data ? formatNumber(readyForPilot) : "…"} />
+        <Card label="Validar demanda con piloto" value={opportunities.data ? formatNumber(validateDemand) : "…"} />
         <Card label="Puntuación integrada" value={NOT_ENABLED} />
         <Card label="Última corrida" value={latestRun ? cell(latestRun.status) : "Sin corridas"} />
       </div>

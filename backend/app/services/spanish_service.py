@@ -23,6 +23,7 @@ from app.domain import spanish_market
 from app.domain.search_plan import SpanishSearchPlan, query_texts
 from app.prompts import spanish_plan_v1 as prompt_v1
 from app.providers.ai import AnthropicClient
+from app.services import evaluation_service
 
 MATCH_QUALITIES = ("UNREVIEWED", "EXACT", "ADJACENT", "GENERIC", "FALSE_POSITIVE")
 ENTRY_TO_STATUS = {
@@ -395,12 +396,6 @@ def record_assessment(
     """Añade una evaluación nueva con el estado español recalculado (append-only)."""
     coverage = coverage_for(session, opportunity_id)
     result = spanish_market.assess(coverage, independent_signals=0)
-    latest = session.scalars(
-        select(m.Evaluation)
-        .where(m.Evaluation.opportunity_id == opportunity_id)
-        .order_by(m.Evaluation.evaluation_version.desc())
-    ).first()
-    version = (latest.evaluation_version if latest else 0) + 1
     spanish = {
         "saturation_state": result.saturation_state,
         "spanish_demand_state": result.demand_state,
@@ -413,28 +408,18 @@ def record_assessment(
         "match_precision_reviewed": coverage.reviewed_matches > 0,
         "reason_codes": result.reason_codes,
     }
-    session.add(
-        m.Evaluation(
-            id=str(uuid4()),
-            opportunity_id=opportunity_id,
-            run_id=run_id,
-            evaluation_version=version,
-            international_json=latest.international_json if latest else {},
-            spanish_json=spanish,
-            feasibility_json=latest.feasibility_json if latest else {},
-            scores_json=latest.scores_json if latest else {},
-            confidence=result.confidence,
-            reason_codes_json=result.reason_codes,
-            recommendation="MORE_RESEARCH",
-            metric_policy_state="RESTRICTED",
-            source_data_type="OFFICIAL",
-            observed_at=now,
-        )
+    evaluation_service.append_evaluation(
+        session,
+        opportunity_id,
+        now=now,
+        source="OFFICIAL",
+        run_id=run_id,
+        spanish=spanish,
+        confidence=result.confidence,
     )
     opp = session.get(m.Opportunity, opportunity_id)
     if opp is not None:
         opp.status = ENTRY_TO_STATUS.get(result.entry_decision, "ES_VALIDATION_IN_PROGRESS")
-        opp.last_evaluated_at = now
     session.flush()
     return spanish
 

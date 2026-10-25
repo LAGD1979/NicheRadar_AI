@@ -6,6 +6,7 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
 from app.api.v1.m2_routes import router as m2_router
+from app.api.v1.m3_routes import router as m3_router
 from app.api.v1.schemas import (
     CapabilityOut,
     ChannelOut,
@@ -45,6 +46,7 @@ from app.services.research_service import (
 
 router = APIRouter()
 router.include_router(m2_router)
+router.include_router(m3_router)
 
 SessionDep = Annotated[Session, Depends(get_session)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]

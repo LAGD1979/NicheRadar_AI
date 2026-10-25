@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { api } from "../api";
+import { ProductionPanel } from "./Production";
 import { SpanishMarket } from "./SpanishMarket";
 import { NOT_ENABLED, formatDateTime, formatField, label, stateFor } from "../format";
 import type { EvidenceOut, OpportunityDetail as Detail, ScoreOut } from "../types";
@@ -69,7 +70,12 @@ export function OpportunityDetail() {
       <section id="panel-ficha" role="tabpanel" aria-labelledby={`tab-${tab}`}>
         {tab === "Evidencia internacional" && <Evidence opp={opp} market="SOURCE_MARKET" />}
         {tab === "Mercado español" && <SpanishMarket opportunityId={opp.id} />}
-        {tab === "Producción IA" && <Production opp={opp} />}
+        {tab === "Producción IA" && (
+          <>
+            <Production opp={opp} />
+            <ProductionPanel opportunityId={opp.id} evaluation={opp.evaluation} />
+          </>
+        )}
         {tab === "Evaluación" && <Evaluation opp={opp} />}
         {tab === "Fuente y auditoría" && <Audit opp={opp} />}
       </section>
