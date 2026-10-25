@@ -10,6 +10,13 @@ Documento para cualquier sesión nueva (o para una persona). Complementa `CLAUDE
 - Sin fuente de señales de demanda: ninguna oportunidad real llega a «listo para piloto».
 - IA (Anthropic y OpenAI): implementada, **no probada** contra APIs reales (no hay claves de IA configuradas).
 
+## 1b. Manuales
+
+- Manual de uso (funcional): `frontend/public/manual/funcional.html`.
+- Manual técnico: `frontend/public/manual/tecnico.html`.
+- Índice de ambos: `frontend/public/manual/index.html`.
+- Se abren desde el menú lateral («Manuales») o en `http://localhost:5173/manual/`. También funcionan abriendo el archivo directamente, salvo los enlaces a la aplicación.
+
 ## 2. Operación en Windows (PowerShell)
 
 - Ruta del proyecto: `C:\Luis\Dropbox\Negocios\202608_Youtube\2026\NicheRadar_AI_Claude_Code\NicheRadar_AI`.

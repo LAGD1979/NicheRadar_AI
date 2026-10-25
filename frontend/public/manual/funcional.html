@@ -1,0 +1,516 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual de uso · NicheRadar AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <span class="kicker">Manual de uso</span>
+      <h1>Cómo usar NicheRadar AI</h1>
+      <p>Una guía sin tecnicismos para encontrar ideas de videos, comprobar si tienen público en español y decidir cuáles vale la pena producir.</p>
+      <a class="back" href="index.html">← Volver a los manuales</a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Índice">
+      <h2>Contenido</h2>
+      <ol>
+        <li><a href="#que-es">1. ¿Qué es?</a></li>
+        <li><a href="#antes">2. Antes de empezar</a></li>
+        <li><a href="#conceptos">3. Conceptos básicos</a></li>
+        <li><a href="#pantalla">4. La pantalla principal</a></li>
+        <li><a href="#buscar">5. Buscar videos en YouTube</a></li>
+        <li><a href="#radar">6. Revisar el radar</a></li>
+        <li><a href="#ficha">7. Abrir una oportunidad</a></li>
+        <li><a href="#espanol">8. Comprobar el mercado en español</a></li>
+        <li><a href="#costos">9. Calcular costos y factibilidad</a></li>
+        <li><a href="#comparar">10. Comparar oportunidades</a></li>
+        <li><a href="#exportar">11. Exportar a una hoja de cálculo</a></li>
+        <li><a href="#cuota">12. La cuota de YouTube</a></li>
+        <li><a href="#colores">13. Colores y palabras</a></li>
+        <li><a href="#limites">14. Lo que todavía no hace</a></li>
+        <li><a href="#ayuda">15. Preguntas frecuentes</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="que-es">
+        <h2><span class="num">1</span>¿Qué es NicheRadar AI?</h2>
+        <p class="lead">Es un tablero para decidir qué videos conviene producir. Le ayuda a ver ideas que funcionan en otros idiomas y a comprobar si en español hay espacio para ellas.</p>
+        <p>Cada idea se presenta como una <strong>oportunidad</strong>: un tema (por ejemplo, «historia con mapas») junto con una forma de contarlo (por ejemplo, «relato narrado con ilustraciones»). La herramienta reúne la evidencia, la ordena y le muestra qué tan sólida es. La decisión final siempre es suya.</p>
+        <div class="note">
+          <strong>Importante</strong>
+          Hoy la aplicación trabaja con datos de demostración, marcados con la etiqueta <strong>DATOS SINTÉTICOS · DEMO</strong> en la parte superior. Los videos reales que se buscan en YouTube aparecen junto a ellos, y cada fila indica su origen.
+        </div>
+      </section>
+
+      <section id="antes">
+        <h2><span class="num">2</span>Antes de empezar</h2>
+        <p>No necesita saber programar. Solo necesita:</p>
+        <ul>
+          <li>Que la aplicación esté abierta en su navegador. La dirección es <strong>http://localhost:5173</strong>.</li>
+          <li>Que alguien de soporte técnico la haya puesto en marcha. Si ve una pantalla en blanco o un mensaje de error de conexión, avise a esa persona.</li>
+          <li>Paciencia con las búsquedas: YouTube tarda unos segundos en responder y la aplicación procesa cada tarea en segundo plano.</li>
+        </ul>
+        <div class="tip">
+          <strong>Consejo</strong>
+          Puede abrir este manual en cualquier momento desde el menú lateral, en la opción <strong>Manuales</strong>.
+        </div>
+      </section>
+
+      <section id="conceptos">
+        <h2><span class="num">3</span>Conceptos básicos</h2>
+        <p>Solo hay cuatro ideas que necesita entender para usar la herramienta.</p>
+
+        <div class="cards">
+          <div class="card">
+            <h3>Nicho</h3>
+            <p>El tema del que trata el contenido. Ejemplo: «Historia explicada con mapas».</p>
+          </div>
+          <div class="card">
+            <h3>Formato</h3>
+            <p>La manera de contarlo. Ejemplo: «Relato narrado con ilustraciones estáticas».</p>
+          </div>
+          <div class="card">
+            <h3>Oportunidad</h3>
+            <p>Un nicho combinado con un formato, para el idioma español. Es la unidad que se evalúa.</p>
+          </div>
+          <div class="card">
+            <h3>Evidencia</h3>
+            <p>Los videos y datos que respaldan una afirmación. Si no hay evidencia, la herramienta lo dice en vez de inventar una respuesta.</p>
+          </div>
+        </div>
+
+        <figure>
+          <svg viewBox="0 0 800 230" role="img" aria-labelledby="fig-concepto">
+            <title id="fig-concepto">Un nicho más un formato forman una oportunidad</title>
+            <defs>
+              <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#8a93a8" />
+              </marker>
+            </defs>
+            <rect class="box-accent" x="30" y="60" width="220" height="110" rx="16" />
+            <text class="label" x="140" y="108" text-anchor="middle">Nicho</text>
+            <text class="small" x="140" y="132" text-anchor="middle">Historia con mapas</text>
+
+            <text class="label" x="290" y="122" text-anchor="middle" font-size="28">+</text>
+
+            <rect class="box" x="330" y="60" width="220" height="110" rx="16" />
+            <text class="label" x="440" y="108" text-anchor="middle">Formato</text>
+            <text class="small" x="440" y="132" text-anchor="middle">Relato con ilustraciones</text>
+
+            <path class="arrow" d="M560 115 L615 115" />
+
+            <rect class="box-ok" x="620" y="60" width="160" height="110" rx="16" />
+            <text class="label" x="700" y="108" text-anchor="middle">Oportunidad</text>
+            <text class="small" x="700" y="132" text-anchor="middle">en español</text>
+          </svg>
+          <figcaption>Un nicho y un formato forman una oportunidad. Cambiar cualquiera de los dos crea otra oportunidad distinta.</figcaption>
+        </figure>
+      </section>
+
+      <section id="pantalla">
+        <h2><span class="num">4</span>La pantalla principal</h2>
+        <p>Todas las pantallas comparten la misma estructura. A la izquierda está el menú; a la derecha, el contenido.</p>
+
+        <figure>
+          <svg viewBox="0 0 800 380" role="img" aria-labelledby="fig-pantalla">
+            <title id="fig-pantalla">Esquema de la pantalla: menú a la izquierda y contenido a la derecha</title>
+            <rect class="box" x="10" y="10" width="780" height="360" rx="14" />
+            <rect class="box-accent" x="10" y="10" width="780" height="46" rx="14" />
+            <text class="label" x="30" y="40">NicheRadar AI</text>
+            <rect class="box-warn" x="190" y="22" width="220" height="22" rx="11" />
+            <text class="small" x="300" y="37" text-anchor="middle">DATOS SINTÉTICOS · DEMO</text>
+
+            <rect class="box" x="24" y="72" width="170" height="284" rx="10" />
+            <rect class="box-accent" x="34" y="84" width="150" height="30" rx="8" />
+            <text class="label" x="48" y="104">Resumen</text>
+            <text class="small" x="48" y="140">Oportunidades</text>
+            <text class="small" x="48" y="168">Videos</text>
+            <text class="small" x="48" y="196">Comparador</text>
+            <text class="small" x="48" y="224">Corridas</text>
+            <text class="small" x="48" y="252">Configuración</text>
+            <text class="small" x="48" y="300">Manuales</text>
+
+            <rect class="box" x="210" y="72" width="570" height="284" rx="10" />
+            <text class="label" x="232" y="106">Contenido de la pantalla</text>
+            <rect class="box-ok" x="232" y="124" width="160" height="90" rx="10" />
+            <text class="small" x="312" y="176" text-anchor="middle">Tarjetas con cifras</text>
+            <rect class="box" x="406" y="124" width="160" height="90" rx="10" />
+            <text class="small" x="486" y="176" text-anchor="middle">Tablas y listas</text>
+            <rect class="box" x="580" y="124" width="184" height="90" rx="10" />
+            <text class="small" x="672" y="176" text-anchor="middle">Botones de acción</text>
+            <rect class="box" x="232" y="230" width="532" height="110" rx="10" />
+            <text class="small" x="498" y="292" text-anchor="middle">Mensajes de estado y avisos</text>
+          </svg>
+          <figcaption>El menú siempre está disponible. Para cambiar de pantalla, haga clic en su nombre.</figcaption>
+        </figure>
+
+        <table class="table">
+          <thead><tr><th>Pantalla</th><th>Para qué sirve</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Resumen</strong></td><td>Cifras generales: cuántas oportunidades hay, cuántas tienen evaluación y las últimas noticias del sistema.</td></tr>
+            <tr><td><strong>Oportunidades</strong></td><td>El radar: la lista de todas las oportunidades, con filtros y búsqueda.</td></tr>
+            <tr><td><strong>Videos</strong></td><td>Los videos encontrados en YouTube, con su idioma, antigüedad y origen.</td></tr>
+            <tr><td><strong>Comparador</strong></td><td>Pone de dos a ocho oportunidades una al lado de otra.</td></tr>
+            <tr><td><strong>Corridas</strong></td><td>Lanza búsquedas en YouTube y muestra su estado.</td></tr>
+            <tr><td><strong>Configuración</strong></td><td>Cuota de YouTube, proveedores y qué funciones están disponibles.</td></tr>
+            <tr><td><strong>Manuales</strong></td><td>Abre esta guía y el manual técnico.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="buscar">
+        <h2><span class="num">5</span>Buscar videos en YouTube</h2>
+        <p>Para encontrar ideas nuevas, primero hay que buscar videos. Esto se hace en la pantalla <strong>Corridas</strong>.</p>
+
+        <figure>
+          <svg viewBox="0 0 800 210" role="img" aria-labelledby="fig-ventanas">
+            <title id="fig-ventanas">Tres ventanas de antigüedad: de 0 a 7 días, de 8 a 30 y de 31 a 90</title>
+            <line x1="40" y1="110" x2="760" y2="110" stroke="#8a93a8" stroke-width="2" />
+            <rect class="box-ok" x="40" y="82" width="120" height="56" rx="10" />
+            <text class="label" x="100" y="106" text-anchor="middle">0 a 7 días</text>
+            <text class="small" x="100" y="126" text-anchor="middle">lo más reciente</text>
+            <rect class="box-accent" x="180" y="82" width="200" height="56" rx="10" />
+            <text class="label" x="280" y="106" text-anchor="middle">8 a 30 días</text>
+            <text class="small" x="280" y="126" text-anchor="middle">el último mes</text>
+            <rect class="box" x="400" y="82" width="360" height="56" rx="10" />
+            <text class="label" x="580" y="106" text-anchor="middle">31 a 90 días</text>
+            <text class="small" x="580" y="126" text-anchor="middle">los últimos tres meses</text>
+            <text class="small" x="40" y="172">Hoy</text>
+            <text class="small" x="760" y="172" text-anchor="end">Hace 90 días</text>
+          </svg>
+          <figcaption>Elija la ventana según qué tan reciente quiere que sea lo encontrado.</figcaption>
+        </figure>
+
+        <h3>Pasos</h3>
+        <ol class="steps">
+          <li>Abra <strong>Corridas</strong> en el menú.</li>
+          <li>En <strong>Idioma</strong>, elija el idioma de los videos que quiere buscar. Para ideas de otros países, elija el idioma original del contenido.</li>
+          <li>En <strong>Consulta</strong>, escriba el tema en pocas palabras, por ejemplo <em>historia con mapas</em>. Debe tener entre 2 y 200 caracteres.</li>
+          <li>En <strong>Ventana</strong>, elija cuánto tiempo atrás buscar.</li>
+          <li>En <strong>Búsquedas máx.</strong>, indique cuántas búsquedas puede hacer como máximo. Cada una consume cuota de YouTube (ver la sección 12). Para empezar, use 1 o 2.</li>
+          <li>Revise el <strong>costo máximo estimado</strong> que aparece debajo del formulario.</li>
+          <li>Haga clic en <strong>Buscar en YouTube</strong>. La búsqueda queda en cola y el mensaje confirma que se encoló.</li>
+          <li>Espere unos segundos y actualice la pantalla. La columna <strong>Estado</strong> cambiará a <em>Completada</em>.</li>
+        </ol>
+
+        <div class="warn">
+          <strong>Si la búsqueda se pausa</strong>
+          Verá el estado <em>Pausada por cuota</em>. Significa que se agotó el cupo diario de YouTube. No pierde nada: al día siguiente, pulse <strong>Reanudar</strong> y solo se harán las búsquedas que faltaban.
+        </div>
+
+        <div class="stop">
+          <strong>Sin clave de YouTube, no hay búsquedas</strong>
+          Si el formulario muestra «YouTube no está configurado», la búsqueda no se puede hacer. La herramienta no inventa resultados. Avise a soporte técnico.
+        </div>
+      </section>
+
+      <section id="radar">
+        <h2><span class="num">6</span>Revisar el radar</h2>
+        <p>El radar es la pantalla <strong>Oportunidades</strong>. Cada fila es una oportunidad, con un resumen de lo que sabemos de ella.</p>
+
+        <h3>Cómo filtrar</h3>
+        <ul>
+          <li><strong>Buscar:</strong> escriba parte del nicho o del formato.</li>
+          <li><strong>Filtros:</strong> tipo de video, saturación en español, demanda, faceless, riesgo de derechos y confianza. Cada filtro se combina con los demás.</li>
+          <li><strong>Orden:</strong> por nombre, por confianza o por estado.</li>
+        </ul>
+        <p>Los filtros quedan en la dirección de la página. Si copia esa dirección y se la envía a alguien, verá lo mismo que usted.</p>
+
+        <h3>Cómo leer una fila</h3>
+        <p>Cada columna responde una pregunta:</p>
+        <table class="table">
+          <thead><tr><th>Columna</th><th>Pregunta que responde</th></tr></thead>
+          <tbody>
+            <tr><td>Replicación</td><td>¿Este tipo de video funciona en varios canales distintos, o solo en uno?</td></tr>
+            <tr><td>Saturación ES</td><td>¿Cuánta competencia hay en español para este formato?</td></tr>
+            <tr><td>Demanda ES</td><td>¿Hay señales de que el público en español busca este tema?</td></tr>
+            <tr><td>Decisión</td><td>¿Qué conclusión sale de la competencia y la demanda?</td></tr>
+            <tr><td>Faceless</td><td>¿Se puede producir sin mostrar el rostro de nadie?</td></tr>
+            <tr><td>Complejidad</td><td>Del 1 (sencillo) al 5 (complejo) para producirlo.</td></tr>
+            <tr><td>Confianza</td><td>Qué tan sólida es la evidencia que respalda la fila.</td></tr>
+            <tr><td>Estado</td><td>En qué etapa está el estudio de esa oportunidad.</td></tr>
+          </tbody>
+        </table>
+        <div class="tip">
+          <strong>Regla de oro</strong>
+          Un espacio vacío significa «no hay dato». No significa cero ni que la oportunidad sea mala.
+        </div>
+      </section>
+
+      <section id="ficha">
+        <h2><span class="num">7</span>Abrir una oportunidad</h2>
+        <p>Haga clic en el nombre de cualquier oportunidad para abrir su ficha. Arriba verá el nicho, el formato, el estado y la confianza. Debajo hay cinco pestañas:</p>
+
+        <table class="table">
+          <thead><tr><th>Pestaña</th><th>Qué encuentra</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Evidencia internacional</strong></td><td>Los videos de otros idiomas que respaldan la idea, con su título, su canal y si la información está al día.</td></tr>
+            <tr><td><strong>Mercado español</strong></td><td>Los planes de búsqueda en español, la competencia encontrada y la validación.</td></tr>
+            <tr><td><strong>Producción IA</strong></td><td>Cómo se produciría el video, el costo estimado y la valoración de factibilidad.</td></tr>
+            <tr><td><strong>Evaluación</strong></td><td>La recomendación final, con los motivos que la sostienen o la frenan.</td></tr>
+            <tr><td><strong>Fuente y auditoría</strong></td><td>De dónde salen los datos, cuándo se observaron y qué política aplica.</td></tr>
+          </tbody>
+        </table>
+
+        <div class="note">
+          <strong>Dato caducado</strong>
+          Algunos datos de YouTube deben renovarse cada 29 días. Si una evidencia aparece como <em>Caducada</em>, actualícela antes de decidir. Junto a ella verá el aviso «Refrescar antes de decidir».
+        </div>
+      </section>
+
+      <section id="espanol">
+        <h2><span class="num">8</span>Comprobar el mercado en español</h2>
+        <p class="lead">Esta es la parte más importante: saber si en español ya hay mucha competencia, poca o ninguna, y si hay señales de que el público busca ese tema.</p>
+
+        <figure>
+          <svg viewBox="0 0 800 250" role="img" aria-labelledby="fig-flujo-es">
+            <title id="fig-flujo-es">Pasos para comprobar el mercado en español</title>
+            <defs>
+              <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#8a93a8" />
+              </marker>
+            </defs>
+            <rect class="box-accent" x="10" y="90" width="140" height="80" rx="12" />
+            <text class="label" x="80" y="124" text-anchor="middle">1. Plan</text>
+            <text class="small" x="80" y="146" text-anchor="middle">escribir o generar</text>
+            <path class="arrow" d="M150 130 L180 130" />
+            <rect class="box" x="184" y="90" width="140" height="80" rx="12" />
+            <text class="label" x="254" y="124" text-anchor="middle">2. Aprobar</text>
+            <text class="small" x="254" y="146" text-anchor="middle">una persona revisa</text>
+            <path class="arrow" d="M324 130 L354 130" />
+            <rect class="box" x="358" y="90" width="140" height="80" rx="12" />
+            <text class="label" x="428" y="124" text-anchor="middle">3. Validar</text>
+            <text class="small" x="428" y="146" text-anchor="middle">buscar en español</text>
+            <path class="arrow" d="M498 130 L528 130" />
+            <rect class="box" x="532" y="90" width="140" height="80" rx="12" />
+            <text class="label" x="602" y="124" text-anchor="middle">4. Revisar</text>
+            <text class="small" x="602" y="146" text-anchor="middle">marcar competidores</text>
+            <path class="arrow" d="M672 130 L702 130" />
+            <rect class="box-ok" x="706" y="90" width="84" height="80" rx="12" />
+            <text class="label" x="748" y="128" text-anchor="middle" font-size="12">Estado</text>
+            <text class="small" x="748" y="150" text-anchor="middle" font-size="11">actualizado</text>
+          </svg>
+          <figcaption>Cada paso alimenta al siguiente. La conclusión solo cambia cuando una persona ha revisado la competencia.</figcaption>
+        </figure>
+
+        <h3>Paso 1: el plan de búsqueda</h3>
+        <p>Un plan es la lista de frases que usaría alguien en español para buscar esa idea. Puede:</p>
+        <ul>
+          <li><strong>Generarlo con IA</strong> con el botón <em>Generar plan con IA</em>. Necesita que la IA esté configurada por soporte técnico.</li>
+          <li><strong>Escribirlo usted</strong> en el recuadro <em>Escribir un plan manualmente</em>. Son frases en español, sin enlaces, y al menos cinco en el grupo principal.</li>
+        </ul>
+        <div class="warn">
+          <strong>Revise siempre las frases</strong>
+          Una frase con un enlace o con datos inventados se rechaza automáticamente. Si la IA cita algo que no existe, el plan queda <em>Requiere revisión</em> y no se usa.
+        </div>
+
+        <h3>Paso 2: aprobar el plan</h3>
+        <p>Pulse <strong>Aprobar este plan</strong> cuando esté conforme. Un plan aprobado ya no se puede editar: si quiere cambiarlo, escriba uno nuevo y apruébelo. El nuevo reemplaza al anterior.</p>
+
+        <h3>Paso 3: validar en español</h3>
+        <p>Elija las ventanas de tiempo y el número máximo de búsquedas, y pulse <strong>Validar en español</strong>. La herramienta busca cada frase en YouTube y guarda lo que encuentra. Solo cuentan como español los videos cuyo idioma se puede comprobar.</p>
+
+        <h3>Paso 4: revisar los competidores</h3>
+        <p>Debajo aparece la lista de videos encontrados. Para cada uno, elija cómo lo clasifica:</p>
+        <table class="table">
+          <thead><tr><th>Clasificación</th><th>Cuándo usarla</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge stop">Falso positivo</span></td><td>No tiene nada que ver con la idea.</td></tr>
+            <tr><td><span class="badge info">Genérico</span></td><td>Trata el tema, pero de forma general, sin el formato de la idea.</td></tr>
+            <tr><td><span class="badge warn">Cercano</span></td><td>Parecido, pero no es el mismo formato. Es un competidor indirecto.</td></tr>
+            <tr><td><span class="badge ok">Exacto</span></td><td>Es el mismo formato y el mismo tema. Es un competidor directo.</td></tr>
+          </tbody>
+        </table>
+        <p>Solo los videos marcados como <strong>Exacto</strong> cuentan para medir la saturación. Los que no ha revisado no cuentan para nada: eso evita dar conclusiones falsas.</p>
+
+        <h3>Qué significan los resultados</h3>
+        <table class="table">
+          <thead><tr><th>Saturación en español</th><th>Significado</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge ok">Baja</span></td><td>Hay pocos competidores exactos, con búsquedas suficientes y revisadas.</td></tr>
+            <tr><td><span class="badge warn">Media</span></td><td>Hay algunos competidores exactos.</td></tr>
+            <tr><td><span class="badge stop">Alta</span></td><td>Hay muchos competidores exactos.</td></tr>
+            <tr><td><span class="badge muted">Desconocida</span></td><td>Todavía no hay suficiente evidencia. Es el valor por defecto: no significa que sea buena ni mala.</td></tr>
+          </tbody>
+        </table>
+        <div class="tip">
+          <strong>Ausencia de resultados</strong>
+          Si la búsqueda no encuentra competidores, la herramienta no concluye que el mercado está libre. Lo marca como <em>Desconocida</em> hasta que haya más búsquedas y revisiones.
+        </div>
+      </section>
+
+      <section id="costos">
+        <h2><span class="num">9</span>Calcular costos y factibilidad</h2>
+        <p>En la pestaña <strong>Producción IA</strong> se estima cuánto costaría producir un video y qué tan fácil sería hacerlo sin mostrar el rostro de nadie.</p>
+
+        <h3>El costo</h3>
+        <p>Usted escribe la duración del video, el ritmo de narración y una lista de conceptos (narración, imágenes, música, edición). Para cada concepto indica la cantidad y el precio en tres escenarios: <strong>bajo</strong>, <strong>base</strong> y <strong>alto</strong>.</p>
+        <div class="note">
+          <strong>La herramienta no inventa precios</strong>
+          Si deja un precio vacío, el total de ese escenario aparece como <em>Sin dato</em>, nunca como 0. Así sabe que todavía falta información.
+        </div>
+
+        <figure>
+          <svg viewBox="0 0 800 200" role="img" aria-labelledby="fig-costo">
+            <title id="fig-costo">Costo total: suma de cantidad por precio en cada concepto</title>
+            <rect class="box" x="20" y="30" width="230" height="130" rx="12" />
+            <text class="label" x="135" y="62" text-anchor="middle">Narración</text>
+            <text class="small" x="135" y="90" text-anchor="middle">cantidad: 9 × precio: 1,50</text>
+            <text class="small" x="135" y="116" text-anchor="middle">= 13,50</text>
+            <text class="label" x="280" y="110" text-anchor="middle" font-size="26">+</text>
+            <rect class="box" x="300" y="30" width="230" height="130" rx="12" />
+            <text class="label" x="415" y="62" text-anchor="middle">Imágenes</text>
+            <text class="small" x="415" y="90" text-anchor="middle">cantidad: 20 × precio: 0,02</text>
+            <text class="small" x="415" y="116" text-anchor="middle">= 0,40</text>
+            <text class="label" x="560" y="110" text-anchor="middle" font-size="26">=</text>
+            <rect class="box-ok" x="580" y="30" width="200" height="130" rx="12" />
+            <text class="label" x="680" y="70" text-anchor="middle">Total base</text>
+            <text class="label" x="680" y="112" text-anchor="middle" font-size="22">13,90 USD</text>
+            <text class="small" x="680" y="140" text-anchor="middle">(estimado)</text>
+          </svg>
+          <figcaption>Ejemplo ilustrativo con cifras inventadas solo para explicar el cálculo.</figcaption>
+        </figure>
+
+        <h3>La factibilidad</h3>
+        <p>Usted valora tres cosas, y debe escribir por qué:</p>
+        <ul>
+          <li><strong>Faceless:</strong> si el video se puede hacer sin mostrar personas.</li>
+          <li><strong>Riesgo de derechos:</strong> si usa material de terceros que podría generar problemas. Si el riesgo es medio o alto, debe explicarlo con al menos 20 caracteres.</li>
+          <li><strong>Complejidad y tiempo:</strong> del 1 al 5, y cuántos minutos humanos necesita cada video.</li>
+        </ul>
+        <div class="stop">
+          <strong>Riesgo alto de derechos</strong>
+          Si marca el riesgo como alto, la recomendación pasa a <em>Descartar</em>, sin importar lo bueno que sea lo demás.
+        </div>
+      </section>
+
+      <section id="comparar">
+        <h2><span class="num">10</span>Comparar oportunidades</h2>
+        <p>Para decidir entre varias ideas, marque en el radar las casillas de la columna <strong>Elegir</strong>. Puede marcar de dos a ocho. Luego pulse <strong>Comparar seleccionadas</strong>.</p>
+        <p>En el comparador cada fila es un criterio y cada columna es una oportunidad. Debajo de cada dato aparece de dónde sale y cuándo se observó.</p>
+        <div class="note">
+          <strong>El comparador no elige por usted</strong>
+          No marca ningún ganador. Una saturación baja no significa nada si todavía no hay demanda demostrada. Compare con calma.
+        </div>
+      </section>
+
+      <section id="exportar">
+        <h2><span class="num">11</span>Exportar a una hoja de cálculo</h2>
+        <p>En la pantalla <strong>Oportunidades</strong>, debajo de los botones, verá <em>Exportar con estos filtros: CSV · JSON</em>.</p>
+        <ul>
+          <li><strong>CSV</strong> se abre en Excel o en Google Sheets.</li>
+          <li><strong>JSON</strong> es para quien trabaja con programas.</li>
+        </ul>
+        <p>La exportación incluye solo las oportunidades que ve con sus filtros actuales. Cada archivo lleva una advertencia: los datos de terceros caducan a los 29 días.</p>
+        <div class="tip">
+          <strong>Seguridad</strong>
+          Si una celda empieza con signos como <code>=</code> o <code>+</code>, la herramienta la protege para que la hoja de cálculo no la ejecute como fórmula.
+        </div>
+      </section>
+
+      <section id="cuota">
+        <h2><span class="num">12</span>La cuota de YouTube</h2>
+        <p>YouTube limita cuántas búsquedas puede hacer cada proyecto al día. Esa cuota se llama <strong>cuota</strong>, y se mide en unidades.</p>
+
+        <figure>
+          <svg viewBox="0 0 800 170" role="img" aria-labelledby="fig-cuota">
+            <title id="fig-cuota">Barra de cuota diaria con la parte usada y la parte disponible</title>
+            <rect class="box" x="40" y="60" width="720" height="44" rx="22" />
+            <rect class="box-warn" x="40" y="60" width="430" height="44" rx="22" />
+            <text class="label" x="255" y="88" text-anchor="middle">Usado hoy</text>
+            <text class="label" x="585" y="88" text-anchor="middle">Disponible</text>
+            <text class="small" x="40" y="130">0</text>
+            <text class="small" x="760" y="130" text-anchor="end">Límite del día</text>
+            <text class="small" x="40" y="156">Cada búsqueda cuesta 100 unidades. El día se reinicia a medianoche en Pacific Time.</text>
+          </svg>
+          <figcaption>La configuración muestra cuánto se ha usado y cuánto queda antes de llegar al límite.</figcaption>
+        </figure>
+
+        <p>Puede ver el consumo en <strong>Configuración</strong>, en la sección <em>Cuota de YouTube</em>. Si se acerca al límite, la herramienta pausa las búsquedas y usted puede reanudarlas al día siguiente.</p>
+      </section>
+
+      <section id="colores">
+        <h2><span class="num">13</span>Colores y palabras</h2>
+        <p>Los colores sirven de apoyo; las palabras dicen siempre lo importante.</p>
+        <table class="table">
+          <thead><tr><th>Se ve así</th><th>Quiere decir</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge ok">Verde</span></td><td>Favorable, o terminado correctamente.</td></tr>
+            <tr><td><span class="badge warn">Amarillo</span></td><td>Atención: falta algo o hay que revisar.</td></tr>
+            <tr><td><span class="badge stop">Rojo</span></td><td>Problema grave, o descartado.</td></tr>
+            <tr><td><span class="badge info">Azul</span></td><td>Información o acción recomendada.</td></tr>
+            <tr><td><span class="badge muted">Gris</span></td><td>Sin dato todavía.</td></tr>
+          </tbody>
+        </table>
+
+        <h3>Palabras que verá con frecuencia</h3>
+        <table class="table">
+          <thead><tr><th>Texto</th><th>Qué significa</th></tr></thead>
+          <tbody>
+            <tr><td><strong>Sin dato</strong></td><td>No tenemos ese valor. No es cero.</td></tr>
+            <tr><td><strong>No habilitado</strong></td><td>Esa función no está disponible en este momento, por una regla de uso de los datos.</td></tr>
+            <tr><td><strong>Caducada</strong></td><td>El dato es más viejo que el plazo permitido. Hay que renovarlo.</td></tr>
+            <tr><td><strong>Desconocida</strong></td><td>Todavía no hay evidencia suficiente para decidir.</td></tr>
+            <tr><td><strong>Listo para piloto</strong></td><td>Cumple todas las condiciones de la herramienta. Aun así, conviene probarlo con una prueba pequeña antes de invertir.</td></tr>
+            <tr><td><strong>Validar demanda con piloto</strong></td><td>La competencia parece razonable, pero falta confirmar que el público busca el tema.</td></tr>
+            <tr><td><strong>Investigar más</strong></td><td>Faltan datos para decidir.</td></tr>
+            <tr><td><strong>Vigilar</strong></td><td>El mercado en español ya está saturado. Conviene seguirlo sin producir todavía.</td></tr>
+            <tr><td><strong>Descartar</strong></td><td>Hay un riesgo alto de derechos o una razón de peso para no seguir.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="limites">
+        <h2><span class="num">14</span>Lo que todavía no hace</h2>
+        <p>Es mejor saberlo desde el principio:</p>
+        <ul>
+          <li><strong>No tiene una fuente de demanda real.</strong> Por eso, hoy ninguna oportunidad llega a <em>Listo para piloto</em> con datos reales.</li>
+          <li><strong>La inteligencia artificial no se ha probado con una clave real.</strong> Puede generar planes, pero conviene revisarlos siempre.</li>
+          <li><strong>No hace búsquedas automáticas.</strong> Cada búsqueda la lanza una persona.</li>
+          <li><strong>No crea ni publica videos.</strong> Solo ayuda a decidir cuáles producir.</li>
+          <li><strong>Los índices avanzados están cerrados</strong> hasta que se cumplan las condiciones de uso de los datos de YouTube. Por eso verá <em>No habilitado</em> en esos campos.</li>
+        </ul>
+      </section>
+
+      <section id="ayuda">
+        <h2><span class="num">15</span>Preguntas frecuentes</h2>
+
+        <h3>¿Por qué una oportunidad no tiene recomendación?</h3>
+        <p>Porque todavía no tiene una evaluación completa. Revise la pestaña <strong>Evaluación</strong> y los motivos que aparecen.</p>
+
+        <h3>¿Por qué dice «Sin dato» si hay un número?</h3>
+        <p>Probablemente el número es de otra fuente o de otra fecha. Mire la línea debajo del dato: indica de dónde sale y cuándo se observó.</p>
+
+        <h3>¿Puedo confiar en un video que aparece como «Desconocido»?</h3>
+        <p>Con cuidado. Significa que la herramienta no pudo confirmar su idioma o su tipo. No lo cuente como competidor en español hasta revisarlo.</p>
+
+        <h3>¿Qué hago si una búsqueda falla?</h3>
+        <p>Revise el estado. Si dice <em>Pausada por cuota</em>, espere al día siguiente y pulse <strong>Reanudar</strong>. Si dice <em>Fallida</em>, avise a soporte técnico con la hora en que pasó.</p>
+
+        <h3>¿Puedo cambiar un plan que ya aprobé?</h3>
+        <p>No directamente. Escriba uno nuevo y apruébelo. El anterior queda como reemplazado, para que siempre sepa qué versión se usó.</p>
+
+        <h3>¿Por qué no puedo anotar un video o importar una lista?</h3>
+        <p>Esas acciones todavía se hacen con ayuda técnica. Son tareas de administración que se realizan con cuidado para no mezclar datos sin revisar.</p>
+
+        <div class="tip">
+          <strong>¿Tiene otra duda?</strong>
+          Consulte el <a href="tecnico.html">manual técnico</a> o pida ayuda a soporte técnico.
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="footer">NicheRadar AI · Manual de uso · Datos de demostración: las cifras de ejemplo no son reales.</footer>
+</body>
+</html>

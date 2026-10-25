@@ -1,0 +1,506 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manual técnico · NicheRadar AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <span class="kicker">Manual técnico</span>
+      <h1>NicheRadar AI: componentes, arranque y operación</h1>
+      <p>Para quien instala, opera o mantiene el sistema. Describe cada pieza, cómo se conectan y cómo ponerlas en marcha en Windows con Docker Desktop.</p>
+      <a class="back" href="index.html">← Volver a los manuales</a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Índice">
+      <h2>Contenido</h2>
+      <ol>
+        <li><a href="#vision">1. Visión general</a></li>
+        <li><a href="#componentes">2. Componentes</a></li>
+        <li><a href="#requisitos">3. Requisitos</a></li>
+        <li><a href="#config">4. Configuración</a></li>
+        <li><a href="#arranque">5. Arranque</a></li>
+        <li><a href="#operacion">6. Operación diaria</a></li>
+        <li><a href="#pruebas">7. Pruebas</a></li>
+        <li><a href="#datos">8. Modelo de datos</a></li>
+        <li><a href="#trabajos">9. Trabajos y worker</a></li>
+        <li><a href="#api">10. API HTTP</a></li>
+        <li><a href="#politicas">11. Compuerta de políticas</a></li>
+        <li><a href="#cuota">12. Cuota y retención</a></li>
+        <li><a href="#codigo">13. Mapa del código</a></li>
+        <li><a href="#problemas">14. Problemas comunes</a></li>
+        <li><a href="#limites">15. Límites y decisiones</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="vision">
+        <h2><span class="num">1</span>Visión general</h2>
+        <p class="lead">NicheRadar AI es una aplicación local de cinco servicios que se ejecutan en contenedores Docker. Una base de datos PostgreSQL guarda todo; una API FastAPI la expone; un worker ejecuta las tareas largas; una interfaz React la muestra.</p>
+
+        <figure>
+          <svg viewBox="0 0 800 330" role="img" aria-labelledby="fig-arq">
+            <title id="fig-arq">Arquitectura: navegador, interfaz, API, worker, base de datos y servicios externos</title>
+            <defs>
+              <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#8a93a8" />
+              </marker>
+            </defs>
+            <rect class="box-accent" x="20" y="30" width="160" height="70" rx="12" />
+            <text class="label" x="100" y="62" text-anchor="middle">Navegador</text>
+            <text class="small" x="100" y="84" text-anchor="middle">localhost:5173</text>
+
+            <rect class="box" x="240" y="30" width="200" height="70" rx="12" />
+            <text class="label" x="340" y="62" text-anchor="middle">Interfaz (React)</text>
+            <text class="small" x="340" y="84" text-anchor="middle">frontend · Vite</text>
+
+            <rect class="box" x="500" y="30" width="200" height="70" rx="12" />
+            <text class="label" x="600" y="62" text-anchor="middle">API (FastAPI)</text>
+            <text class="small" x="600" y="84" text-anchor="middle">api · :8000</text>
+
+            <rect class="box" x="500" y="150" width="200" height="70" rx="12" />
+            <text class="label" x="600" y="182" text-anchor="middle">Worker</text>
+            <text class="small" x="600" y="204" text-anchor="middle">tareas en segundo plano</text>
+
+            <rect class="box-ok" x="240" y="250" width="460" height="64" rx="12" />
+            <text class="label" x="470" y="288" text-anchor="middle">PostgreSQL 16 · base nicheradar</text>
+
+            <rect class="box-warn" x="20" y="150" width="160" height="70" rx="12" />
+            <text class="label" x="100" y="182" text-anchor="middle">YouTube API</text>
+            <text class="small" x="100" y="204" text-anchor="middle">solo con clave</text>
+
+            <path class="arrow" d="M180 65 L238 65" />
+            <path class="arrow" d="M440 65 L498 65" />
+            <path class="arrow" d="M600 100 L600 148" />
+            <path class="arrow" d="M600 220 L600 248" />
+            <path class="arrow" d="M500 185 L182 185" />
+            <path class="arrow" d="M340 100 L340 148" />
+          </svg>
+          <figcaption>El navegador habla con la interfaz; la interfaz con la API (a través de un proxy); la API y el worker comparten la base de datos. El worker es el único que sale a YouTube.</figcaption>
+        </figure>
+
+        <div class="note">
+          <strong>Principio de diseño</strong>
+          Ningún request HTTP espera una tarea larga. Las búsquedas y los cálculos se encolan en la base y el worker los ejecuta. Un cero nunca sustituye a un dato faltante: los campos sin dato son NULL.
+        </div>
+      </section>
+
+      <section id="componentes">
+        <h2><span class="num">2</span>Componentes</h2>
+        <p>Los servicios se definen en <code>docker-compose.yml</code> (proyecto <code>nicheradar</code>).</p>
+        <div class="table-scroll">
+          <table class="table">
+            <thead><tr><th>Servicio</th><th>Imagen / tecnología</th><th>Puerto (host)</th><th>Qué hace</th></tr></thead>
+            <tbody>
+              <tr><td><code>db</code></td><td>postgres:16-alpine</td><td>127.0.0.1:15432</td><td>Base de datos. Volumen <code>pgdata</code>. Healthcheck con <code>pg_isready</code>.</td></tr>
+              <tr><td><code>migrate</code></td><td>backend (Python 3.12)</td><td>—</td><td>Servicio de un solo uso: <code>alembic upgrade head</code> y luego el seed sintético. Debe terminar con código 0.</td></tr>
+              <tr><td><code>api</code></td><td>backend · FastAPI + uvicorn</td><td>127.0.0.1:8000</td><td>API REST bajo <code>/api/v1</code>, salud en <code>/health/*</code>, documentación en <code>/docs</code>.</td></tr>
+              <tr><td><code>worker</code></td><td>backend · <code>python -m app.jobs.worker</code></td><td>—</td><td>Toma tareas de la tabla <code>run_tasks</code>, las ejecuta y registra el resultado.</td></tr>
+              <tr><td><code>frontend</code></td><td>Node 22 · Vite (dev)</td><td>127.0.0.1:5173</td><td>Interfaz React. Proxy de <code>/api</code> hacia <code>api:8000</code>. Sirve también estos manuales.</td></tr>
+              <tr><td><code>e2e</code></td><td>Playwright 1.49.1</td><td>—</td><td>Solo con <code>--profile e2e</code>. Ejecuta las pruebas de navegador contra el stack.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Componentes que no son servicios</h3>
+        <table class="table">
+          <thead><tr><th>Elemento</th><th>Ubicación</th><th>Función</th></tr></thead>
+          <tbody>
+            <tr><td>Parámetros de investigación</td><td><code>config/research.yaml</code></td><td>Valores editables: idiomas, ventanas, cuotas blandas, reglas de replicación. No son límites reales del proveedor.</td></tr>
+            <tr><td>Dataset sintético</td><td><code>backend/app/demo/fixtures/synthetic_v1.json</code></td><td>Datos de demostración rotulados como SYNTHETIC. Los carga el seed.</td></tr>
+            <tr><td>Compuerta de políticas</td><td><code>backend/app/services/compliance_service.py</code></td><td>Decide qué capacidades condicionadas están abiertas.</td></tr>
+            <tr><td>CLI de aprobaciones</td><td><code>backend/app/jobs/policy_cli.py</code></td><td>Registra, revoca y lista aprobaciones en <code>policy_approvals</code>.</td></tr>
+            <tr><td>Manuales</td><td><code>frontend/public/manual/</code></td><td>Estas páginas estáticas. Vite las sirve sin compilar.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="requisitos">
+        <h2><span class="num">3</span>Requisitos</h2>
+        <ul>
+          <li><strong>Windows 10 u 11</strong> con Docker Desktop y motor WSL 2 activado.</li>
+          <li>Docker Desktop con Compose v2 o superior (probado con Docker 29.9.2 y Compose v5.6.1).</li>
+          <li>Git (para trabajar con el repositorio).</li>
+          <li>Recursos: al menos 8 GB de RAM asignados a Docker. Puertos libres: 15432, 8000 y 5173.</li>
+          <li>No hace falta Python ni Node en el equipo: todo corre en contenedores.</li>
+        </ul>
+        <div class="warn">
+          <strong>Dropbox</strong>
+          El repositorio puede estar en una carpeta sincronizada. Dropbox puede bloquear archivos mientras Docker escribe. Si aparecen errores intermitentes de escritura, mueva el proyecto fuera de Dropbox.
+        </div>
+      </section>
+
+      <section id="config">
+        <h2><span class="num">4</span>Configuración</h2>
+        <p>La configuración llega a los servicios por tres vías, en este orden de prioridad:</p>
+        <ol>
+          <li>Variables de entorno del proceso que ejecuta Compose (por ejemplo, la variable de usuario de Windows).</li>
+          <li>El archivo <code>.env</code> en la raíz del proyecto. No se versiona.</li>
+          <li>Los valores por defecto de <code>backend/app/core/config.py</code>.</li>
+        </ol>
+
+        <h3>Variables principales</h3>
+        <div class="table-scroll">
+          <table class="table">
+            <thead><tr><th>Variable</th><th>Por defecto</th><th>Descripción</th></tr></thead>
+            <tbody>
+              <tr><td><code>APP_ENV</code></td><td>development</td><td><code>development</code> o <code>test</code>. <code>production</code> se rechaza: no hay autenticación.</td></tr>
+              <tr><td><code>DATABASE_URL</code></td><td>postgresql+psycopg://nicheradar:nicheradar@db:5432/nicheradar</td><td>Conexión a la base dentro de la red de Compose.</td></tr>
+              <tr><td><code>YOUTUBE_API_KEY</code></td><td>vacía</td><td>Clave de YouTube Data API v3. Vacía = sin búsquedas. Se lee del entorno del host.</td></tr>
+              <tr><td><code>AI_PROVIDER</code></td><td>none</td><td><code>none</code>, <code>anthropic</code> u <code>openai</code>.</td></tr>
+              <tr><td><code>AI_MODEL</code></td><td>vacío</td><td>Nombre del modelo. Vacío = la IA no se ejecuta.</td></tr>
+              <tr><td><code>ANTHROPIC_API_KEY</code> / <code>OPENAI_API_KEY</code></td><td>vacías</td><td>Claves del proveedor elegido. Nunca se muestran en respuestas ni en logs.</td></tr>
+              <tr><td><code>COMPLIANCE_MODE</code></td><td>restricted</td><td><code>restricted</code> cierra todo. <code>approved_scope</code> abre solo lo que tenga aprobación vigente.</td></tr>
+              <tr><td><code>ADVANCED_ANALYTICS_ENABLED</code></td><td>false</td><td>Segunda condición de la compuerta de M4. Por sí sola no abre nada.</td></tr>
+              <tr><td><code>YOUTUBE_DAILY_UNITS_LIMIT</code></td><td>10000</td><td>Límite duro de unidades diarias de YouTube.</td></tr>
+              <tr><td><code>YOUTUBE_DAILY_UNITS_SOFT_PCT</code></td><td>0.9</td><td>Corte blando: el sistema se detiene al 90 % del límite duro.</td></tr>
+              <tr><td><code>AI_MAX_USD_PER_RUN</code></td><td>5.0</td><td>Tope de gasto de IA por corrida (referencia).</td></tr>
+              <tr><td><code>RESEARCH_CONFIG_PATH</code></td><td>../config/research.yaml</td><td>Ruta del YAML de parámetros. En Compose se monta en <code>/config</code>.</td></tr>
+              <tr><td><code>LOG_LEVEL</code></td><td>INFO</td><td>Nivel de logs JSON.</td></tr>
+              <tr><td><code>TZ</code></td><td>America/Santiago</td><td>Zona horaria de los contenedores.</td></tr>
+              <tr><td><code>DB_HOST_PORT</code>, <code>API_HOST_PORT</code>, <code>FRONTEND_HOST_PORT</code></td><td>15432, 8000, 5173</td><td>Puertos publicados en 127.0.0.1. El 5432 estaba bloqueado en el equipo de origen.</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Ejemplo de <code>.env</code></h3>
+        <pre><code># Configuración local del responsable (no versionada)
+COMPLIANCE_MODE=approved_scope
+ADVANCED_ANALYTICS_ENABLED=true
+DB_HOST_PORT=15432</code></pre>
+
+        <div class="stop">
+          <strong>No versionar secretos</strong>
+          <code>.env</code> está en <code>.gitignore</code>. Las claves deben vivir en la variable de usuario de Windows o en el <code>.env</code> local, nunca en el repositorio.
+        </div>
+
+        <h3>Cómo leer una clave desde PowerShell sin mostrarla</h3>
+        <pre><code>$env:YOUTUBE_API_KEY = [Environment]::GetEnvironmentVariable('YOUTUBE_API_KEY','User')
+[bool]$env:YOUTUBE_API_KEY   # devuelve True o False, nunca el valor</code></pre>
+      </section>
+
+      <section id="arranque">
+        <h2><span class="num">5</span>Arranque</h2>
+        <p>Desde PowerShell, en la carpeta del proyecto (o con <code>--project-directory</code> desde cualquier carpeta):</p>
+
+        <ol class="steps">
+          <li>
+            <strong>Pasar la clave de YouTube a Compose (solo si va a buscar en YouTube).</strong>
+            <pre><code>$env:YOUTUBE_API_KEY = [Environment]::GetEnvironmentVariable('YOUTUBE_API_KEY','User')</code></pre>
+          </li>
+          <li>
+            <strong>Levantar el stack y construir las imágenes.</strong>
+            <pre><code>docker compose --project-directory "C:\Luis\Dropbox\Negocios\202608_Youtube\2026\NicheRadar_AI_Claude_Code\NicheRadar_AI" up -d --build</code></pre>
+          </li>
+          <li>
+            <strong>Esperar a que la base esté sana y la migración termine con código 0.</strong>
+            <pre><code>docker compose --project-directory "<ruta>" ps
+docker compose --project-directory "<ruta>" logs migrate</code></pre>
+          </li>
+          <li>
+            <strong>Comprobar la salud de la API.</strong>
+            <pre><code>Invoke-RestMethod http://127.0.0.1:8000/health/ready</code></pre>
+            <p>Debe responder <code>status: ready</code>.</p>
+          </li>
+          <li>
+            <strong>Abrir la aplicación.</strong> Interfaz en <code>http://localhost:5173</code>, documentación de la API en <code>http://127.0.0.1:8000/docs</code>.
+          </li>
+        </ol>
+
+        <div class="tip">
+          <strong>Arranque sin clave</strong>
+          Si no define <code>YOUTUBE_API_KEY</code>, todo funciona salvo las búsquedas en YouTube, que responden 409 <code>PROVIDER_NOT_CONFIGURED</code>.
+        </div>
+
+        <h3>Reiniciar un servicio después de cambiar configuración</h3>
+        <p>Los cambios en variables de entorno requieren recrear los contenedores que las usan:</p>
+        <pre><code>docker compose --project-directory "<ruta>" up -d api worker</code></pre>
+      </section>
+
+      <section id="operacion">
+        <h2><span class="num">6</span>Operación diaria</h2>
+        <table class="table">
+          <thead><tr><th>Tarea</th><th>Comando</th></tr></thead>
+          <tbody>
+            <tr><td>Ver el estado de los servicios</td><td><code>docker compose --project-directory "&lt;ruta&gt;" ps</code></td></tr>
+            <tr><td>Ver logs de la API y el worker</td><td><code>docker compose --project-directory "&lt;ruta&gt;" logs -f api worker</code></td></tr>
+            <tr><td>Reiniciar la API y el worker</td><td><code>docker compose --project-directory "&lt;ruta&gt;" restart api worker</code></td></tr>
+            <tr><td>Reaplicar migraciones y seed</td><td><code>docker compose --project-directory "&lt;ruta&gt;" run --rm migrate</code></td></tr>
+            <tr><td>Ver aprobaciones de políticas</td><td><code>docker compose --project-directory "&lt;ruta&gt;" run --rm --no-deps api python -m app.jobs.policy_cli list</code></td></tr>
+            <tr><td>Registrar una aprobación</td><td><code>… run --rm --no-deps api python -m app.jobs.policy_cli grant --capability advanced_scores --provider youtube_official --scope "…" --approval-ref "…" --reviewer "…" --expires AAAA-MM-DD</code></td></tr>
+            <tr><td>Revocar una aprobación</td><td><code>… run --rm --no-deps api python -m app.jobs.policy_cli revoke --id &lt;uuid&gt;</code></td></tr>
+            <tr><td>Abrir una shell en la base</td><td><code>docker compose --project-directory "&lt;ruta&gt;" exec db psql -U nicheradar -d nicheradar</code></td></tr>
+            <tr><td>Parar sin borrar datos</td><td><code>docker compose --project-directory "&lt;ruta&gt;" down</code></td></tr>
+            <tr><td>Reinicio total (borra la base)</td><td><code>docker compose --project-directory "&lt;ruta&gt;" down -v</code></td></tr>
+          </tbody>
+        </table>
+        <div class="warn">
+          <strong>down -v borra la base</strong>
+          Elimina el volumen <code>pgdata</code>: todas las búsquedas, evaluaciones y aprobaciones. Úselo solo si quiere empezar de cero.
+        </div>
+      </section>
+
+      <section id="pruebas">
+        <h2><span class="num">7</span>Pruebas</h2>
+        <p>Todas las pruebas corren dentro de contenedores, sin red externa. La suite de integración usa la base <code>nicheradar_test</code>, que se recrea en cada sesión, y fija su propia configuración (<code>restricted</code>), así que no depende del <code>.env</code> local.</p>
+        <pre><code># Backend: unitarias e integración
+docker compose --project-directory "&lt;ruta&gt;" run --rm --no-deps api pytest -q
+
+# Backend: estilo y tipos
+docker compose --project-directory "&lt;ruta&gt;" run --rm --no-deps api sh -c "ruff check app tests &amp;&amp; ruff format --check app tests &amp;&amp; mypy app"
+
+# Frontend: lint, tipos y pruebas unitarias
+docker compose --project-directory "&lt;ruta&gt;" run --rm --no-deps frontend sh -c "npx eslint . &amp;&amp; npx tsc --noEmit &amp;&amp; npx vitest run"
+
+# E2E de navegador (requiere el stack arriba)
+docker compose --project-directory "&lt;ruta&gt;" --profile e2e run --rm e2e</code></pre>
+        <p>Resultado de referencia: 229 pruebas de backend, 15 de frontend y 7 E2E pasando, con 1 E2E omitido a propósito (la comprobación de desbordamiento solo corre en móvil).</p>
+      </section>
+
+      <section id="datos">
+        <h2><span class="num">8</span>Modelo de datos</h2>
+        <p>Los identificadores internos son UUID en texto. Los identificadores de YouTube son cadenas externas. Todas las fechas se guardan en UTC con zona horaria.</p>
+
+        <figure>
+          <svg viewBox="0 0 800 330" role="img" aria-labelledby="fig-datos">
+            <title id="fig-datos">Relaciones principales entre tablas</title>
+            <rect class="box-accent" x="20" y="20" width="170" height="60" rx="10" />
+            <text class="label" x="105" y="46" text-anchor="middle">niches · formats</text>
+            <text class="small" x="105" y="66" text-anchor="middle">taxonomía</text>
+            <rect class="box-accent" x="20" y="130" width="170" height="60" rx="10" />
+            <text class="label" x="105" y="156" text-anchor="middle">opportunities</text>
+            <text class="small" x="105" y="176" text-anchor="middle">nicho + formato</text>
+            <rect class="box" x="250" y="130" width="170" height="60" rx="10" />
+            <text class="label" x="335" y="156" text-anchor="middle">evaluations</text>
+            <text class="small" x="335" y="176" text-anchor="middle">versiones (append-only)</text>
+            <rect class="box" x="480" y="130" width="170" height="60" rx="10" />
+            <text class="label" x="565" y="156" text-anchor="middle">spanish_search_plans</text>
+            <text class="small" x="565" y="176" text-anchor="middle">planes versionados</text>
+            <rect class="box" x="250" y="230" width="170" height="60" rx="10" />
+            <text class="label" x="335" y="256" text-anchor="middle">source_queries</text>
+            <text class="small" x="335" y="276" text-anchor="middle">búsquedas exactas</text>
+            <rect class="box" x="480" y="230" width="170" height="60" rx="10" />
+            <text class="label" x="565" y="256" text-anchor="middle">discovery_matches</text>
+            <text class="small" x="565" y="276" text-anchor="middle">videos encontrados</text>
+            <rect class="box" x="480" y="20" width="170" height="60" rx="10" />
+            <text class="label" x="565" y="46" text-anchor="middle">videos · channels</text>
+            <text class="small" x="565" y="66" text-anchor="middle">procedencia y retención</text>
+            <rect class="box-ok" x="660" y="20" width="120" height="60" rx="10" />
+            <text class="label" x="720" y="46" text-anchor="middle">policy_approvals</text>
+            <text class="small" x="720" y="66" text-anchor="middle">aprobaciones</text>
+            <path class="arrow" d="M190 160 L248 160" />
+            <path class="arrow" d="M420 160 L478 160" />
+            <path class="arrow" d="M105 80 L105 128" />
+            <path class="arrow" d="M480 100 L480 128" />
+          </svg>
+          <figcaption>Vista simplificada. El esquema completo está en las migraciones de <code>backend/alembic/versions/</code>.</figcaption>
+        </figure>
+
+        <table class="table">
+          <thead><tr><th>Grupo</th><th>Tablas</th><th>Notas</th></tr></thead>
+          <tbody>
+            <tr><td>Taxonomía</td><td><code>niches</code>, <code>formats</code></td><td>Catálogo revisado. IDs estables.</td></tr>
+            <tr><td>Oportunidades</td><td><code>opportunities</code>, <code>opportunity_evidence</code>, <code>video_annotations</code></td><td>Única por nicho + formato + idioma + tipo.</td></tr>
+            <tr><td>Evaluación</td><td><code>evaluations</code>, <code>cost_models</code></td><td>Cada cambio crea una versión. Los campos sin dato son NULL.</td></tr>
+            <tr><td>Mercado español</td><td><code>spanish_search_plans</code>, <code>source_queries</code>, <code>discovery_matches</code></td><td>Un plan APPROVED por oportunidad. Coincidencias con <code>match_quality</code>.</td></tr>
+            <tr><td>Datos de YouTube</td><td><code>channels</code>, <code>videos</code></td><td>Incluyen <code>owner_authorized</code>, <code>retention_deadline</code> y <code>last_refreshed_at</code>.</td></tr>
+            <tr><td>Corridas</td><td><code>research_runs</code>, <code>run_tasks</code>, <code>audit_events</code></td><td>Estado, progreso, errores y auditoría de cada acción.</td></tr>
+            <tr><td>Cuota y políticas</td><td><code>provider_usage</code>, <code>policy_approvals</code></td><td>Unidades consumidas por día; aprobaciones con caducidad.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="trabajos">
+        <h2><span class="num">9</span>Trabajos y worker</h2>
+        <p>Cada corrida crea una fila en <code>research_runs</code> y una tarea en <code>run_tasks</code>. El worker reclama tareas con <code>FOR UPDATE SKIP LOCKED</code>, así dos workers nunca toman la misma.</p>
+
+        <figure>
+          <svg viewBox="0 0 800 260" role="img" aria-labelledby="fig-estados">
+            <title id="fig-estados">Estados de una tarea: pendiente, en ejecución, terminada, pausada por cuota o fallida</title>
+            <defs>
+              <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+                <polygon points="0 0, 10 3.5, 0 7" fill="#8a93a8" />
+              </marker>
+            </defs>
+            <rect class="box" x="20" y="100" width="150" height="56" rx="12" />
+            <text class="label" x="95" y="134" text-anchor="middle">PENDING</text>
+            <rect class="box-accent" x="220" y="100" width="150" height="56" rx="12" />
+            <text class="label" x="295" y="134" text-anchor="middle">RUNNING</text>
+            <rect class="box-ok" x="420" y="30" width="170" height="56" rx="12" />
+            <text class="label" x="505" y="64" text-anchor="middle">SUCCEEDED</text>
+            <rect class="box-warn" x="420" y="170" width="170" height="56" rx="12" />
+            <text class="label" x="505" y="204" text-anchor="middle">PAUSED_QUOTA</text>
+            <rect class="box-stop" x="630" y="100" width="150" height="56" rx="12" />
+            <text class="label" x="705" y="134" text-anchor="middle">FAILED</text>
+            <path class="arrow" d="M170 128 L218 128" />
+            <path class="arrow" d="M370 118 L418 66" />
+            <path class="arrow" d="M370 138 L418 186" />
+            <path class="arrow" d="M590 58 L660 98" />
+            <path class="arrow" d="M295 98 L295 80 L210 80 L95 98" />
+          </svg>
+          <figcaption>Un fallo transitorio devuelve la tarea a PENDING con espera creciente (hasta 3 intentos). Una pausa por cuota espera a que el usuario reanude. Una tarea RUNNING con arrendamiento vencido (5 minutos) se recupera.</figcaption>
+        </figure>
+
+        <h3>Qué tipos de tarea existen</h3>
+        <table class="table">
+          <thead><tr><th>Tipo</th><th>Lo lanza</th><th>Qué hace</th></tr></thead>
+          <tbody>
+            <tr><td><code>demo_research</code></td><td>Corrida DEMO</td><td>Resume el dataset sintético. Sin red.</td></tr>
+            <tr><td><code>youtube_discovery</code></td><td>Búsqueda en YouTube</td><td>Ejecuta consultas por idioma y ventana. Guarda el progreso por consulta.</td></tr>
+            <tr><td><code>spanish_plan</code></td><td>Generar plan con IA</td><td>Pide el plan al proveedor, lo valida y lo guarda como pendiente de revisión.</td></tr>
+            <tr><td><code>spanish_validation</code></td><td>Validar en español</td><td>Busca cada frase del plan aprobado y recalcula la evaluación.</td></tr>
+            <tr><td><code>retention_purge</code></td><td>Corrida <code>purge</code> (API)</td><td>Expira datos de terceros fuera de plazo.</td></tr>
+          </tbody>
+        </table>
+        <p>Una búsqueda que se pausa por cuota conserva las consultas completadas en <code>run_tasks.result_json</code>. Al reanudar, solo se ejecuta lo pendiente.</p>
+      </section>
+
+      <section id="api">
+        <h2><span class="num">10</span>API HTTP</h2>
+        <p>Base: <code>http://127.0.0.1:8000/api/v1</code>. Documentación interactiva: <code>/docs</code>. Los errores siguen <code>application/problem+json</code> e incluyen <code>code</code> y <code>request_id</code>. Salud: <code>/health/live</code> y <code>/health/ready</code>.</p>
+
+        <h3>Principales grupos</h3>
+        <div class="table-scroll">
+          <table class="table">
+            <thead><tr><th>Área</th><th>Rutas</th></tr></thead>
+            <tbody>
+              <tr><td>Configuración</td><td><code>GET /config/public</code>, <code>GET /providers</code>, <code>GET /usage</code>, <code>GET /policy/capabilities</code></td></tr>
+              <tr><td>Radar</td><td><code>GET /opportunities</code> (filtros: <code>q</code>, <code>status</code>, <code>saturation_es</code>, <code>faceless_state</code>…; orden: <code>sort</code>), <code>GET /opportunities/{id}</code>, <code>POST /compare</code></td></tr>
+              <tr><td>Taxonomía y anotaciones</td><td><code>GET /taxonomy</code>, <code>POST /opportunities</code>, <code>POST /videos/{id}/annotations</code></td></tr>
+              <tr><td>Mercado español</td><td><code>GET|POST /opportunities/{id}/search-plans</code>, <code>POST …/search-plans/generate</code>, <code>PATCH /search-plans/{id}</code>, <code>POST …/validate-spanish</code>, <code>GET …/competition</code>, <code>PATCH /matches/{id}</code></td></tr>
+              <tr><td>Costos y factibilidad</td><td><code>GET|POST /opportunities/{id}/cost-model</code>, <code>POST /opportunities/{id}/feasibility</code></td></tr>
+              <tr><td>Índices (M4)</td><td><code>GET /opportunities/{id}/scores</code>, <code>POST /opportunities/{id}/scores</code>, <code>POST /cohorts/ranking</code></td></tr>
+              <tr><td>Videos y canales</td><td><code>GET /videos</code>, <code>GET /channels/{id}</code></td></tr>
+              <tr><td>Corridas</td><td><code>GET /research-runs</code>, <code>GET /research-runs/{id}</code>, <code>POST /research-runs</code> (<code>demo</code>, <code>discovery</code>, <code>purge</code>), <code>POST …/resume</code></td></tr>
+              <tr><td>Importación y exportación</td><td><code>POST /imports/provider-file</code>, <code>GET /exports/opportunities.csv</code>, <code>GET /exports/opportunities.json</code></td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h3>Ejemplo: lanzar una búsqueda</h3>
+        <pre><code>$body = @{ kind='discovery'; payload=@{ queries=@(@{ language='es'; query='historia con mapas'; window='8-30' }); max_search_calls=1; pages_per_query=1 } } | ConvertTo-Json -Depth 6
+Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/v1/research-runs -ContentType 'application/json' -Body $body</code></pre>
+        <p>Responde <code>202</code> con el <code>id</code> de la corrida. Consulte su estado con <code>GET /research-runs/{id}</code>.</p>
+      </section>
+
+      <section id="politicas">
+        <h2><span class="num">11</span>Compuerta de políticas</h2>
+        <p>Las capacidades condicionadas (<code>advanced_scores</code>, <code>derived_metrics</code>, <code>extended_history</code>, <code>vidiq_api</code>) solo se abren si se cumplen <strong>las tres</strong> condiciones:</p>
+
+        <figure>
+          <svg viewBox="0 0 800 220" role="img" aria-labelledby="fig-compuerta">
+            <title id="fig-compuerta">Tres condiciones que deben cumplirse a la vez para abrir una capacidad</title>
+            <rect class="box" x="20" y="40" width="230" height="110" rx="12" />
+            <text class="label" x="135" y="76" text-anchor="middle">1. Modo</text>
+            <text class="small" x="135" y="102" text-anchor="middle">COMPLIANCE_MODE</text>
+            <text class="small" x="135" y="124" text-anchor="middle">= approved_scope</text>
+            <rect class="box" x="285" y="40" width="230" height="110" rx="12" />
+            <text class="label" x="400" y="76" text-anchor="middle">2. Analítica</text>
+            <text class="small" x="400" y="102" text-anchor="middle">ADVANCED_ANALYTICS_ENABLED</text>
+            <text class="small" x="400" y="124" text-anchor="middle">= true</text>
+            <rect class="box" x="550" y="40" width="230" height="110" rx="12" />
+            <text class="label" x="665" y="76" text-anchor="middle">3. Aprobación</text>
+            <text class="small" x="665" y="102" text-anchor="middle">policy_approvals</text>
+            <text class="small" x="665" y="124" text-anchor="middle">activa, vigente y no revocada</text>
+            <path class="arrow" d="M250 95 L283 95" />
+            <path class="arrow" d="M515 95 L548 95" />
+            <rect class="box-ok" x="250" y="170" width="300" height="36" rx="10" />
+            <text class="label" x="400" y="194" text-anchor="middle">Solo si se cumplen las tres: permitido</text>
+          </svg>
+          <figcaption>Si falta cualquiera, la respuesta es 403 <code>POLICY_RESTRICTED</code> con el motivo. Una variable de entorno sola nunca basta.</figcaption>
+        </figure>
+
+        <p>Las aprobaciones se registran solo por línea de comandos (<code>app.jobs.policy_cli</code>), con referencia documental, revisor y fecha de caducidad obligatorias. No existe ruta de la API ni pantalla que las conceda.</p>
+        <div class="note">
+          <strong>Estado en este equipo</strong>
+          Las cuatro capacidades tienen una aprobación registrada por el responsable (decisión D-54 en <code>docs/DECISIONS.md</code>). El modo está en <code>approved_scope</code> por el <code>.env</code> local. Esta aprobación no es una autorización emitida por YouTube.
+        </div>
+      </section>
+
+      <section id="cuota">
+        <h2><span class="num">12</span>Cuota y retención</h2>
+        <h3>Cuota</h3>
+        <ul>
+          <li><code>search.list</code> cuesta <strong>100 unidades</strong>. <code>videos.list</code>, <code>channels.list</code> y <code>playlistItems.list</code> cuestan 1 unidad por llamada.</li>
+          <li>El día de cuota empieza a medianoche de <strong>Pacific Time</strong> (<code>quota_service.quota_day_start</code>).</li>
+          <li>Cada llamada se reserva antes de enviarse. Si no cabe en el presupuesto blando, la tarea pasa a <code>PAUSED_QUOTA</code>.</li>
+        </ul>
+        <div class="warn">
+          <strong>Diferencia con la especificación</strong>
+          La especificación (§5.2) habla de 1 unidad por <code>search.list</code>. La documentación oficial dice 100. El código usa 100. Confirme la cuota real del proyecto en Google Cloud Console.
+        </div>
+
+        <h3>Retención</h3>
+        <p>Los datos de terceros (API o importaciones) se guardan con <code>owner_authorized=false</code> y <code>retention_deadline</code> a 29 días. Un expirado se purga con <code>kind=purge</code>: los valores quedan en NULL, el título pasa a «[Dato caducado]» y el registro se marca <code>EXPIRED</code>. La purga todavía no corre sola (M5).</p>
+      </section>
+
+      <section id="codigo">
+        <h2><span class="num">13</span>Mapa del código</h2>
+        <table class="table">
+          <thead><tr><th>Ruta</th><th>Contenido</th></tr></thead>
+          <tbody>
+            <tr><td><code>backend/app/main.py</code></td><td>Crea la aplicación FastAPI, middlewares y routers.</td></tr>
+            <tr><td><code>backend/app/api/v1/</code></td><td>Rutas: <code>routes.py</code> (base), <code>m2_routes.py</code>, <code>m3_routes.py</code>, <code>m4_routes.py</code>; esquemas en <code>schemas.py</code>.</td></tr>
+            <tr><td><code>backend/app/domain/</code></td><td>Reglas puras: clasificación, mercado español, decisión con compuertas, costos, puntuación.</td></tr>
+            <tr><td><code>backend/app/services/</code></td><td>Lógica de negocio: ingesta, cuota, importación, purga, evaluación, exportación y compuerta.</td></tr>
+            <tr><td><code>backend/app/providers/</code></td><td>Adaptadores externos: YouTube, IA (Anthropic, OpenAI) y factoría.</td></tr>
+            <tr><td><code>backend/app/jobs/</code></td><td>Worker, manejadores de tareas y CLI de aprobaciones.</td></tr>
+            <tr><td><code>backend/app/db/models.py</code></td><td>Modelos SQLAlchemy.</td></tr>
+            <tr><td><code>backend/alembic/versions/</code></td><td>Migraciones 0001 a 0004.</td></tr>
+            <tr><td><code>backend/tests/</code></td><td>Pruebas unitarias (<code>unit/</code>), de integración (<code>integration/</code>) y fakes sin red (<code>fakes.py</code>).</td></tr>
+            <tr><td><code>frontend/src/pages/</code></td><td>Pantallas de la interfaz.</td></tr>
+            <tr><td><code>frontend/public/manual/</code></td><td>Estos manuales.</td></tr>
+            <tr><td><code>docs/</code></td><td>Progreso, decisiones, plan de pruebas y traspaso.</td></tr>
+          </tbody>
+        </table>
+      </section>
+
+      <section id="problemas">
+        <h2><span class="num">14</span>Problemas comunes</h2>
+        <div class="table-scroll">
+          <table class="table">
+            <thead><tr><th>Síntoma</th><th>Causa probable</th><th>Qué hacer</th></tr></thead>
+            <tbody>
+              <tr><td>El puerto 5432 no se puede publicar</td><td>Windows reserva o bloquea el puerto</td><td>Usar <code>DB_HOST_PORT=15432</code> (valor por defecto) o cambiarlo en <code>.env</code>.</td></tr>
+              <tr><td><code>migrate</code> sale con error</td><td>Base no lista o migración rota</td><td>Ver <code>logs migrate</code>. Si la base está sana, correr <code>run --rm migrate</code>.</td></tr>
+              <tr><td><code>/health/ready</code> responde 503 <code>migrations_pending</code></td><td>La base no tiene la última migración</td><td>Correr <code>run --rm migrate</code>.</td></tr>
+              <tr><td>Búsqueda: 409 <code>PROVIDER_NOT_CONFIGURED</code></td><td><code>YOUTUBE_API_KEY</code> vacía en la API</td><td>Definir la variable de usuario y recrear <code>api worker</code>.</td></tr>
+              <tr><td>Búsqueda: estado <code>PAUSED_QUOTA</code></td><td>Se agotó el presupuesto diario</td><td>Esperar al reinicio (medianoche PT) y <code>POST …/resume</code>.</td></tr>
+              <tr><td>Búsqueda: estado <code>FAILED</code> con <code>AUTH_ERROR</code></td><td>La clave fue rechazada o el proyecto no tiene la API activa</td><td>Revisar la clave y que YouTube Data API v3 esté habilitada en el proyecto.</td></tr>
+              <tr><td>Índices en 403 <code>POLICY_RESTRICTED</code></td><td>Modo <code>restricted</code> o sin aprobación vigente</td><td>Ver <code>policy/capabilities</code> para el motivo exacto.</td></tr>
+              <tr><td>Cambios de <code>.env</code> no tienen efecto</td><td>Los contenedores no se recrearon</td><td><code>up -d api worker</code>.</td></tr>
+              <tr><td>Errores intermitentes al escribir archivos</td><td>Dropbox sincronizando el proyecto</td><td>Mover el proyecto fuera de Dropbox o pausar la sincronización.</td></tr>
+              <tr><td>Vite no recarga al editar</td><td>Montaje de Windows sin eventos de archivo</td><td>Ya viene activado el sondeo (<code>CHOKIDAR_USEPOLLING</code>). Reiniciar <code>frontend</code>.</td></tr>
+              <tr><td>La IA responde <code>AI_NOT_CONFIGURED</code></td><td><code>AI_PROVIDER</code>, <code>AI_MODEL</code> o la clave no definidos</td><td>Definir las tres variables y recrear <code>api worker</code>.</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <section id="limites">
+        <h2><span class="num">15</span>Límites y decisiones</h2>
+        <ul>
+          <li><strong>Sin fuente de demanda con licencia.</strong> Ninguna oportunidad pasa de «demanda no demostrada» con datos reales (D-35).</li>
+          <li><strong>IA sin probar contra APIs reales.</strong> Los adaptadores están probados con transporte simulado. Algunos modelos de razonamiento pueden rechazar <code>temperature=0</code> (D-47).</li>
+          <li><strong>Índices cerrados por falta de datos.</strong> La resiliencia temporal requiere un histórico licenciado; sin él, los índices integrados quedan en NULL (D-50).</li>
+          <li><strong>Banner fijo.</strong> El banner «DATOS SINTÉTICOS · DEMO» no distingue todavía datos mixtos.</li>
+          <li><strong>Sin autenticación.</strong> La API y la interfaz solo se deben exponer en 127.0.0.1.</li>
+          <li><strong>Datos de demostración en la base.</strong> <code>syn-opp-06</code> mezcla un video real con datos sintéticos.</li>
+          <li><strong>Proceso manual.</strong> Anotaciones, importaciones, purgas y aprobaciones son acciones de administración, no pantallas.</li>
+        </ul>
+        <p>Las decisiones completas están en <code>docs/DECISIONS.md</code>, y el estado de cada hito en <code>docs/IMPLEMENTATION_PROGRESS.md</code>. Para retomar el trabajo en una sesión nueva, lea <code>docs/HANDOFF.md</code>.</p>
+      </section>
+    </main>
+  </div>
+
+  <footer class="footer">NicheRadar AI · Manual técnico · Versión del repositorio: rama <code>master</code>.</footer>
+</body>
+</html>

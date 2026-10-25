@@ -13,6 +13,8 @@ const NAV = [
   { to: "/settings", label: "Configuración" },
 ];
 
+const MANUALS_HREF = "/manual/index.html";
+
 export function Layout({ children }: { children: ReactNode }) {
   const config = useQuery({ queryKey: ["config"], queryFn: api.config });
   const showBanner = config.data?.synthetic_banner ?? true;
@@ -37,6 +39,10 @@ export function Layout({ children }: { children: ReactNode }) {
                 </NavLink>
               </li>
             ))}
+            {/* Los manuales son páginas estáticas: un enlace normal, no una ruta de la aplicación. */}
+            <li>
+              <a href={MANUALS_HREF}>Manuales</a>
+            </li>
           </ul>
         </nav>
         <main className="content">{children}</main>

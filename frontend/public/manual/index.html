@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Manuales · NicheRadar AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <span class="kicker">Documentación</span>
+      <h1>Manuales de NicheRadar AI</h1>
+      <p>Dos guías para dos necesidades. Elija la que corresponda y ábrala cuando quiera, con o sin la aplicación en marcha.</p>
+      <a class="back" href="/">← Volver a la aplicación</a>
+    </div>
+  </header>
+
+  <div class="layout" style="grid-template-columns: 1fr;">
+    <main>
+      <section>
+        <h2>¿Cuál necesito?</h2>
+        <div class="cards">
+          <a class="card" href="funcional.html" style="text-decoration:none;color:inherit;display:block">
+            <h3>Manual de uso</h3>
+            <p>Para quien usa la herramienta a diario. Explica, paso a paso y sin tecnicismos, cómo buscar videos, revisar el radar, comprobar el mercado en español, calcular costos y exportar resultados.</p>
+            <p><span class="badge info">Sin conocimientos técnicos</span></p>
+          </a>
+          <a class="card" href="tecnico.html" style="text-decoration:none;color:inherit;display:block">
+            <h3>Manual técnico</h3>
+            <p>Para quien instala, opera o mantiene el sistema. Describe cada componente, cómo arrancarlo en Windows, la configuración, la API, el modelo de datos y los problemas comunes.</p>
+            <p><span class="badge muted">Requiere Docker y PowerShell</span></p>
+          </a>
+        </div>
+      </section>
+
+      <section>
+        <h2>Cómo abrirlos</h2>
+        <ol class="steps">
+          <li><strong>Desde la aplicación:</strong> en el menú lateral, haga clic en <em>Manuales</em>.</li>
+          <li><strong>De forma independiente:</strong> con la aplicación en marcha, escriba <code>http://localhost:5173/manual/</code> en el navegador.</li>
+          <li><strong>Sin la aplicación:</strong> abra el archivo <code>index.html</code> de la carpeta <code>frontend/public/manual</code> con el navegador. Los estilos y las ilustraciones funcionan; los enlaces a la aplicación no.</li>
+        </ol>
+        <div class="tip">
+          <strong>Para imprimir</strong>
+          Use la opción de imprimir del navegador. El índice lateral se oculta automáticamente.
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <footer class="footer">NicheRadar AI · Documentación</footer>
+</body>
+</html>
