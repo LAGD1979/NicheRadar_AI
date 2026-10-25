@@ -100,3 +100,5 @@ docs/      progreso, decisiones, plan de pruebas
 ## Variables de entorno
 
 Vea [.env.example](.env.example). Ninguna clave es necesaria para el demo. Los valores de claves nunca se muestran en la API ni en los logs; los logs redactan campos con `key`, `secret`, `token` o `password`.
+
+## Solo es una prueba
