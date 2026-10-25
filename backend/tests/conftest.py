@@ -42,6 +42,9 @@ def test_database_url() -> Iterator[str]:
     os.environ["DATABASE_URL"] = url
     # Las pruebas nunca llaman a YouTube: la clave real, si existe en el entorno, se anula aquí.
     os.environ["YOUTUBE_API_KEY"] = ""
+    # Las pruebas fijan el modo de cumplimiento: no heredan la configuración local (.env).
+    os.environ["COMPLIANCE_MODE"] = "restricted"
+    os.environ["ADVANCED_ANALYTICS_ENABLED"] = "false"
     _reset_settings()
     command.upgrade(Config("alembic.ini"), "head")
     yield url

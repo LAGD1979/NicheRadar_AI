@@ -213,6 +213,13 @@ Cada cálculo crea una evaluación nueva con `source_data_type=CALCULATED`, la v
 ### D-53 · Ranking de cohortes
 `POST /cohorts/ranking` ordena por índice integrado. Los NULL van al final y los empates se ordenan por ID, de forma estable. Está protegido por la misma compuerta.
 
+### D-54 · Aprobación registrada por el responsable (2026-10-25)
+El responsable del proyecto, Luis Gonzalez, registró en `policy_approvals` una aprobación para las cuatro capacidades (`advanced_scores`, `derived_metrics`, `extended_history`, `vidiq_api`), con alcance «todas las oportunidades del proyecto» y caducidad el 2035-12-31. La referencia es su revisión personal de las políticas de métricas derivadas y de retención de la API de YouTube.
+
+**Esta aprobación no es una autorización de YouTube.** Se registró a petición del responsable, que asume la decisión de cumplimiento. El plazo de 29 días de conservación de datos de terceros sigue aplicándose.
+
+Estado actual: el responsable autorizó abrir la compuerta. La configuración local (`.env`, no versionado) fija `COMPLIANCE_MODE=approved_scope` y `ADVANCED_ANALYTICS_ENABLED=true`. Las pruebas fijan su propia configuración (`restricted`) para no heredar la local. Para cerrar la compuerta de nuevo, basta con borrar esas dos líneas y reiniciar la API y el worker. `vidiq_api` no tiene adaptador: la aprobación no crea ninguna integración.
+
 ### Qué queda fuera de M4
 - Histórico licenciado y series temporales (resiliencia temporal).
 - Diferenciación editorial y mantenibilidad: requieren juicio humano registrado.

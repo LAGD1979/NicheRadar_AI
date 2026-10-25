@@ -40,5 +40,6 @@ test("comparar cuatro oportunidades muestra columnas y celdas sin ganador", asyn
   await page.getByRole("button", { name: "Comparar seleccionadas" }).click();
   await expect(page).toHaveURL(/\/compare\?ids=/);
   await expect(page.getByRole("columnheader")).toHaveCount(5); // criterio + 4 oportunidades
-  await expect(page.getByText("No habilitado").first()).toBeVisible();
+  // La fila del índice existe en ambos modos; su valor depende de la compuerta de políticas.
+  await expect(page.getByRole("rowheader", { name: /Índice integrado/ })).toBeVisible();
 });
