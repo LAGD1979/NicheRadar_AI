@@ -178,7 +178,7 @@ Las oportunidades sintéticas muestran la recomendación del fixture hasta que s
 ### D-47 · Dos adaptadores con la misma interfaz
 `AI_PROVIDER=anthropic` o `AI_PROVIDER=openai`, con `AI_MODEL` y la clave correspondiente. El adaptador de OpenAI usa Chat Completions con `response_format: json_object`, `temperature: 0` y `max_completion_tokens`. Ambos comparten reintentos (3 intentos ante 429, 5xx y timeouts; sin reintento ante 400) y no muestran la clave en los errores.
 
-**Actualización 2026-10-25:** OpenAI se probó en vivo (ver D-55). Anthropic sigue sin probar: no hay clave. Los modelos de razonamiento pueden rechazar `temperature: 0`; en ese caso la llamada devuelve error y habrá que ajustar el adaptador.
+**Actualización 2026-10-25:** OpenAI se probó en vivo (ver D-55). Anthropic se probó también (ver D-56). Los modelos de razonamiento pueden rechazar `temperature: 0`; en ese caso la llamada devuelve error y habrá que ajustar el adaptador.
 
 **Sin pausa entre reintentos de IA**: a diferencia de YouTube, los reintentos de IA no esperan (`2^n` segundos). Conviene añadir espera antes de usarlo en lote.
 
@@ -189,6 +189,15 @@ Con `AI_PROVIDER=openai` y `AI_MODEL=gpt-4.1-mini`, `POST /opportunities/syn-opp
 - **Compose:** `docker-compose.yml` pasa ahora `OPENAI_API_KEY` y `ANTHROPIC_API_KEY` desde el entorno del host a `api` y `worker`, como ya hacía con la de YouTube. Antes la clave no llegaba a los contenedores.
 - **Configuración local:** `AI_PROVIDER` y `AI_MODEL` viven en el `.env` (no versionado).
 - **Sin probar:** calidad de las frases (un plan de IA siempre lo aprueba una persona), reintentos ante 429/5xx, modelos de razonamiento, y Anthropic.
+
+### D-56 · Prueba en vivo del adaptador de Anthropic y corrección de `temperature` (2026-10-25)
+La primera llamada con `claude-haiku-5-5` falló con HTTP 400. Una llamada directa a la API mostró el motivo: «`temperature` is deprecated for this model». El adaptador la enviaba siempre en 0. Se **quitó `temperature` de la petición a Anthropic** (`providers/ai.py`) y se añadió `tests/unit/test_anthropic_client.py`, que fija que no se envía. Con el cambio, `POST …/search-plans/generate` creó un plan `PENDING_REVIEW` válido de tres grupos para `syn-opp-02` y `syn-opp-03`.
+
+- **Consecuencia:** sin `temperature`, la salida de Anthropic no es determinista. Es aceptable porque el plan se valida con esquema y lo aprueba una persona (D-32).
+- **Modelo:** `claude-haiku-5-5`, elegido de `GET /v1/models` por ser el más económico de la lista.
+- **Clave:** el responsable guardó la clave en `CLAUDE_API_KEY`. Compose la acepta como respaldo de `ANTHROPIC_API_KEY`. No aparece en los logs de `api` ni `worker`.
+- **Config local:** el `.env` (no versionado) deja `AI_PROVIDER=anthropic` y `AI_MODEL=claude-haiku-5-5`.
+- **Pendiente:** el adaptador de OpenAI sigue enviando `temperature: 0`; falla con modelos que no lo admitan (D-47).
 
 ---
 

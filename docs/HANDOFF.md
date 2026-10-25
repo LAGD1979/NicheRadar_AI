@@ -8,7 +8,7 @@ Documento para cualquier sesión nueva (o para una persona). Complementa `CLAUDE
 - M4 (índices avanzados) **abierto** en este equipo: el modo `approved_scope` está en el `.env` local, y hay cuatro aprobaciones registradas por el responsable (D-54). No es una autorización emitida por YouTube.
 - Los índices siguen en NULL porque no existe resiliencia temporal (histórico licenciado). Es intencional.
 - Sin fuente de señales de demanda: ninguna oportunidad real llega a «listo para piloto».
-- IA: el adaptador de **OpenAI** se probó en vivo el 2026-10-25 (`gpt-4.1-mini`, un plan para `syn-opp-01`: correcto, ver D-55). El de **Anthropic** sigue sin probar (no hay clave). La clave de OpenAI se lee de la variable de usuario `OPENAI_API_KEY`; `AI_PROVIDER` y `AI_MODEL` están en el `.env` local.
+- IA: los adaptadores de **OpenAI** (`gpt-4.1-mini`, D-55) y **Anthropic** (`claude-haiku-5-5`, D-56) se probaron en vivo el 2026-10-25 generando un plan de búsqueda. Las claves se leen de las variables de usuario `OPENAI_API_KEY` y `CLAUDE_API_KEY` (Compose acepta esta última como `ANTHROPIC_API_KEY`). El `.env` local deja activo Anthropic; para cambiar, editar `AI_PROVIDER` y `AI_MODEL` y recrear `api worker`.
 
 ## 1b. Manuales
 
@@ -32,7 +32,7 @@ Documento para cualquier sesión nueva (o para una persona). Complementa `CLAUDE
 - Lint y tipos backend: `… run --rm --no-deps api sh -c "ruff check app tests && ruff format --check app tests && mypy app"`
 - Frontend: `… run --rm --no-deps frontend sh -c "npx eslint . && npx tsc --noEmit && npx vitest run"`
 - E2E (con el stack arriba): `… --profile e2e run --rm e2e`
-- Estado esperado: 229 pruebas backend, 15 frontend, 7 E2E pasando y 1 omitido (el omitido es esperado).
+- Estado esperado: 230 pruebas backend, 15 frontend, 7 E2E pasando y 1 omitido (el omitido es esperado).
 
 Para ver cambios sin reconstruir la imagen: montar el código con `-v "<ruta>\backend:/app"` en `run`.
 
@@ -59,7 +59,7 @@ Para ver cambios sin reconstruir la imagen: montar el código con `-v "<ruta>\ba
 ## 7. Pendientes conocidos
 
 - Confirmar la cuota real del proyecto en Google Cloud (la especificación dice 1 unidad por `search.list`; la documentación oficial dice 100).
-- Probar el adaptador de Anthropic con una clave real; de OpenAI, probar reintentos (429/5xx) y un modelo de razonamiento (`temperature`).
+- IA: probar reintentos (429/5xx), un modelo de razonamiento de OpenAI (`temperature`) y revisar la calidad de los planes generados.
 - Probar una búsqueda grande y la reanudación con cuota real.
 - Detección de canales espejo (T12).
 - Scheduler automático y purga programada (M5).

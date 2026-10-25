@@ -8,7 +8,7 @@
 |---|---|---|
 | **M0 — cimientos y demo sintético** | ✔ Completado (commit `b8762f9`) | Compose, API, worker, migraciones, seed, dashboard, E2E, CI. |
 | **M1 — ingesta oficial, cuota, importación** | ✔ Completado (commit `29ce8bc`) | Búsqueda real probada. Ver «Límites» de M1 en el historial. |
-| **M2 — mercado español y planes de búsqueda** | ✔ Completado con límites (commit `349fcee`) | Validación real probada una vez. IA probada en vivo con OpenAI (D-55); Anthropic sin probar. Sin fuentes de demanda. |
+| **M2 — mercado español y planes de búsqueda** | ✔ Completado con límites (commit `349fcee`) | Validación real probada una vez. IA probada en vivo con OpenAI (D-55) y Anthropic (D-56). Sin fuentes de demanda. |
 | **M3 — factibilidad, decisiones, comparador, export** | ✔ Completado con límites (commit `86c3ae8`) | Costos, factibilidad, recomendación con compuertas, export CSV/JSON. Sin watchlist (Seguimiento). |
 | **M4 — analítica avanzada (condicional)** | ◐ Construido y abierto en este equipo (commits `fbc07d0`, `ad9bcdb`) | Compuerta de tres condiciones (D-48). El responsable registró las aprobaciones (D-54); no son una autorización de YouTube. Los índices siguen en NULL por falta de histórico licenciado. |
 | M5 — radar continuo | — pendiente | Scheduler, purga automática, alertas, watchlist. |
@@ -29,7 +29,7 @@ Verificación de M3: **194 pruebas backend** (160 al cierre de M2 + 34 de M3), l
 Limitaciones de M3:
 - **`READY_FOR_PILOT` aparece para `syn-opp-01`** porque su fixture sintético declara demanda indicativa (D-45). No es una señal real.
 - **Las recomendaciones del fixture** se muestran tal cual hasta que hay una evaluación nueva (D-46).
-- **P4 y P5 (IA de factibilidad)** no se implementaron: la factibilidad la valora una persona. El adaptador de Anthropic sigue sin probarse en vivo.
+- **P4 y P5 (IA de factibilidad)** no se implementaron: la factibilidad la valora una persona. Anthropic se probó en vivo después (D-56).
 - **Sin watchlist** (Seguimiento) ni **sin pantalla de política** nueva: se mantiene la de Configuración.
 
 ## M2: qué se construyó
@@ -65,13 +65,13 @@ Datos reales en la base: el video real «Stalingrado: la batalla que cambió…�
 - [x] Búsqueda en español con verificación de idioma.
 - [x] Comparación entre formato exacto y adyacente (solo `EXACT` cuenta).
 - [x] Estados de saturación y demanda `UNKNOWN` seguros.
-- [~] Pipeline desde video en otro idioma hasta plan español y tabla de competencia: probado con datos reales; el plan de IA se generó en vivo con OpenAI (2026-10-25), pero aún no se ha encadenado con una validación completa.
+- [~] Pipeline desde video en otro idioma hasta plan español y tabla de competencia: probado con datos reales; el plan de IA se generó en vivo con OpenAI y Anthropic (2026-10-25), pero aún no se ha encadenado con una validación completa.
 - [ ] Revisión humana de muestras (30–50 videos, §13.3): no hay conjunto etiquetado todavía.
 
 ## Límites conocidos
 
 - **Sin fuentes de demanda**: ninguna oportunidad pasa de `DEMAND_UNPROVEN` (D-35). Es la limitación más importante de M2.
-- **IA probada solo con OpenAI** (`gpt-4.1-mini`, un plan, 2026-10-25; ver D-55). El adaptador de Anthropic no se ha ejecutado: no hay clave. No se probaron reintentos ni modelos de razonamiento.
+- **IA probada en vivo con un plan por proveedor** (OpenAI `gpt-4.1-mini` y Anthropic `claude-haiku-5-5`, 2026-10-25; D-55 y D-56). No se probaron reintentos, modelos de razonamiento ni la calidad de las frases.
 - **Sin revisión humana masiva**: el conjunto de 30–50 videos de §13.3 no existe todavía; la precisión por idioma no se ha medido.
 - **Espejos (T12)**: no se detecta que varios canales sean del mismo creador. Pendiente.
 - **Datos mezclados**: ver la nota de `syn-opp-06` arriba.
@@ -80,7 +80,7 @@ Datos reales en la base: el video real «Stalingrado: la batalla que cambió…�
 
 ## Estado de verificación actual
 
-229 pruebas de backend, 15 de frontend y 7 E2E pasando (1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
+230 pruebas de backend, 15 de frontend y 7 E2E pasando (1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
 
 ## Siguiente paso
 
