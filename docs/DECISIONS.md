@@ -178,9 +178,17 @@ Las oportunidades sintéticas muestran la recomendación del fixture hasta que s
 ### D-47 · Dos adaptadores con la misma interfaz
 `AI_PROVIDER=anthropic` o `AI_PROVIDER=openai`, con `AI_MODEL` y la clave correspondiente. El adaptador de OpenAI usa Chat Completions con `response_format: json_object`, `temperature: 0` y `max_completion_tokens`. Ambos comparten reintentos (3 intentos ante 429, 5xx y timeouts; sin reintento ante 400) y no muestran la clave en los errores.
 
-**No probado contra la API real**: no hay clave de ninguno de los dos proveedores configurada en el equipo. Los modelos de razonamiento pueden rechazar `temperature: 0`; en ese caso la llamada devuelve error y habrá que ajustar el adaptador.
+**Actualización 2026-10-25:** OpenAI se probó en vivo (ver D-55). Anthropic sigue sin probar: no hay clave. Los modelos de razonamiento pueden rechazar `temperature: 0`; en ese caso la llamada devuelve error y habrá que ajustar el adaptador.
 
 **Sin pausa entre reintentos de IA**: a diferencia de YouTube, los reintentos de IA no esperan (`2^n` segundos). Conviene añadir espera antes de usarlo en lote.
+
+### D-55 · Prueba en vivo del adaptador de OpenAI (2026-10-25)
+Con `AI_PROVIDER=openai` y `AI_MODEL=gpt-4.1-mini`, `POST /opportunities/syn-opp-01/search-plans/generate` terminó en unos 5 segundos y dejó un plan `PENDING_REVIEW` válido: tres grupos (`ALL_ES`, `LATAM`, `ES`), exclusiones, notas de localización y solo `source_id` existentes. La clave no aparece en los logs de `api` ni `worker`.
+
+- **Modelo:** se eligió un modelo de chat clásico porque el adaptador envía `temperature: 0`, que los modelos de razonamiento pueden rechazar. Los modelos disponibles en la cuenta se consultaron con `GET /v1/models`.
+- **Compose:** `docker-compose.yml` pasa ahora `OPENAI_API_KEY` y `ANTHROPIC_API_KEY` desde el entorno del host a `api` y `worker`, como ya hacía con la de YouTube. Antes la clave no llegaba a los contenedores.
+- **Configuración local:** `AI_PROVIDER` y `AI_MODEL` viven en el `.env` (no versionado).
+- **Sin probar:** calidad de las frases (un plan de IA siempre lo aprueba una persona), reintentos ante 429/5xx, modelos de razonamiento, y Anthropic.
 
 ---
 

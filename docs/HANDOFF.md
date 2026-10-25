@@ -8,7 +8,7 @@ Documento para cualquier sesión nueva (o para una persona). Complementa `CLAUDE
 - M4 (índices avanzados) **abierto** en este equipo: el modo `approved_scope` está en el `.env` local, y hay cuatro aprobaciones registradas por el responsable (D-54). No es una autorización emitida por YouTube.
 - Los índices siguen en NULL porque no existe resiliencia temporal (histórico licenciado). Es intencional.
 - Sin fuente de señales de demanda: ninguna oportunidad real llega a «listo para piloto».
-- IA (Anthropic y OpenAI): implementada, **no probada** contra APIs reales (no hay claves de IA configuradas).
+- IA: el adaptador de **OpenAI** se probó en vivo el 2026-10-25 (`gpt-4.1-mini`, un plan para `syn-opp-01`: correcto, ver D-55). El de **Anthropic** sigue sin probar (no hay clave). La clave de OpenAI se lee de la variable de usuario `OPENAI_API_KEY`; `AI_PROVIDER` y `AI_MODEL` están en el `.env` local.
 
 ## 1b. Manuales
 
@@ -59,7 +59,7 @@ Para ver cambios sin reconstruir la imagen: montar el código con `-v "<ruta>\ba
 ## 7. Pendientes conocidos
 
 - Confirmar la cuota real del proyecto en Google Cloud (la especificación dice 1 unidad por `search.list`; la documentación oficial dice 100).
-- Probar IA con una clave real (Anthropic u OpenAI).
+- Probar el adaptador de Anthropic con una clave real; de OpenAI, probar reintentos (429/5xx) y un modelo de razonamiento (`temperature`).
 - Probar una búsqueda grande y la reanudación con cuota real.
 - Detección de canales espejo (T12).
 - Scheduler automático y purga programada (M5).
