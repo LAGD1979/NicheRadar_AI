@@ -26,6 +26,9 @@ class Settings(BaseSettings):
     compliance_mode: Literal["restricted"] = "restricted"
     advanced_analytics_enabled: bool = False
     ai_provider: Literal["none", "anthropic", "openai"] = "none"
+    # Modelo configurable por entorno; vacío = no hay modelo y la IA no se ejecuta (spec §17).
+    ai_model: str = ""
+    ai_max_usd_per_run: float = 5.0
     demo_mode: bool = True
 
     # Cuota de YouTube Data API: pool diario compartido en unidades (search.list = 100 u.).

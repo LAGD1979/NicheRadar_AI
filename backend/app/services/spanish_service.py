@@ -1,0 +1,491 @@
+"""Mercado español (M2): anotaciones, planes de búsqueda, validación y revisión de competidores.
+
+Reglas que este módulo hace cumplir:
+- Solo se guarda un plan que pasó el esquema y cuyas fuentes existen (T13).
+- Un plan aprobado no se edita: para cambiarlo se crea otro (versionado).
+- La evaluación es append-only: cada cambio crea una versión nueva.
+- Un competidor cuenta como EXACT solo si una persona lo confirmó.
+"""
+
+import json
+from dataclasses import dataclass
+from datetime import UTC, datetime
+from typing import Any
+from uuid import uuid4
+
+from pydantic import ValidationError
+from sqlalchemy import select
+from sqlalchemy.orm import Session
+
+from app.core.errors import ProblemError
+from app.db import models as m
+from app.domain import spanish_market
+from app.domain.search_plan import SpanishSearchPlan, query_texts
+from app.prompts import spanish_plan_v1 as prompt_v1
+from app.providers.ai import AnthropicClient
+
+MATCH_QUALITIES = ("UNREVIEWED", "EXACT", "ADJACENT", "GENERIC", "FALSE_POSITIVE")
+ENTRY_TO_STATUS = {
+    "CROWDED": "ES_COMPETITIVE",
+    "DEMAND_UNPROVEN": "ES_DEMAND_UNPROVEN",
+    "POTENTIAL_GAP": "ES_UNDERSERVED",
+    "INSUFFICIENT_EVIDENCE": "ES_VALIDATION_IN_PROGRESS",
+}
+
+
+# --- oportunidades y anotaciones --------------------------------------------------------------
+
+
+def ensure_opportunity(
+    session: Session, *, niche_id: str, format_id: str, target_lang: str, video_type: str
+) -> tuple[m.Opportunity, bool]:
+    """Nicho, formato, idioma y tipo forman una sola oportunidad (T09)."""
+    existing = session.scalars(
+        select(m.Opportunity).where(
+            m.Opportunity.niche_id == niche_id,
+            m.Opportunity.format_id == format_id,
+            m.Opportunity.target_lang == target_lang,
+            m.Opportunity.video_type == video_type,
+        )
+    ).first()
+    if existing is not None:
+        return existing, False
+    if session.get(m.Niche, niche_id) is None:
+        raise ProblemError(404, "NICHE_NOT_FOUND", "Nicho no encontrado")
+    if session.get(m.Format, format_id) is None:
+        raise ProblemError(404, "FORMAT_NOT_FOUND", "Formato no encontrado")
+    opp = m.Opportunity(
+        id=str(uuid4()),
+        niche_id=niche_id,
+        format_id=format_id,
+        target_lang=target_lang,
+        video_type=video_type,
+        source_languages_json=[],
+        status="SCREENED",
+        owner_notes=None,
+    )
+    session.add(opp)
+    session.flush()
+    return opp, True
+
+
+def annotate_video(
+    session: Session,
+    *,
+    video_id: str,
+    niche_id: str,
+    format_id: str,
+    confidence: str,
+    rationale: str,
+    reviewer: str,
+) -> tuple[m.VideoAnnotation, m.Opportunity]:
+    video = session.get(m.Video, video_id)
+    if video is None:
+        raise ProblemError(404, "VIDEO_NOT_FOUND", "Video no encontrado")
+    if video.video_type not in ("LONG", "SHORT"):
+        # Un tipo ambiguo no se mezcla con largos ni Shorts (spec §0.5).
+        raise ProblemError(
+            422,
+            "VIDEO_TYPE_UNCLEAR",
+            "El tipo del video no está confirmado",
+            "Solo se anotan videos LONG o SHORT confirmados.",
+        )
+    opp, _created = ensure_opportunity(
+        session,
+        niche_id=niche_id,
+        format_id=format_id,
+        target_lang="es",
+        video_type=video.video_type,
+    )
+    annotation = m.VideoAnnotation(
+        id=str(uuid4()),
+        video_id=video.id,
+        opportunity_id=opp.id,
+        same_format_confidence=confidence,
+        label_source="HUMAN",
+        model_version=None,
+        prompt_version=None,
+        rationale=rationale,
+        reviewed_by=reviewer,
+    )
+    session.add(annotation)
+    langs = list(opp.source_languages_json)
+    if video.language_state not in ("UNKNOWN", "") and video.language_state not in langs:
+        opp.source_languages_json = [*langs, video.language_state]
+    session.flush()
+    return annotation, opp
+
+
+# --- fuentes permitidas y planes --------------------------------------------------------------
+
+
+@dataclass(frozen=True)
+class EvidenceItem:
+    source_id: str
+    kind: str
+    title: str | None
+    channel: str | None
+    language: str | None
+
+
+def allowed_evidence(session: Session, opportunity_id: str) -> list[EvidenceItem]:
+    """Todo lo que el modelo puede citar. Cualquier otro source_id se rechaza (T13)."""
+    items: dict[str, EvidenceItem] = {}
+    opp = session.get(m.Opportunity, opportunity_id)
+    if opp is None:
+        raise ProblemError(404, "OPPORTUNITY_NOT_FOUND", "Oportunidad no encontrada")
+    niche = session.get(m.Niche, opp.niche_id)
+    items[f"O:{opp.id}"] = EvidenceItem(
+        f"O:{opp.id}",
+        "OPPORTUNITY",
+        f"{niche.canonical_name_es if niche else ''}",
+        None,
+        opp.target_lang,
+    )
+    for ev in session.scalars(
+        select(m.OpportunityEvidence).where(m.OpportunityEvidence.opportunity_id == opp.id)
+    ).all():
+        if ev.entity_type == "VIDEO":
+            video = session.scalars(
+                select(m.Video).where(m.Video.youtube_video_id == ev.entity_id)
+            ).first()
+            channel = session.get(m.Channel, video.channel_id) if video else None
+            items[f"V:{ev.entity_id}"] = EvidenceItem(
+                f"V:{ev.entity_id}",
+                "VIDEO",
+                video.title if video else None,
+                channel.title_current if channel else None,
+                video.language_state if video else None,
+            )
+        elif ev.entity_type == "CHANNEL":
+            channel = session.scalars(
+                select(m.Channel).where(m.Channel.youtube_channel_id == ev.entity_id)
+            ).first()
+            items[f"C:{ev.entity_id}"] = EvidenceItem(
+                f"C:{ev.entity_id}",
+                "CHANNEL",
+                None,
+                channel.title_current if channel else None,
+                None,
+            )
+    for ann in session.scalars(
+        select(m.VideoAnnotation).where(m.VideoAnnotation.opportunity_id == opp.id)
+    ).all():
+        video = session.get(m.Video, ann.video_id)
+        if video is None:
+            continue
+        channel = session.get(m.Channel, video.channel_id)
+        items[f"V:{video.youtube_video_id}"] = EvidenceItem(
+            f"V:{video.youtube_video_id}",
+            "VIDEO",
+            video.title,
+            channel.title_current if channel else None,
+            video.language_state,
+        )
+    return list(items.values())
+
+
+def _check_sources(session: Session, opportunity_id: str, source_ids: list[str]) -> None:
+    allowed = {e.source_id for e in allowed_evidence(session, opportunity_id)}
+    unknown = [s for s in source_ids if s not in allowed]
+    if unknown:
+        raise ProblemError(
+            422,
+            "INVALID_EVIDENCE_REF",
+            "El plan cita fuentes que no existen",
+            f"Referencias no válidas: {', '.join(unknown[:5])}",
+        )
+
+
+def plan_out_dict(plan: m.SpanishSearchPlan) -> dict[str, Any]:
+    return {
+        "id": plan.id,
+        "opportunity_id": plan.opportunity_id,
+        "status": plan.status,
+        "origin": plan.origin,
+        "plan": plan.plan_json,
+        "prompt_version": plan.prompt_version,
+        "model_version": plan.model_version,
+        "error_code": plan.error_code,
+        "approved_by": plan.approved_by,
+        "approved_at": plan.approved_at,
+        "created_at": plan.created_at,
+    }
+
+
+def create_manual_plan(
+    session: Session, opportunity_id: str, draft: SpanishSearchPlan
+) -> m.SpanishSearchPlan:
+    _check_sources(session, opportunity_id, draft.source_ids)
+    plan = m.SpanishSearchPlan(
+        id=str(uuid4()),
+        opportunity_id=opportunity_id,
+        status="PENDING_REVIEW",
+        origin="HUMAN",
+        plan_json=draft.model_dump(),
+        prompt_version=None,
+        model_version=None,
+        source_ids_json=draft.source_ids,
+        error_code=None,
+        approved_by=None,
+        approved_at=None,
+    )
+    session.add(plan)
+    session.flush()
+    return plan
+
+
+def generate_plan_with_ai(
+    session: Session, client: AnthropicClient, opportunity_id: str
+) -> m.SpanishSearchPlan:
+    """Pide el plan a la IA. Si no pasa la validación, queda NEEDS_REVIEW sin hechos."""
+    opp = session.get(m.Opportunity, opportunity_id)
+    if opp is None:
+        raise ProblemError(404, "OPPORTUNITY_NOT_FOUND", "Oportunidad no encontrada")
+    niche = session.get(m.Niche, opp.niche_id)
+    fmt = session.get(m.Format, opp.format_id)
+    evidence = allowed_evidence(session, opportunity_id)
+    user = prompt_v1.build_user_message(
+        {
+            "nicho": niche.canonical_name_es if niche else "",
+            "definicion_nicho": niche.definition if niche else "",
+            "formato": fmt.canonical_name_es if fmt else "",
+            "estructura_formato": fmt.story_structure if fmt else "",
+            "idioma_destino": opp.target_lang,
+            "tipo_video": opp.video_type,
+        },
+        [
+            {
+                "source_id": e.source_id,
+                "tipo": e.kind,
+                "titulo": e.title,
+                "canal": e.channel,
+                "idioma": e.language,
+            }
+            for e in evidence
+        ],
+    )
+    raw = client.complete(prompt_v1.SYSTEM, user)
+    plan = m.SpanishSearchPlan(
+        id=str(uuid4()),
+        opportunity_id=opportunity_id,
+        status="NEEDS_REVIEW",
+        origin="AI",
+        plan_json={},
+        prompt_version=prompt_v1.PROMPT_VERSION,
+        model_version=client.model,
+        source_ids_json=[],
+        error_code=None,
+        approved_by=None,
+        approved_at=None,
+    )
+    try:
+        data = json.loads(_strip_fences(raw))
+    except json.JSONDecodeError:
+        plan.error_code = "INVALID_JSON"
+        session.add(plan)
+        session.flush()
+        return plan
+    try:
+        draft = SpanishSearchPlan.model_validate(data)
+    except ValidationError:
+        plan.error_code = "INVALID_PLAN"
+        session.add(plan)
+        session.flush()
+        return plan
+    allowed = {e.source_id for e in evidence}
+    if any(s not in allowed for s in draft.source_ids):
+        plan.error_code = "INVALID_EVIDENCE_REF"
+        session.add(plan)
+        session.flush()
+        return plan
+    plan.status = "PENDING_REVIEW"
+    plan.plan_json = draft.model_dump()
+    plan.source_ids_json = draft.source_ids
+    session.add(plan)
+    session.flush()
+    return plan
+
+
+def _strip_fences(text: str) -> str:
+    stripped = text.strip()
+    if stripped.startswith("```"):
+        stripped = stripped.strip("`")
+        if stripped.lower().startswith("json"):
+            stripped = stripped[4:]
+    return stripped.strip()
+
+
+def update_plan(
+    session: Session, plan_id: str, draft: SpanishSearchPlan, *, approve: bool, reviewer: str
+) -> m.SpanishSearchPlan:
+    plan = session.get(m.SpanishSearchPlan, plan_id)
+    if plan is None:
+        raise ProblemError(404, "PLAN_NOT_FOUND", "Plan no encontrado")
+    if plan.status == "APPROVED" or plan.status == "SUPERSEDED":
+        raise ProblemError(
+            409, "PLAN_LOCKED", "Un plan aprobado no se edita; cree una versión nueva"
+        )
+    _check_sources(session, plan.opportunity_id, draft.source_ids)
+    plan.plan_json = draft.model_dump()
+    plan.source_ids_json = draft.source_ids
+    plan.error_code = None
+    if approve:
+        others = session.scalars(
+            select(m.SpanishSearchPlan).where(
+                m.SpanishSearchPlan.opportunity_id == plan.opportunity_id,
+                m.SpanishSearchPlan.status == "APPROVED",
+            )
+        ).all()
+        for other in others:
+            other.status = "SUPERSEDED"
+        plan.status = "APPROVED"
+        plan.approved_by = reviewer
+        plan.approved_at = datetime.now(UTC)
+    else:
+        plan.status = "PENDING_REVIEW"
+    session.flush()
+    return plan
+
+
+def approved_plan(session: Session, plan_id: str, opportunity_id: str) -> m.SpanishSearchPlan:
+    plan = session.get(m.SpanishSearchPlan, plan_id)
+    if plan is None or plan.opportunity_id != opportunity_id:
+        raise ProblemError(404, "PLAN_NOT_FOUND", "Plan no encontrado para esta oportunidad")
+    if plan.status != "APPROVED":
+        raise ProblemError(
+            409, "PLAN_NOT_APPROVED", "Solo se valida con un plan aprobado por una persona"
+        )
+    return plan
+
+
+def plan_queries(plan: m.SpanishSearchPlan) -> list[tuple[str, str]]:
+    return query_texts(SpanishSearchPlan.model_validate(plan.plan_json))
+
+
+# --- coberura, evaluación y revisión ----------------------------------------------------------
+
+
+def coverage_for(session: Session, opportunity_id: str) -> spanish_market.SpanishCoverage:
+    queries = session.scalars(
+        select(m.SourceQuery).where(
+            m.SourceQuery.opportunity_id == opportunity_id,
+            m.SourceQuery.status == "OK",
+            m.SourceQuery.provider == "youtube_official",
+        )
+    ).all()
+    matches = session.scalars(
+        select(m.DiscoveryMatch).where(m.DiscoveryMatch.opportunity_id == opportunity_id)
+    ).all()
+    es_videos = {mt.video_id for mt in matches if mt.is_spanish_market}
+    reviewed = [mt for mt in matches if mt.match_quality != "UNREVIEWED"]
+    exact = [mt for mt in matches if mt.match_quality == "EXACT"]
+    return spanish_market.SpanishCoverage(
+        queries_run=len(queries),
+        query_variants=len({q.query_text.lower() for q in queries}),
+        es_verified_videos=len(es_videos),
+        reviewed_matches=len(reviewed),
+        exact_matches=len(exact),
+    )
+
+
+def record_assessment(
+    session: Session, opportunity_id: str, run_id: str | None, now: datetime
+) -> dict[str, Any]:
+    """Añade una evaluación nueva con el estado español recalculado (append-only)."""
+    coverage = coverage_for(session, opportunity_id)
+    result = spanish_market.assess(coverage, independent_signals=0)
+    latest = session.scalars(
+        select(m.Evaluation)
+        .where(m.Evaluation.opportunity_id == opportunity_id)
+        .order_by(m.Evaluation.evaluation_version.desc())
+    ).first()
+    version = (latest.evaluation_version if latest else 0) + 1
+    spanish = {
+        "saturation_state": result.saturation_state,
+        "spanish_demand_state": result.demand_state,
+        "entry_decision": result.entry_decision,
+        "query_coverage_count": coverage.queries_run,
+        "query_variants": coverage.query_variants,
+        "es_verified_videos": coverage.es_verified_videos,
+        "reviewed_matches": coverage.reviewed_matches,
+        "exact_matches": coverage.exact_matches,
+        "match_precision_reviewed": coverage.reviewed_matches > 0,
+        "reason_codes": result.reason_codes,
+    }
+    session.add(
+        m.Evaluation(
+            id=str(uuid4()),
+            opportunity_id=opportunity_id,
+            run_id=run_id,
+            evaluation_version=version,
+            international_json=latest.international_json if latest else {},
+            spanish_json=spanish,
+            feasibility_json=latest.feasibility_json if latest else {},
+            scores_json=latest.scores_json if latest else {},
+            confidence=result.confidence,
+            reason_codes_json=result.reason_codes,
+            recommendation="MORE_RESEARCH",
+            metric_policy_state="RESTRICTED",
+            source_data_type="OFFICIAL",
+            observed_at=now,
+        )
+    )
+    opp = session.get(m.Opportunity, opportunity_id)
+    if opp is not None:
+        opp.status = ENTRY_TO_STATUS.get(result.entry_decision, "ES_VALIDATION_IN_PROGRESS")
+        opp.last_evaluated_at = now
+    session.flush()
+    return spanish
+
+
+def review_match(session: Session, match_id: str, quality: str, reviewer: str) -> m.DiscoveryMatch:
+    if quality not in MATCH_QUALITIES:
+        raise ProblemError(422, "INVALID_QUALITY", "Calidad de coincidencia no válida")
+    match = session.get(m.DiscoveryMatch, match_id)
+    if match is None:
+        raise ProblemError(404, "MATCH_NOT_FOUND", "Coincidencia no encontrada")
+    match.match_quality = quality
+    match.reviewed_by = reviewer
+    session.add(
+        m.AuditEvent(
+            id=str(uuid4()),
+            run_id=match.run_id,
+            actor=reviewer,
+            event_type="MATCH_REVIEWED",
+            object_type="discovery_match",
+            object_id=match.id,
+            details_redacted_json={"match_quality": quality},
+        )
+    )
+    session.flush()
+    if match.opportunity_id is not None:
+        record_assessment(session, match.opportunity_id, match.run_id, datetime.now(UTC))
+    return match
+
+
+def competition(session: Session, opportunity_id: str) -> list[dict[str, Any]]:
+    rows = session.execute(
+        select(m.DiscoveryMatch, m.Video, m.Channel, m.SourceQuery)
+        .join(m.Video, m.Video.id == m.DiscoveryMatch.video_id)
+        .join(m.Channel, m.Channel.id == m.Video.channel_id)
+        .join(m.SourceQuery, m.SourceQuery.id == m.DiscoveryMatch.query_id)
+        .where(m.DiscoveryMatch.opportunity_id == opportunity_id)
+        .order_by(m.DiscoveryMatch.match_quality, m.DiscoveryMatch.position)
+    ).all()
+    return [
+        {
+            "id": match.id,
+            "video_title": video.title,
+            "channel_title": channel.title_current,
+            "video_language": video.language_state,
+            "is_spanish_market": match.is_spanish_market,
+            "match_quality": match.match_quality,
+            "query": query.query_text,
+            "query_language": query.language_requested,
+            "region": query.region,
+            "position": match.position,
+            "run_id": match.run_id,
+        }
+        for match, video, channel, query in rows
+    ]

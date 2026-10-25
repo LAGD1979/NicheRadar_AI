@@ -8,7 +8,13 @@ from sqlalchemy.orm import Session
 from app.core.errors import ProblemError
 from app.db import models as m
 
-TASK_TYPES = {"demo": "demo_research", "discovery": "youtube_discovery", "purge": "retention_purge"}
+TASK_TYPES = {
+    "demo": "demo_research",
+    "discovery": "youtube_discovery",
+    "purge": "retention_purge",
+    "spanish_plan": "spanish_plan",
+    "spanish_validation": "spanish_validation",
+}
 PAUSED = "PAUSED_QUOTA"
 
 

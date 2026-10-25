@@ -97,3 +97,41 @@ Todo lo que viene de la API o de una importación se guarda con `owner_authorize
 - **Expansión por canal** (`playlistItems` para uploads): el servicio existe y está probado (T06), pero no hay ruta HTTP para dispararlo.
 - **Scheduler automático**: todo es manual (D-26). Lo automático llega en M5.
 - **Detección de idioma por el título**: solo se usan `defaultAudioLanguage` y `defaultLanguage`. Sin ellos el idioma queda `UNKNOWN`.
+
+---
+
+## M2 — mercado español y planes de búsqueda
+
+### D-30 · Una oportunidad = nicho + formato + idioma + tipo
+`ensure_opportunity` crea o reutiliza la oportunidad por esa combinación (restricción única). Un mismo formato en otro nicho es otra oportunidad (T09). Anotar un video crea la oportunidad si no existe. El tipo sale del video: si es `UNKNOWN` o `LIVE`, la anotación se rechaza (`VIDEO_TYPE_UNCLEAR`), para no mezclar largos y Shorts.
+
+### D-31 · La IA está desactivada hasta que haya clave, modelo y proveedor
+`AI_PROVIDER=none` por defecto y `AI_MODEL` vacío. Sin ellos, `POST …/search-plans/generate` responde 409 `AI_NOT_CONFIGURED`. El cliente de Anthropic (`app/providers/ai.py`) está implementado según el contrato de la API de Mensajes, **pero no se ha ejecutado contra la API real**: no hay clave de Anthropic configurada. Los tests usan un doble de prueba.
+
+### D-32 · La IA solo propone; el dominio valida
+La respuesta se parsea con Pydantic. Se rechaza si no es JSON (`INVALID_JSON`), si no cumple el esquema (`INVALID_PLAN`), si cita un `source_id` que no existe en la evidencia (`INVALID_EVIDENCE_REF`) o si incluye una URL (T13). En esos casos el plan queda `NEEDS_REVIEW` sin datos de plan. Los títulos entran en el prompt dentro de un JSON como datos, con instrucciones de no obedecerlos (T14). Prompt versionado: `P2-1`.
+
+### D-33 · Planes versionados; un plan aprobado no se edita
+Un plan aprobado queda bloqueado (`PLAN_LOCKED`). Aprobar otro plan de la misma oportunidad marca el anterior como `SUPERSEDED`. Un plan escrito por una persona (`origin=HUMAN`) se valida con el mismo esquema que el de la IA.
+
+### D-34 · Competidor exacto solo con revisión humana
+Todas las coincidencias nacen `UNREVIEWED`. Solo cuentan como `EXACT` cuando una persona lo marca (`PATCH /matches/{id}`). Un video cuenta como español solo si su idioma verificado es `es`; uno con audio en otro idioma no cuenta, aunque aparezca en la búsqueda.
+
+### D-35 · Reglas de saturación y decisión (domain/spanish_market.py)
+- Cobertura mínima: 6 consultas y 2 variantes. Con menos, la saturación es `UNKNOWN` (`ES_QUERY_COVERAGE_LOW`).
+- Sin ningún video verificado en español: `UNKNOWN`. Sin ninguna coincidencia revisada: `UNKNOWN` (`ES_MATCH_NOT_REVIEWED`). Nunca `LOW` sin revisión (T10).
+- Con revisión: `LOW` si hay 0 exactos, `MEDIUM` si hay 1–4, `HIGH` si hay 5 o más.
+- Demanda: 0 señales independientes = `UNPROVEN`; 1 = `INDICATIVE`; 2 o más = `OBSERVED`.
+- Decisión: primero se comprueba la cobertura, luego la demanda (T11: sin demanda, `DEMAND_UNPROVEN` aunque haya búsquedas completas), luego la saturación.
+- La confianza nunca sube por ausencia de resultados.
+
+**Limitación importante:** M2 no tiene fuentes de señales de demanda. Google Trends está desactivado y no hay búsquedas con licencia. Por tanto, hoy **ninguna oportunidad puede pasar de `DEMAND_UNPROVEN`**, y `GAP_CONFIRMED` / `POTENTIAL_GAP` no se alcanzan. Es lo correcto según la especificación (§3.6), pero conviene saberlo antes de interpretar el radar.
+
+### D-36 · Evaluación append-only
+Cada validación o revisión añade una versión nueva de la evaluación. Las versiones anteriores no se modifican. La versión vigente es la de mayor número. Las secciones internacional y de factibilidad se copian de la versión anterior; la de español se recalcula.
+
+### D-37 · Cobertura calculada sobre todas las búsquedas de la oportunidad
+`source_queries` y `discovery_matches` tienen `opportunity_id`. La cobertura se recalcula sobre todas las búsquedas de la oportunidad, no solo sobre la última corrida. Así una revisión posterior actualiza el estado sin repetir búsquedas.
+
+### D-38 · Resultados de búsqueda como muestra, no como censo
+Los contadores de cobertura son lo que devolvió YouTube para esas consultas. No representan el total de competidores (§3.6).

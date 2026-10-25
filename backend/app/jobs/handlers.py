@@ -4,7 +4,7 @@ Resultados: COMPLETED | PARTIAL | PAUSED_QUOTA | FAILED. El worker traduce el re
 """
 
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
@@ -12,10 +12,11 @@ from uuid import uuid4
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.core.config import Settings
+from app.core.config import Settings, get_settings
 from app.db import models as m
+from app.providers.ai import AnthropicClient, build_ai_client
 from app.providers.base import ProviderError
-from app.services import retention_service
+from app.services import retention_service, spanish_service
 from app.services.ingestion_service import DiscoverySource, QueryPlan, run_discovery
 
 
@@ -23,6 +24,7 @@ from app.services.ingestion_service import DiscoverySource, QueryPlan, run_disco
 class HandlerContext:
     settings: Settings
     make_source: Callable[[], DiscoverySource]
+    make_ai: Callable[[], AnthropicClient] = field(default=lambda: build_ai_client(get_settings()))
 
 
 def _audit(session: Session, run_id: str, event_type: str, details: dict[str, Any]) -> None:
@@ -117,8 +119,97 @@ def run_retention_purge(session: Session, task: m.RunTask, ctx: HandlerContext) 
     return "COMPLETED"
 
 
+def run_spanish_plan(session: Session, task: m.RunTask, ctx: HandlerContext) -> str:
+    """Pide a la IA un plan en español. Si la respuesta no es válida, queda NEEDS_REVIEW."""
+    run = session.get(m.ResearchRun, task.run_id)
+    if run is None:
+        raise LookupError(f"Corrida inexistente: {task.run_id}")
+    try:
+        client = ctx.make_ai()
+    except ProviderError as exc:
+        run.errors_json = [*run.errors_json, {"code": exc.code, "detail": str(exc)}]
+        return "FAILED"
+    try:
+        plan = spanish_service.generate_plan_with_ai(
+            session, client, str(task.payload_json["opportunity_id"])
+        )
+    except ProviderError as exc:
+        run.errors_json = [*run.errors_json, {"code": exc.code, "detail": str(exc)}]
+        return "FAILED"
+    finally:
+        client.close()
+    run.coverage_json = {
+        "plan_id": plan.id,
+        "plan_status": plan.status,
+        "error_code": plan.error_code,
+    }
+    _audit(session, task.run_id, "SPANISH_PLAN_GENERATED", {"status": plan.status})
+    return "COMPLETED" if plan.status == "PENDING_REVIEW" else "PARTIAL"
+
+
+def run_spanish_validation(session: Session, task: m.RunTask, ctx: HandlerContext) -> str:
+    """Busca en español con un plan aprobado y recalcula el estado del mercado español."""
+    run = session.get(m.ResearchRun, task.run_id)
+    if run is None:
+        raise LookupError(f"Corrida inexistente: {task.run_id}")
+    payload = task.payload_json
+    opp_id = str(payload["opportunity_id"])
+    plan = spanish_service.approved_plan(session, str(payload["plan_id"]), opp_id)
+    plans = [
+        QueryPlan(
+            language="es",
+            query=query,
+            window=str(window),
+            region="ES" if region == "ES" else None,
+        )
+        for region, query in spanish_service.plan_queries(plan)
+        for window in payload["windows"]
+    ]
+    try:
+        source = ctx.make_source()
+    except ProviderError as exc:
+        run.errors_json = [*run.errors_json, {"code": exc.code, "detail": str(exc)}]
+        return "FAILED"
+    try:
+        outcome = run_discovery(
+            session,
+            source,
+            ctx.settings,
+            run_id=task.run_id,
+            plans=plans,
+            completed_keys=set(task.result_json.get("completed", [])),
+            max_search_calls=int(payload["max_search_calls"]),
+            pages_per_query=int(payload["pages_per_query"]),
+            now=datetime.now(UTC),
+            strategy="spanish_validation",
+            opportunity_id=opp_id,
+        )
+    finally:
+        close = getattr(source, "close", None)
+        if callable(close):
+            close()
+    task.result_json = {"completed": outcome.completed}
+    run.errors_json = [*run.errors_json, *outcome.errors]
+    assessment = spanish_service.record_assessment(session, opp_id, task.run_id, datetime.now(UTC))
+    run.coverage_json = {
+        "queries_total": len(plans),
+        "queries_completed": len(outcome.completed),
+        "searches": outcome.searches,
+        "spanish_assessment": assessment,
+    }
+    _audit(
+        session,
+        task.run_id,
+        f"SPANISH_VALIDATION_{outcome.outcome}",
+        {"searches": outcome.searches},
+    )
+    return outcome.outcome
+
+
 HANDLERS: dict[str, Callable[[Session, m.RunTask, HandlerContext], str]] = {
     "demo_research": run_demo_research,
     "youtube_discovery": run_youtube_discovery,
     "retention_purge": run_retention_purge,
+    "spanish_plan": run_spanish_plan,
+    "spanish_validation": run_spanish_validation,
 }

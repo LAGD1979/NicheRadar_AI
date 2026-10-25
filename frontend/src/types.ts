@@ -147,6 +147,55 @@ export interface RunOut {
   events?: Array<{ event_type: string; actor: string; created_at: string | null }>;
 }
 
+export interface SearchPlanBody {
+  schema_version: "1.0";
+  canonical_concept_es: string;
+  same_format_definition: string;
+  query_groups: Array<{ region: string; language: string; queries: string[]; exclusions: string[] }>;
+  adjacent_but_distinct: string[];
+  localization_notes: string[];
+  source_ids: string[];
+}
+
+export interface SearchPlan {
+  id: string;
+  opportunity_id: string;
+  status: string;
+  origin: string;
+  plan: Partial<SearchPlanBody>;
+  prompt_version: string | null;
+  model_version: string | null;
+  error_code: string | null;
+  approved_by: string | null;
+  approved_at: string | null;
+  created_at: string;
+}
+
+export interface CompetitionMatch {
+  id: string;
+  video_title: string;
+  channel_title: string;
+  video_language: string;
+  is_spanish_market: boolean;
+  match_quality: string;
+  query: string;
+  query_language: string;
+  region: string | null;
+  position: number;
+  run_id: string;
+}
+
+export interface Competition {
+  coverage: {
+    queries_run: number;
+    query_variants: number;
+    es_verified_videos: number;
+    reviewed_matches: number;
+    exact_matches: number;
+  };
+  matches: CompetitionMatch[];
+}
+
 export interface UsageOut {
   provider: string;
   quota_bucket: string;

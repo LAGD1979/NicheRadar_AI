@@ -4,7 +4,7 @@
 
 | Capa | Comando | Qué cubre | Último resultado |
 |---|---|---|---|
-| Backend (unitarias + integración) | `docker compose run --rm --no-deps api pytest -q` | Dominio, cliente de YouTube (simulado), ingesta, cuota, importación, purga, API, worker | **117 pasan** |
+| Backend (unitarias + integración) | `docker compose run --rm --no-deps api pytest -q` | Dominio, clientes (simulados), ingesta, cuota, importación, purga, mercado español, API, worker | **160 pasan** |
 | Backend (lint y tipos) | `docker compose run --rm --no-deps api sh -c "ruff check app tests && ruff format --check app tests && mypy app"` | Estilo y tipos estrictos | **pasa** |
 | Frontend (lint, tipos) | `docker compose run --rm --no-deps frontend sh -c "npx eslint . && npx tsc --noEmit"` | ESLint estricto, TypeScript estricto | **pasa** |
 | Frontend (unitarias) | `docker compose run --rm --no-deps frontend npx vitest run` | Formato de nulos, selección 2–8, URL, formulario de búsqueda | **15 pasan** |
@@ -54,7 +54,27 @@ Estado: **✔ cubierto** · **◐ parcial** · **— pendiente** (indica el hito
 - **Migraciones:** la base de pruebas se recrea y se compara con los modelos (`test_migrations_match_models`).
 - **Zona horaria de cuota:** la frontera de medianoche Pacific Time (`test_quota_day_starts_at_pacific_midnight`).
 
+## M2: mercado español (T08–T14)
+
+| ID | Caso | Estado | Dónde |
+|---|---|---|---|
+| T08 | Mismo formato en varios idiomas → un grupo | ✔ | `test_two_videos_annotated_to_one_format_share_one_opportunity` |
+| T09 | Mismo formato, nicho distinto → dos oportunidades | ✔ | `test_same_format_in_another_niche_is_another_opportunity` |
+| T10 | Ninguna competencia ES en pocas búsquedas → `UNKNOWN` | ✔ | `test_zero_competitors_in_three_searches_is_unknown_not_low` |
+| T11 | Búsquedas ES sin demanda → `DEMAND_UNPROVEN` | ✔ | `test_eight_es_searches_without_demand_is_demand_unproven`, `test_validation_counts_only_spanish_verified_videos…` |
+| T12 | Canal espejo multilingüe | — | No implementado (pendiente, ver progreso). |
+| T13 | IA inventa URL o ID de fuente | ✔ | `test_invalid_ai_output_is_kept_for_review_without_facts`, `test_links_and_control_characters…` |
+| T14 | Instrucción dentro de un título | ✔ | `test_injected_title_stays_inside_json_data` (comprueba la estructura del prompt; el comportamiento real del modelo no se ha probado). |
+
+Otras pruebas de M2: planes bloqueados al aprobar (`test_approved_plan_is_locked…`), historial append-only (`test_evaluation_history_is_append_only`), revisión que recalcula (`test_unreviewed_matches_are_not_exact_and_review_recalculates`), IA desactivada por defecto (`test_ai_is_off_by_default…`).
+
+Cobertura en tiempo de ejecución: 160 pruebas en backend, de las que 43 son de M2.
+
 ## Pendiente de verificar
+
+- Una validación en español con más de seis consultas (la prueba real usó dos).
+- El cliente de IA contra la API real de Anthropic (no hay clave ni modelo configurados).
+- Precisión de la revisión humana en una muestra etiquetada (§13.3).
 
 - Una búsqueda real repetida y la purga de datos reales en un día distinto (solo se ejecutó una vez).
 - Playwright en el navegador del usuario (solo en el contenedor oficial).

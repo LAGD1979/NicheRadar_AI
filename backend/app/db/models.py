@@ -116,6 +116,7 @@ class SourceQuery(Base):
     pages: Mapped[int] = mapped_column(Integer, default=0)
     status: Mapped[str] = mapped_column(String(20))
     warnings_json: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    opportunity_id: Mapped[str | None] = mapped_column(ForeignKey("opportunities.id"), index=True)
 
 
 class DiscoveryMatch(Base):
@@ -132,6 +133,44 @@ class DiscoveryMatch(Base):
     strategy: Mapped[str] = mapped_column(String(40))
     match_quality: Mapped[str] = mapped_column(String(20), default="UNREVIEWED")
     is_spanish_market: Mapped[bool] = mapped_column(Boolean, default=False)
+    opportunity_id: Mapped[str | None] = mapped_column(ForeignKey("opportunities.id"), index=True)
+    reviewed_by: Mapped[str | None] = mapped_column(String(120))
+
+
+class VideoAnnotation(Base):
+    """Etiqueta de un video para un nicho y formato. Solo cuenta si tiene evidencia y autor."""
+
+    __tablename__ = "video_annotations"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    video_id: Mapped[str] = mapped_column(ForeignKey("videos.id"), index=True)
+    opportunity_id: Mapped[str] = mapped_column(ForeignKey("opportunities.id"), index=True)
+    same_format_confidence: Mapped[str] = mapped_column(String(10))
+    label_source: Mapped[str] = mapped_column(String(20))
+    model_version: Mapped[str | None] = mapped_column(String(60))
+    prompt_version: Mapped[str | None] = mapped_column(String(20))
+    rationale: Mapped[str] = mapped_column(Text)
+    reviewed_by: Mapped[str] = mapped_column(String(120))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class SpanishSearchPlan(Base):
+    """Plan de búsqueda en español. Versionado; solo un plan APPROVED por oportunidad."""
+
+    __tablename__ = "spanish_search_plans"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    opportunity_id: Mapped[str] = mapped_column(ForeignKey("opportunities.id"), index=True)
+    status: Mapped[str] = mapped_column(String(20))
+    origin: Mapped[str] = mapped_column(String(10))
+    plan_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    prompt_version: Mapped[str | None] = mapped_column(String(20))
+    model_version: Mapped[str | None] = mapped_column(String(60))
+    source_ids_json: Mapped[list[str]] = mapped_column(JSONB, default=list)
+    error_code: Mapped[str | None] = mapped_column(String(60))
+    approved_by: Mapped[str | None] = mapped_column(String(120))
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
 class ProviderUsage(Base):
@@ -168,6 +207,7 @@ class Opportunity(Base):
     source_languages_json: Mapped[list[str]] = mapped_column(JSONB, default=list)
     status: Mapped[str] = mapped_column(String(40))
     owner_notes: Mapped[str | None] = mapped_column(Text)
+    last_evaluated_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 

@@ -1,0 +1,265 @@
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+
+import { api } from "../api";
+import { label } from "../format";
+import type { SearchPlan, SearchPlanBody } from "../types";
+
+const WINDOW_OPTIONS: Array<[string, string]> = [
+  ["0-7", "0 a 7 días"],
+  ["8-30", "8 a 30 días"],
+  ["31-90", "31 a 90 días"],
+];
+const QUALITY_OPTIONS: Array<[string, string]> = [
+  ["UNREVIEWED", "Sin revisar"],
+  ["EXACT", "Exacto (mismo formato)"],
+  ["ADJACENT", "Cercano (no es el mismo)"],
+  ["GENERIC", "Genérico"],
+  ["FALSE_POSITIVE", "Falso positivo"],
+];
+const PLAN_TEMPLATE: SearchPlanBody = {
+  schema_version: "1.0",
+  canonical_concept_es: "Escriba el concepto en español",
+  same_format_definition: "Describa qué narrativa y estética deben coincidir.",
+  query_groups: [
+    {
+      region: "ALL_ES",
+      language: "es",
+      queries: ["búsqueda 1", "búsqueda 2", "búsqueda 3", "búsqueda 4", "búsqueda 5"],
+      exclusions: [],
+    },
+  ],
+  adjacent_but_distinct: [],
+  localization_notes: [],
+  source_ids: [],
+};
+
+const STATUS_LABEL: Record<string, string> = {
+  PENDING_REVIEW: "Pendiente de revisión",
+  APPROVED: "Aprobado",
+  NEEDS_REVIEW: "Requiere revisión",
+  SUPERSEDED: "Reemplazado",
+};
+
+export function SpanishMarket({ opportunityId }: { opportunityId: string }) {
+  const queryClient = useQueryClient();
+  const plans = useQuery({
+    queryKey: ["plans", opportunityId],
+    queryFn: () => api.plans(opportunityId),
+    refetchInterval: 5000,
+  });
+  const competition = useQuery({
+    queryKey: ["competition", opportunityId],
+    queryFn: () => api.competition(opportunityId),
+    refetchInterval: 5000,
+  });
+  const refresh = () => {
+    void queryClient.invalidateQueries({ queryKey: ["plans", opportunityId] });
+    void queryClient.invalidateQueries({ queryKey: ["competition", opportunityId] });
+    void queryClient.invalidateQueries({ queryKey: ["opportunity", opportunityId] });
+  };
+
+  const generate = useMutation({ mutationFn: () => api.generatePlan(opportunityId), onSuccess: refresh });
+  const createManual = useMutation({
+    mutationFn: (body: unknown) => api.createManualPlan(opportunityId, body),
+    onSuccess: refresh,
+  });
+  const approve = useMutation({
+    mutationFn: (plan: SearchPlan) =>
+      api.updatePlan(plan.id, { plan: plan.plan, approve: true }),
+    onSuccess: refresh,
+  });
+  const review = useMutation({
+    mutationFn: ({ id, quality }: { id: string; quality: string }) => api.reviewMatch(id, quality),
+    onSuccess: refresh,
+  });
+
+  const approved = plans.data?.find((p) => p.status === "APPROVED");
+  const [manualText, setManualText] = useState(JSON.stringify(PLAN_TEMPLATE, null, 2));
+  const [manualError, setManualError] = useState<string | null>(null);
+  const [windows, setWindows] = useState<string[]>(["8-30", "31-90"]);
+  const [maxSearches, setMaxSearches] = useState(5);
+  const validate = useMutation({
+    mutationFn: () =>
+      api.validateSpanish(opportunityId, {
+        plan_id: approved?.id ?? "",
+        windows,
+        max_search_calls: maxSearches,
+        pages_per_query: 1,
+      }),
+    onSuccess: refresh,
+  });
+
+  function submitManual() {
+    try {
+      createManual.mutate(JSON.parse(manualText) as unknown);
+      setManualError(null);
+    } catch {
+      setManualError("El texto no es JSON válido.");
+    }
+  }
+
+  return (
+    <div>
+      <p className="hint">
+        Una búsqueda sin resultados no prueba oportunidad ni baja competencia. El estado solo cambia con
+        evidencia revisada.
+      </p>
+
+      {competition.data && (
+        <p>
+          Consultas ejecutadas: <strong>{competition.data.coverage.queries_run}</strong> · Videos en español verificados:{" "}
+          <strong>{competition.data.coverage.es_verified_videos}</strong> · Revisados:{" "}
+          <strong>{competition.data.coverage.reviewed_matches}</strong> · Competidores exactos:{" "}
+          <strong>{competition.data.coverage.exact_matches}</strong>
+        </p>
+      )}
+
+      <h3>Planes de búsqueda</h3>
+      <div className="toolbar">
+        <button type="button" onClick={() => { generate.mutate(); }} disabled={generate.isPending}>
+          Generar plan con IA
+        </button>
+      </div>
+      {generate.isError && <p role="alert">No se pudo generar: {generate.error.message}.</p>}
+      {generate.isSuccess && <p role="status">Plan encolado. Aparecerá aquí cuando el worker termine.</p>}
+
+      {plans.isSuccess && plans.data.length === 0 && <p className="empty">Aún no hay planes para esta oportunidad.</p>}
+      <ul className="list">
+        {plans.data?.map((plan) => (
+          <li key={plan.id}>
+            <strong>{plan.plan.canonical_concept_es ?? "Plan sin contenido válido"}</strong>{" "}
+            <span className="muted">
+              · {STATUS_LABEL[plan.status] ?? plan.status} · Origen: {label(plan.origin)}
+              {plan.error_code && ` · Error: ${plan.error_code}`}
+            </span>
+            {plan.plan.query_groups && (
+              <ul>
+                {plan.plan.query_groups.flatMap((g) =>
+                  g.queries.map((q) => (
+                    <li key={`${g.region}-${q}`}>
+                      {q} <small className="muted">({g.region})</small>
+                    </li>
+                  )),
+                )}
+              </ul>
+            )}
+            {plan.status === "PENDING_REVIEW" && (
+              <button type="button" onClick={() => { approve.mutate(plan); }} disabled={approve.isPending}>
+                Aprobar este plan
+              </button>
+            )}
+          </li>
+        ))}
+      </ul>
+      {approve.isError && <p role="alert">No se pudo aprobar: {approve.error.message}.</p>}
+
+      <details>
+        <summary>Escribir un plan manualmente (JSON)</summary>
+        <textarea
+          aria-label="Plan en JSON"
+          rows={14}
+          value={manualText}
+          onChange={(e) => { setManualText(e.target.value); }}
+          style={{ width: "100%", fontFamily: "monospace" }}
+        />
+        <button type="button" onClick={submitManual} disabled={createManual.isPending}>
+          Guardar plan
+        </button>
+        {manualError && <p role="alert">{manualError}</p>}
+        {createManual.isError && <p role="alert">{createManual.error.message}</p>}
+      </details>
+
+      <h3>Validar en español</h3>
+      {approved ? (
+        <form
+          className="filters"
+          onSubmit={(e) => {
+            e.preventDefault();
+            validate.mutate();
+          }}
+          aria-label="Validar en español"
+        >
+          <fieldset>
+            <legend>Ventanas</legend>
+            {WINDOW_OPTIONS.map(([code, text]) => (
+              <label key={code}>
+                <input
+                  type="checkbox"
+                  checked={windows.includes(code)}
+                  onChange={(e) => {
+                    setWindows(e.target.checked ? [...windows, code] : windows.filter((w) => w !== code));
+                  }}
+                />{" "}
+                {text}
+              </label>
+            ))}
+          </fieldset>
+          <label>
+            Búsquedas máx.
+            <input
+              type="number"
+              min={1}
+              max={80}
+              value={maxSearches}
+              onChange={(e) => { setMaxSearches(Number(e.target.value)); }}
+            />
+          </label>
+          <button type="submit" disabled={validate.isPending || windows.length === 0}>
+            Validar en español
+          </button>
+        </form>
+      ) : (
+        <p className="empty">Apruebe un plan para poder validarlo en español.</p>
+      )}
+      {validate.isSuccess && <p role="status">Validación encolada.</p>}
+      {validate.isError && <p role="alert">No se pudo validar: {validate.error.message}.</p>}
+
+      <h3>Competidores encontrados</h3>
+      {competition.isSuccess && competition.data.matches.length === 0 && (
+        <p className="empty">Sin coincidencias todavía.</p>
+      )}
+      {competition.isSuccess && competition.data.matches.length > 0 && (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Video</th>
+                <th scope="col">Canal</th>
+                <th scope="col">Idioma verificado</th>
+                <th scope="col">Búsqueda</th>
+                <th scope="col">Revisión</th>
+              </tr>
+            </thead>
+            <tbody>
+              {competition.data.matches.map((match) => (
+                <tr key={match.id}>
+                  <td>{match.video_title}</td>
+                  <td>{match.channel_title}</td>
+                  <td>
+                    {label(match.video_language)}
+                    {match.is_spanish_market ? "" : " · no cuenta como español"}
+                  </td>
+                  <td>{match.query}</td>
+                  <td>
+                    <select
+                      aria-label={`Revisión de ${match.video_title}`}
+                      value={match.match_quality}
+                      onChange={(e) => { review.mutate({ id: match.id, quality: e.target.value }); }}
+                    >
+                      {QUALITY_OPTIONS.map(([code, text]) => (
+                        <option key={code} value={code}>
+                          {text}
+                        </option>
+                      ))}
+                    </select>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}

@@ -242,6 +242,8 @@ def run_discovery(
     max_search_calls: int,
     pages_per_query: int,
     now: datetime,
+    strategy: str = "search_list",
+    opportunity_id: str | None = None,
 ) -> DiscoveryOutcome:
     """Ejecuta consultas pendientes en orden. Al agotar la cuota se detiene y guarda el progreso."""
     result = DiscoveryOutcome(completed=sorted(completed_keys))
@@ -255,7 +257,18 @@ def run_discovery(
             )
             break
         try:
-            _run_one_query(session, source, settings, run_id, plan, pages_per_query, now, result)
+            _run_one_query(
+                session,
+                source,
+                settings,
+                run_id,
+                plan,
+                pages_per_query,
+                now,
+                result,
+                strategy=strategy,
+                opportunity_id=opportunity_id,
+            )
         except QuotaExhausted as exc:
             result.outcome = "PAUSED_QUOTA"
             result.errors.append({"code": "PAUSED_QUOTA", "detail": str(exc)})
@@ -271,7 +284,16 @@ def run_discovery(
                 {"code": exc.code, "detail": f"{plan.language} · {plan.window}: {exc}"}
             )
             session.add(
-                _query_row(run_id, plan, now, status="ERROR", count=0, pages=0, warnings=[str(exc)])
+                _query_row(
+                    run_id,
+                    plan,
+                    now,
+                    status="ERROR",
+                    count=0,
+                    pages=0,
+                    warnings=[str(exc)],
+                    opportunity_id=opportunity_id,
+                )
             )
             session.flush()
     return result
@@ -286,6 +308,9 @@ def _run_one_query(
     pages_per_query: int,
     now: datetime,
     result: DiscoveryOutcome,
+    *,
+    strategy: str = "search_list",
+    opportunity_id: str | None = None,
 ) -> None:
     after, before = window_bounds(plan.window, now)
     hits: list[SearchHit] = []
@@ -316,7 +341,14 @@ def _run_one_query(
     )
 
     query_row = _query_row(
-        run_id, plan, now, status="OK", count=len(hits), pages=pages, warnings=[]
+        run_id,
+        plan,
+        now,
+        status="OK",
+        count=len(hits),
+        pages=pages,
+        warnings=[],
+        opportunity_id=opportunity_id,
     )
     session.add(query_row)
     session.flush()
@@ -337,9 +369,10 @@ def _run_one_query(
                     query_id=query_row.id,
                     video_id=video.id,
                     position=position,
-                    strategy="search_list",
+                    strategy=strategy,
                     match_quality="UNREVIEWED",
                     is_spanish_market=video.language_state == "es",
+                    opportunity_id=opportunity_id,
                 )
             )
     counts = result.per_language.setdefault(
@@ -360,10 +393,12 @@ def _query_row(
     count: int,
     pages: int,
     warnings: list[str],
+    opportunity_id: str | None = None,
 ) -> m.SourceQuery:
     return m.SourceQuery(
         id=str(uuid4()),
         run_id=run_id,
+        opportunity_id=opportunity_id,
         provider=PROVIDER,
         language_requested=plan.language,
         region=plan.region,

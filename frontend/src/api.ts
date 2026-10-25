@@ -7,7 +7,9 @@ import type {
   Page,
   ProblemBody,
   ProviderOut,
+  Competition,
   RunOut,
+  SearchPlan,
   UsageOut,
   VideoItem,
 } from "./types";
@@ -79,4 +81,33 @@ export const api = {
       { method: "POST" },
     ),
   usage: () => request<UsageOut>("/usage"),
+  plans: (opportunityId: string) =>
+    request<SearchPlan[]>(`/opportunities/${encodeURIComponent(opportunityId)}/search-plans`),
+  createManualPlan: (opportunityId: string, plan: unknown) =>
+    request<SearchPlan>(`/opportunities/${encodeURIComponent(opportunityId)}/search-plans`, {
+      method: "POST",
+      body: JSON.stringify(plan),
+    }),
+  generatePlan: (opportunityId: string) =>
+    request<{ id: string; kind: string; status: string }>(
+      `/opportunities/${encodeURIComponent(opportunityId)}/search-plans/generate`,
+      { method: "POST" },
+    ),
+  updatePlan: (planId: string, body: { plan: unknown; approve: boolean }) =>
+    request<SearchPlan>(`/search-plans/${encodeURIComponent(planId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  validateSpanish: (opportunityId: string, body: unknown) =>
+    request<{ id: string; kind: string; status: string }>(
+      `/opportunities/${encodeURIComponent(opportunityId)}/validate-spanish`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+  competition: (opportunityId: string) =>
+    request<Competition>(`/opportunities/${encodeURIComponent(opportunityId)}/competition`),
+  reviewMatch: (matchId: string, matchQuality: string) =>
+    request<{ id: string; match_quality: string }>(`/matches/${encodeURIComponent(matchId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ match_quality: matchQuality }),
+    }),
 };
