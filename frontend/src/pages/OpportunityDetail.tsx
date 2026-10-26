@@ -85,19 +85,83 @@ export function OpportunityDetail() {
   );
 }
 
+const REPLICATION_REASONS: Record<string, string> = {
+  NO_RELEVANT_VIDEOS: "No hay videos agrupados con confianza alta o media.",
+  SUCCESS_DATA_MISSING: "Faltan vistas o suscriptores para medir el éxito.",
+  ONE_CREATOR_GROUP: "Todo viene de un solo canal o creador.",
+  SUCCESS_IN_ONE_VIDEO: "El éxito se concentra en un solo video.",
+  BELOW_REPLICATED_THRESHOLDS: "Alcanza «prometedor» pero no los umbrales de «replicado».",
+  REPLICATION_INSUFFICIENT_SAMPLE: "Muestra insuficiente: faltan canales, videos o semanas.",
+  SOME_VIDEOS_MISSING_VIEWS_OR_SUBSCRIBERS: "A algunos videos les faltan vistas o suscriptores.",
+  LOW_CONFIDENCE_VIDEOS_EXCLUDED: "Se excluyeron videos agrupados con confianza baja.",
+};
+
+function Replication({ opp }: { opp: Detail }) {
+  const intl = opp.evaluation?.international ?? {};
+  const state = typeof intl.replication_state === "string" ? intl.replication_state : null;
+  if (state === null) {
+    return (
+      <p className="notice" role="note">
+        Sin cálculo de replicación. Se calcula al agrupar videos en <Link to="/videos">Videos</Link>, si la política
+        de métricas derivadas lo permite.
+      </p>
+    );
+  }
+  const reasons = Array.isArray(intl.reason_codes) ? (intl.reason_codes as string[]) : [];
+  const num = (key: string) => formatField(intl[key] ?? null, stateFor(intl[key]));
+  const concentration =
+    typeof intl.top_channel_concentration === "number"
+      ? `${String(Math.round(intl.top_channel_concentration * 100))} %`
+      : formatField(null, "NOT_AVAILABLE");
+  return (
+    <section className="replication" aria-label="Replicación internacional">
+      <h3>
+        Replicación internacional: <strong>{label(state)}</strong>
+      </h3>
+      <dl className="facts">
+        <dt>Canales independientes</dt>
+        <dd>{num("independent_channels_observed")}</dd>
+        <dt>Videos relevantes</dt>
+        <dd>{num("relevant_videos_observed")}</dd>
+        <dt>Videos exitosos</dt>
+        <dd>{num("successful_videos_observed")}</dd>
+        <dt>Semanas distintas</dt>
+        <dd>{num("distinct_weeks")}</dd>
+        <dt>Concentración del mayor canal</dt>
+        <dd>{concentration}</dd>
+      </dl>
+      {reasons.length > 0 && (
+        <ul className="list">
+          {reasons.map((code) => (
+            <li key={code}>{REPLICATION_REASONS[code] ?? code}</li>
+          ))}
+        </ul>
+      )}
+      <p className="muted small">
+        Reglas heurísticas por calibrar. Un canal distinto no prueba un creador distinto (canales espejo sin revisar), y
+        los videos salen de búsquedas y de su selección: no son una muestra del universo de YouTube.
+      </p>
+    </section>
+  );
+}
+
 function Evidence({ opp, market }: { opp: Detail; market: string }) {
   const rows = opp.evidence.filter((e) => e.market === market);
   if (rows.length === 0) {
     return (
-      <p className="empty">
-        {market === "SOURCE_MARKET"
-          ? "Sin evidencia internacional registrada para esta oportunidad."
-          : "Sin evidencia de mercado español. La ausencia de resultados no prueba oportunidad ni baja competencia."}
-      </p>
+      <>
+        {market === "SOURCE_MARKET" && <Replication opp={opp} />}
+        <p className="empty">
+          {market === "SOURCE_MARKET"
+            ? "Sin evidencia internacional registrada para esta oportunidad."
+            : "Sin evidencia de mercado español. La ausencia de resultados no prueba oportunidad ni baja competencia."}
+        </p>
+      </>
     );
   }
   return (
     <>
+      {market === "SOURCE_MARKET" && <Replication opp={opp} />}
       {market === "SPANISH_MARKET" && <Coverage opp={opp} />}
       <div className="table-wrap">
       <table>

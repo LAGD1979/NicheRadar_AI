@@ -82,9 +82,13 @@ Datos reales en la base: el video real «Stalingrado: la batalla que cambió…�
 
 Cliente MCP de solo lectura (`vidiq_outliers`), corrida `kind=vidiq`, presupuesto de créditos (diario y por corrida), datos `PROVIDER` con caducidad de 29 días, métricas con procedencia en `videos.provider_metrics` y migración 0005. Verificación: 27 pruebas nuevas (cliente simulado, servicio y API/worker), lint y tipos limpios, y una corrida real (9 videos, 5 créditos). Los términos de vidIQ los revisó el responsable: delegan el almacenamiento en la plataforma de origen (29 días). Las pantallas (Corridas con vidIQ, Videos con agrupación y guía de pasos) están en D-58.
 
+## Replicación internacional con datos reales (D-61)
+
+Cálculo `repl-v1` (REPLICATED, PROMISING, SINGLE_OUTLIER, UNKNOWN) desde los videos agrupados, detrás de la compuerta `derived_metrics`, con evidencia por video, versiones de evaluación y caducidad. Verificado con 14 pruebas de dominio, 5 de integración y una oportunidad real (Replicado). Pendiente: revisión de canales espejo (T12).
+
 ## Estado de verificación actual
 
-265 pruebas de backend, 23 de frontend y 9 E2E pasando (1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
+284 pruebas de backend, 23 de frontend y 9 E2E pasando (1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
 
 ## Siguiente paso
 

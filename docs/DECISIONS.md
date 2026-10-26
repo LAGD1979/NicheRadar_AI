@@ -240,6 +240,24 @@ Recorrido real de punta a punta: consulta a vidIQ por formato (`video_essay`, 15
 - **Lo que mostró la validación:** 252 coincidencias, 194 en español verificado y 133 canales distintos. Hay mucho contenido de análisis de series y películas en español, pero está mezclado: la revisión humana debe separar los competidores exactos.
 - **Corrida parcial por diseño:** el plan tiene 18 consultas y se usó un presupuesto de 6.
 
+### D-61 · Replicación internacional calculada con datos reales (2026-10-25)
+Hasta ahora los estados «Replicado», «Prometedor» y «Caso aislado» solo existían en la demo. `domain/replication.py` (reglas `repl-v1`, función pura) los calcula a partir de los videos que una persona agrupó en la oportunidad, con las reglas de la especificación §3.4:
+
+- **REPLICATED:** 3 o más canales independientes, reparto (2 o más videos por canal, o 6 o más videos), 3 o más semanas ISO distintas y concentración del mayor canal menor de 60 % de los videos exitosos.
+- **PROMISING:** 2 o más canales y 4 o más videos en 2 o más semanas.
+- **SINGLE_OUTLIER:** un solo canal o creador, o un solo video exitoso.
+- **UNKNOWN:** sin videos relevantes, sin vistas ni suscriptores para medir el éxito, o muestra insuficiente (por ejemplo 3 videos). Nunca se trata un dato faltante como cero.
+
+Un video «exitoso» tiene al menos 50 000 vistas (`long_video_views_soft_min`) y es de un canal de hasta 50 000 suscriptores (`candidate_channel_subscribers_soft_max`). Cuentan solo las anotaciones con confianza alta o media; las de confianza baja se excluyen y se informa. Un video anotado dos veces cuenta una.
+
+- **Compuerta:** es una métrica derivada, así que corre solo si `derived_metrics` está abierta (D-48). Si no, la sección internacional queda como estaba y la API responde 403 al pedirla.
+- **Cuándo se calcula:** al agrupar un video (`POST /videos/{id}/annotations`, que ahora devuelve `replication_state`) y a pedido (`POST /opportunities/{id}/replication/refresh`). Cada cambio crea una versión nueva de la evaluación; recalcular sin cambios no crea nada.
+- **Evidencia:** cada video agrupado genera una fila de evidencia internacional (`INTL_EXAMPLE`), con el motivo de la persona, y la ficha la muestra.
+- **Caducidad:** un video purgado a los 29 días deja de contar.
+- **Límites declarados en cada resultado:** `independence_verified=false` (un canal distinto no prueba un creador distinto; canales espejo pendientes, T12; el campo `creator_group` permite corregirlo cuando exista esa revisión) y `sample_bias_warning` (los videos salen de búsquedas y de una selección humana, no de una muestra del universo).
+- **Resultado real:** la oportunidad de prueba de D-60 pasó a «Replicado» (6 canales, 6 videos, 4 semanas, concentración 17 %) y la recomendación subió de «Investigar más» a «Validar demanda con piloto». Esa replicación se apoya en seis videos que el asistente eligió por título y categoría de vidIQ.
+- **No incluido:** la métrica de `PROMISING`/`REPLICATED` no usa el desempeño frente al promedio del propio canal (mínimo 5 videos comparables) ni el desglose por idioma; la tracción, la persistencia y la resiliencia temporal siguen sin calcularse.
+
 ---
 
 ## M4 — motor analítico avanzado (detrás de la compuerta)

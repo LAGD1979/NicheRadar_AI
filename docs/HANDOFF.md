@@ -7,6 +7,7 @@ Documento para cualquier sesión nueva (o para una persona). Complementa `CLAUDE
 - Hitos M0, M1, M2, M3 y M4 construidos y commiteados. Último commit: `ad9bcdb`.
 - M4 (índices avanzados) **abierto** en este equipo: el modo `approved_scope` está en el `.env` local, y hay cuatro aprobaciones registradas por el responsable (D-54). No es una autorización emitida por YouTube.
 - Los índices siguen en NULL porque no existe resiliencia temporal (histórico licenciado). Es intencional.
+- Replicación internacional calculada con datos reales (D-61): corre al agrupar videos y exige la capacidad `derived_metrics`. La oportunidad real de prueba está «Replicada».
 - Sin fuente de señales de demanda: ninguna oportunidad real llega a «listo para piloto».
 - **vidIQ (D-57):** adaptador MCP implementado y probado en vivo (`POST /research-runs` con `kind=vidiq`). Clave en la variable de usuario `VIDIQ_API_KEY`. El responsable revisó los términos de vidIQ: delegan el almacenamiento en los términos de la plataforma de origen, así que rige la caducidad de 29 días (D-57). Desde D-58 hay tarjeta en Corridas y agrupación en Videos.
 - IA: los adaptadores de **OpenAI** (`gpt-4.1-mini`, D-55) y **Anthropic** (`claude-haiku-5-5`, D-56) se probaron en vivo el 2026-10-25 generando un plan de búsqueda. Las claves se leen de las variables de usuario `OPENAI_API_KEY` y `CLAUDE_API_KEY` (Compose acepta esta última como `ANTHROPIC_API_KEY`). El `.env` local deja activo Anthropic; para cambiar, editar `AI_PROVIDER` y `AI_MODEL` y recrear `api worker`.
@@ -33,7 +34,7 @@ Documento para cualquier sesión nueva (o para una persona). Complementa `CLAUDE
 - Lint y tipos backend: `… run --rm --no-deps api sh -c "ruff check app tests && ruff format --check app tests && mypy app"`
 - Frontend: `… run --rm --no-deps frontend sh -c "npx eslint . && npx tsc --noEmit && npx vitest run"`
 - E2E (con el stack arriba): `… --profile e2e run --rm e2e`
-- Estado esperado: 265 pruebas backend, 23 frontend, 9 E2E pasando y 1 omitido (el omitido es esperado).
+- Estado esperado: 284 pruebas backend, 23 frontend, 9 E2E pasando y 1 omitido (el omitido es esperado).
 
 Para ver cambios sin reconstruir la imagen: montar el código con `-v "<ruta>\backend:/app"` en `run`.
 
@@ -63,6 +64,6 @@ Para ver cambios sin reconstruir la imagen: montar el código con `-v "<ruta>\ba
 - Confirmar la cuota real del proyecto en Google Cloud (la especificación dice 1 unidad por `search.list`; la documentación oficial dice 100).
 - IA: probar reintentos (429/5xx), un modelo de razonamiento de OpenAI (`temperature`) y revisar la calidad de los planes generados.
 - Probar una búsqueda grande y la reanudación con cuota real.
-- Detección de canales espejo (T12).
+- Detección de canales espejo (T12): la replicación asume que canal distinto es creador distinto.
 - Scheduler automático y purga programada (M5).
 - Revisión humana de 30 a 50 videos etiquetados (§13.3) para medir precisión.

@@ -1,5 +1,6 @@
 """Rutas del mercado español (M2): taxonomía, anotaciones, planes, validación y revisión."""
 
+from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 from uuid import uuid4
 
@@ -13,7 +14,7 @@ from app.core.errors import ProblemError
 from app.db import models as m
 from app.db.session import get_session
 from app.domain.search_plan import SpanishSearchPlan
-from app.services import spanish_service
+from app.services import replication_service, spanish_service
 from app.services.research_service import enqueue_run
 
 router = APIRouter()
@@ -155,8 +156,13 @@ def create_opportunity(body: OpportunityCreate, session: SessionDep) -> dict[str
 
 
 @router.post("/videos/{video_id}/annotations", status_code=201)
-def annotate(video_id: str, body: AnnotationCreate, session: SessionDep) -> dict[str, Any]:
-    """Etiqueta humana: el video pertenece a un nicho y formato. Crea la oportunidad si falta."""
+def annotate(
+    video_id: str, body: AnnotationCreate, session: SessionDep, settings: SettingsDep
+) -> dict[str, Any]:
+    """Etiqueta humana: el video pertenece a un nicho y formato. Crea la oportunidad si falta.
+
+    Si la política lo permite, recalcula la replicación internacional de la oportunidad.
+    """
     annotation, opp = spanish_service.annotate_video(
         session,
         video_id=video_id,
@@ -166,8 +172,29 @@ def annotate(video_id: str, body: AnnotationCreate, session: SessionDep) -> dict
         rationale=body.rationale,
         reviewer="local_owner",
     )
+    replication = replication_service.refresh(session, settings, opp.id, datetime.now(UTC))
     session.commit()
-    return {"annotation_id": annotation.id, "opportunity_id": opp.id}
+    return {
+        "annotation_id": annotation.id,
+        "opportunity_id": opp.id,
+        "replication_state": replication.get("state"),
+    }
+
+
+@router.post("/opportunities/{opportunity_id}/replication/refresh")
+def refresh_replication(
+    opportunity_id: str, session: SessionDep, settings: SettingsDep
+) -> dict[str, Any]:
+    """Recalcula la replicación con los videos agrupados vigentes (caducados no cuentan)."""
+    if session.get(m.Opportunity, opportunity_id) is None:
+        raise ProblemError(404, "OPPORTUNITY_NOT_FOUND", "Oportunidad no encontrada")
+    replication = replication_service.refresh(session, settings, opportunity_id, datetime.now(UTC))
+    session.commit()
+    if replication.get("state") == "RESTRICTED":
+        raise ProblemError(
+            403, "POLICY_RESTRICTED", "La replicación está restringida", replication.get("reason")
+        )
+    return replication
 
 
 @router.get("/opportunities/{opportunity_id}/search-plans")
