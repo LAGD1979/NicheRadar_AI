@@ -1,5 +1,5 @@
 from datetime import UTC, datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, or_, select
@@ -26,6 +26,7 @@ from app.api.v1.schemas import (
     RunOut,
     UsageOut,
     VideoItem,
+    VideoOpportunityRef,
     VidIQUsageOut,
 )
 from app.core.config import Settings, get_settings
@@ -174,7 +175,37 @@ def _age_or_none(published_at: Any, observed_at: Any) -> float | None:
         return None
 
 
-def _video_item(v: m.Video, c: m.Channel) -> VideoItem:
+def _opportunity_refs(
+    session: Session, video_ids: list[str]
+) -> dict[str, list[VideoOpportunityRef]]:
+    """Oportunidades a las que ya se anotó cada video, con nicho y formato legibles."""
+    if not video_ids:
+        return {}
+    rows = session.execute(
+        select(
+            m.VideoAnnotation.video_id,
+            m.Opportunity.id,
+            m.Niche.canonical_name_es,
+            m.Format.canonical_name_es,
+            m.Opportunity.video_type,
+        )
+        .join(m.Opportunity, m.Opportunity.id == m.VideoAnnotation.opportunity_id)
+        .join(m.Niche, m.Niche.id == m.Opportunity.niche_id)
+        .join(m.Format, m.Format.id == m.Opportunity.format_id)
+        .where(m.VideoAnnotation.video_id.in_(video_ids))
+        .order_by(m.VideoAnnotation.created_at)
+    ).all()
+    refs: dict[str, list[VideoOpportunityRef]] = {}
+    for video_id, opp_id, niche, fmt, video_type in rows:
+        existing = refs.setdefault(video_id, [])
+        if all(r.id != opp_id for r in existing):
+            existing.append(VideoOpportunityRef(id=opp_id, label=f"{niche} · {fmt} ({video_type})"))
+    return refs
+
+
+def _video_item(
+    v: m.Video, c: m.Channel, refs: list[VideoOpportunityRef] | None = None
+) -> VideoItem:
     return VideoItem(
         id=v.id,
         youtube_video_id=v.youtube_video_id,
@@ -197,6 +228,8 @@ def _video_item(v: m.Video, c: m.Channel) -> VideoItem:
         owner_authorized=v.owner_authorized,
         retention_deadline=v.retention_deadline,
         last_refreshed_at=v.last_refreshed_at,
+        provider_metrics=v.provider_metrics,
+        opportunities=refs or [],
     )
 
 
@@ -209,6 +242,9 @@ def list_videos(
     video_type: Annotated[str | None, Query(max_length=10)] = None,
     language_state: Annotated[str | None, Query(max_length=20)] = None,
     source_data_type: Annotated[str | None, Query(max_length=20)] = None,
+    provider: Annotated[str | None, Query(max_length=60)] = None,
+    annotated: Annotated[bool | None, Query()] = None,
+    sort: Annotated[Literal["recent", "breakout"], Query()] = "recent",
 ) -> Page[VideoItem]:
     stmt = select(m.Video, m.Channel).join(m.Channel, m.Channel.id == m.Video.channel_id)
     if q:
@@ -224,13 +260,24 @@ def list_videos(
         stmt = stmt.where(m.Video.language_state == language_state)
     if source_data_type:
         stmt = stmt.where(m.Video.source_data_type == source_data_type)
+    if provider:
+        stmt = stmt.where(m.Video.provider == provider)
+    if annotated is not None:
+        has_annotation = select(m.VideoAnnotation.id).where(
+            m.VideoAnnotation.video_id == m.Video.id
+        )
+        stmt = stmt.where(has_annotation.exists() if annotated else ~has_annotation.exists())
     total = session.scalar(select(func.count()).select_from(stmt.subquery())) or 0
+    if sort == "breakout":
+        breakout = m.Video.provider_metrics["vidiq"]["breakout_score"].as_float()
+        order = [breakout.desc().nulls_last(), m.Video.id]
+    else:
+        order = [m.Video.published_at.desc(), m.Video.id]
     rows = session.execute(
-        stmt.order_by(m.Video.published_at.desc(), m.Video.id)
-        .offset((page - 1) * page_size)
-        .limit(page_size)
+        stmt.order_by(*order).offset((page - 1) * page_size).limit(page_size)
     ).all()
-    items = [_video_item(v, c) for v, c in rows]
+    refs = _opportunity_refs(session, [v.id for v, _c in rows])
+    items = [_video_item(v, c, refs.get(v.id)) for v, c in rows]
     return Page[VideoItem](items=items, page=page, page_size=page_size, total=int(total))
 
 

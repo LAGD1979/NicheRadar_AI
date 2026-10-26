@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { api } from "../api";
+import { ExplorationSteps } from "../components/ExplorationSteps";
 import { ProductionPanel } from "./Production";
 import { SpanishMarket } from "./SpanishMarket";
 import { NOT_ENABLED, formatDateTime, formatField, label, stateFor } from "../format";
@@ -35,6 +36,7 @@ export function OpportunityDetail() {
 
   return (
     <article aria-labelledby="titulo-ficha">
+      <ExplorationSteps current={tab === "Producción IA" ? "produce" : "validate"} />
       <p className="crumbs">
         <Link to="/opportunities">Oportunidades</Link> / {opp.niche.name}
       </p>

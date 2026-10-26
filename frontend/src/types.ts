@@ -131,6 +131,31 @@ export interface VideoItem {
   observed_at: string;
   source_data_type: string;
   availability: string;
+  retention_deadline: string | null;
+  provider_metrics: { vidiq?: VidiqMetrics } | null;
+  opportunities: Array<{ id: string; label: string }>;
+}
+
+export interface VidiqMetrics {
+  breakout_score: number | null;
+  views_per_hour: number | null;
+  engagement_rate: number | null;
+  trend_categories: string[];
+  observed_at: string;
+}
+
+export interface VidiqUsage {
+  provider: string;
+  quota_bucket: string;
+  day_start_utc: string;
+  credits_used: number;
+  credits_daily_limit: number;
+  credits_remaining: number;
+}
+
+export interface Taxonomy {
+  niches: Array<{ id: string; name: string; definition: string }>;
+  formats: Array<{ id: string; name: string }>;
 }
 
 export interface RunOut {

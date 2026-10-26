@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { NO_DATA, NOT_ENABLED, cell, formatAgeHours, formatField, label } from "./format";
+import { NO_DATA, NOT_ENABLED, cell, daysLeft, formatAgeHours, formatField, label } from "./format";
 
 describe("formatField", () => {
   it("muestra NULL como «Sin dato», nunca como cero", () => {
@@ -36,5 +36,14 @@ describe("formatAgeHours", () => {
     expect(formatAgeHours(null)).toBe(NO_DATA);
     expect(formatAgeHours(1)).toBe("1 h");
     expect(formatAgeHours(96)).toBe("4 días");
+  });
+});
+
+describe("daysLeft", () => {
+  it("cuenta los dias que quedan y no inventa un plazo", () => {
+    const now = Date.parse("2026-10-25T12:00:00Z");
+    expect(daysLeft("2026-11-24T12:00:00Z", now)).toBe(30);
+    expect(daysLeft("2026-10-20T12:00:00Z", now)).toBeLessThanOrEqual(0);
+    expect(daysLeft(null, now)).toBeNull();
   });
 });

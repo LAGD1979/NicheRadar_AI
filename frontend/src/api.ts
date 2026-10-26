@@ -11,8 +11,10 @@ import type {
   CostModelOut,
   RunOut,
   SearchPlan,
+  Taxonomy,
   UsageOut,
   VideoItem,
+  VidiqUsage,
 } from "./types";
 
 export class ApiError extends Error {
@@ -82,6 +84,26 @@ export const api = {
       { method: "POST" },
     ),
   usage: () => request<UsageOut>("/usage"),
+  vidiqUsage: () => request<VidiqUsage>("/usage/vidiq"),
+  taxonomy: () => request<Taxonomy>("/taxonomy"),
+  createNiche: (body: { name: string; definition: string }) =>
+    request<{ id: string; name: string }>("/taxonomy/niches", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  createFormat: (body: { name: string; story_structure: string; visual_grammar: string }) =>
+    request<{ id: string; name: string }>("/taxonomy/formats", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  annotateVideo: (
+    videoId: string,
+    body: { niche_id: string; format_id: string; same_format_confidence: string; rationale: string },
+  ) =>
+    request<{ annotation_id: string; opportunity_id: string }>(
+      `/videos/${encodeURIComponent(videoId)}/annotations`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
   plans: (opportunityId: string) =>
     request<SearchPlan[]>(`/opportunities/${encodeURIComponent(opportunityId)}/search-plans`),
   createManualPlan: (opportunityId: string, plan: unknown) =>

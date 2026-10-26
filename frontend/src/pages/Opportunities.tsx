@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 
 import { api } from "../api";
+import { ExplorationSteps } from "../components/ExplorationSteps";
 import { formatDateTime, formatField, stateFor } from "../format";
 import { MAX_COMPARE, canSelect, isCompareReady, toggleSelection } from "../selection";
 import type { OpportunityItem } from "../types";
@@ -140,6 +141,7 @@ export function Opportunities() {
 
   return (
     <section aria-labelledby="titulo-oportunidades">
+      <ExplorationSteps current="validate" />
       <h1 id="titulo-oportunidades">Oportunidades</h1>
       <p className="hint">
         Cada fila es un nicho con un formato. Un dato vacío se muestra como «Sin dato», no como cero.

@@ -217,6 +217,16 @@ vidIQ ofrece un servidor MCP remoto (`https://mcp.vidiq.com/mcp`) con claves de 
 - **Prueba en vivo:** una consulta (`language=es`, sin tema, canales de hasta 100 mil suscriptores, 3 meses, 50 mil vistas o más) devolvió 9 videos y costó 5 créditos.
 - **Fuera de alcance:** no hay pantalla en la interfaz para lanzar estas corridas, ni uso de más herramientas de vidIQ.
 
+### D-58 · Pantallas de exploración: descubrir, elegir y agrupar (2026-10-25)
+El flujo de la interfaz sigue cinco pasos, visibles en una guía en lo alto de cada pantalla y en el menú: **Descubrir** (Corridas) → **Elegir y agrupar** (Videos) → **Validar en español** → **Costo y factibilidad** → **Comparar y decidir**.
+
+- **Corridas:** dos tarjetas de fuente. La de vidIQ ofrece tres modos: *Abierto* (sin tema ni formato, para no sesgar), *Por formato* (85 categorías de vidIQ en español) y *Por tema*. Muestra el costo en créditos y el consumo del día, y se desactiva con el motivo si falta la clave o la compuerta `vidiq_api` está cerrada.
+- **Videos:** filtros por origen, agrupación y orden por breakout (los NULL van al final, no como 0); columnas de breakout y vistas por hora; días que quedan antes de caducar; oportunidad a la que pertenece cada video; paginación. Solo se eligen videos LONG o SHORT confirmados y no caducados.
+- **Agrupar:** una barra fija al pie lleva a un formulario para elegir o crear nicho y formato, indicar la confianza y el motivo. Cada video genera una anotación humana (`label_source=HUMAN`) y varios videos del mismo nicho y formato comparten una sola oportunidad (T08).
+- **Taxonomía propia:** `POST /taxonomy/niches` y `/taxonomy/formats`, con nombre único sin distinguir mayúsculas, definición mínima y rechazo de caracteres de control. Se guardan con `taxonomy_version=user-v1` y `source_data_type=HUMAN`. Quien agrupa decide qué es un nicho y un formato: la herramienta no lo infiere.
+- **API de videos:** `GET /videos` acepta `provider`, `annotated` y `sort=breakout`, y devuelve `provider_metrics` y las oportunidades de cada video.
+- **No incluido:** el banner «DATOS SINTÉTICOS · DEMO» sigue fijo aunque haya datos reales.
+
 ---
 
 ## M4 — motor analítico avanzado (detrás de la compuerta)

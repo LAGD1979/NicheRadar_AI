@@ -377,11 +377,11 @@ docker compose --project-directory "&lt;ruta&gt;" --profile e2e run --rm e2e</co
             <tbody>
               <tr><td>Configuración</td><td><code>GET /config/public</code>, <code>GET /providers</code>, <code>GET /usage</code>, <code>GET /policy/capabilities</code></td></tr>
               <tr><td>Radar</td><td><code>GET /opportunities</code> (filtros: <code>q</code>, <code>status</code>, <code>saturation_es</code>, <code>faceless_state</code>…; orden: <code>sort</code>), <code>GET /opportunities/{id}</code>, <code>POST /compare</code></td></tr>
-              <tr><td>Taxonomía y anotaciones</td><td><code>GET /taxonomy</code>, <code>POST /opportunities</code>, <code>POST /videos/{id}/annotations</code></td></tr>
+              <tr><td>Taxonomía y anotaciones</td><td><code>GET /taxonomy</code>, <code>POST /taxonomy/niches</code>, <code>POST /taxonomy/formats</code>, <code>POST /opportunities</code>, <code>POST /videos/{id}/annotations</code></td></tr>
               <tr><td>Mercado español</td><td><code>GET|POST /opportunities/{id}/search-plans</code>, <code>POST …/search-plans/generate</code>, <code>PATCH /search-plans/{id}</code>, <code>POST …/validate-spanish</code>, <code>GET …/competition</code>, <code>PATCH /matches/{id}</code></td></tr>
               <tr><td>Costos y factibilidad</td><td><code>GET|POST /opportunities/{id}/cost-model</code>, <code>POST /opportunities/{id}/feasibility</code></td></tr>
               <tr><td>Índices (M4)</td><td><code>GET /opportunities/{id}/scores</code>, <code>POST /opportunities/{id}/scores</code>, <code>POST /cohorts/ranking</code></td></tr>
-              <tr><td>Videos y canales</td><td><code>GET /videos</code>, <code>GET /channels/{id}</code></td></tr>
+              <tr><td>Videos y canales</td><td><code>GET /videos</code> (filtros: <code>q</code>, <code>provider</code>, <code>annotated</code>, <code>video_type</code>, <code>language_state</code>; orden: <code>sort=recent|breakout</code>; incluye <code>provider_metrics</code> y las oportunidades de cada video), <code>GET /channels/{id}</code></td></tr>
               <tr><td>Corridas</td><td><code>GET /research-runs</code>, <code>GET /research-runs/{id}</code>, <code>POST /research-runs</code> (<code>demo</code>, <code>discovery</code>, <code>purge</code>), <code>POST …/resume</code></td></tr>
               <tr><td>vidIQ</td><td><code>POST /research-runs</code> con <code>kind=vidiq</code> y <code>vidiq.searches</code>, <code>GET /usage/vidiq</code></td></tr>
               <tr><td>Importación y exportación</td><td><code>POST /imports/provider-file</code>, <code>GET /exports/opportunities.csv</code>, <code>GET /exports/opportunities.json</code></td></tr>

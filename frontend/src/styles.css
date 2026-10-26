@@ -597,3 +597,494 @@ thead th {
   outline: 3px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* ---- Ruta de exploración (guía de pasos) ---- */
+.steps {
+  margin: 0 0 18px;
+}
+
+.steps ol {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.steps a {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 100%;
+  padding: 9px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--muted);
+  box-shadow: var(--shadow-sm);
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.steps a:hover {
+  border-color: var(--accent);
+  text-decoration: none;
+  color: var(--text);
+}
+
+.step-number {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  font-size: 0.8rem;
+  font-weight: 700;
+}
+
+.step-text {
+  display: grid;
+  min-width: 0;
+  line-height: 1.25;
+}
+
+.step-title {
+  font-weight: 600;
+  font-size: 0.86rem;
+  color: var(--text);
+}
+
+.step-hint {
+  font-size: 0.74rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.step.current a {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  box-shadow: 0 6px 16px -10px var(--accent);
+}
+
+.step.current .step-number {
+  background: linear-gradient(135deg, var(--accent), var(--accent-strong));
+  color: var(--accent-text);
+  border-color: transparent;
+}
+
+.step.done .step-number {
+  background: var(--success-soft);
+  color: var(--success);
+  border-color: transparent;
+}
+
+/* ---- Menú: grupos y números de paso ---- */
+.nav-group {
+  margin: 14px 12px 2px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.nav-step {
+  display: inline-grid;
+  place-items: center;
+  min-width: 22px;
+  height: 22px;
+  margin-right: 8px;
+  padding: 0 4px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.sidenav a.active .nav-step {
+  background: rgba(255, 255, 255, 0.22);
+  border-color: transparent;
+  color: var(--accent-text);
+}
+
+/* ---- Fuentes de descubrimiento ---- */
+.source-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(420px, 1fr));
+  gap: 16px;
+  margin: 14px 0 22px;
+  align-items: start;
+}
+
+.source-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 18px 20px;
+  box-shadow: var(--shadow-sm);
+  display: grid;
+  gap: 12px;
+}
+
+.source-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.source-head h2,
+.section-title {
+  margin: 0 0 4px;
+  font-size: 1.05rem;
+  font-weight: 700;
+}
+
+.source-head p {
+  margin: 0;
+}
+
+.pill {
+  flex: none;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 0.74rem;
+  font-weight: 700;
+}
+
+.pill.ok {
+  background: var(--success-soft);
+  color: var(--success);
+}
+
+.pill.off {
+  background: var(--warn-bg);
+  color: var(--warn-text);
+}
+
+.notice {
+  margin: 0;
+  padding: 9px 12px;
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  border-radius: var(--radius-sm);
+  font-size: 0.88rem;
+}
+
+.source-form {
+  display: grid;
+  gap: 14px;
+}
+
+.fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 12px;
+}
+
+.fields label,
+.annotate label {
+  display: grid;
+  gap: 4px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.fields .wide {
+  grid-column: 1 / -1;
+}
+
+.modes {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.modes legend {
+  padding: 0;
+  margin-bottom: 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.mode {
+  display: grid;
+  gap: 2px;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+  cursor: pointer;
+  position: relative;
+}
+
+.mode input {
+  position: absolute;
+  opacity: 0;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  cursor: pointer;
+}
+
+.mode.selected {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.mode:focus-within {
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+
+.mode-title {
+  font-weight: 700;
+  color: var(--text);
+  font-size: 0.9rem;
+}
+
+.mode-text {
+  font-size: 0.74rem;
+  font-weight: 400;
+  color: var(--muted);
+  line-height: 1.3;
+}
+
+.source-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.source-foot p {
+  margin: 0;
+}
+
+.meter-block {
+  flex: 1 1 220px;
+  display: grid;
+  gap: 6px;
+}
+
+.meter-label {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+  font-size: 0.84rem;
+}
+
+.meter {
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-muted);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.meter span {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), #14b8a6);
+}
+
+.small {
+  font-size: 0.8rem;
+  margin: 0;
+}
+
+button.ghost {
+  background: var(--surface);
+  color: var(--accent);
+  border: 1px solid var(--border);
+  box-shadow: none;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+}
+
+/* ---- Agrupar videos en una oportunidad ---- */
+.annotate {
+  position: sticky;
+  bottom: 12px;
+  z-index: 5;
+  margin: 0 0 14px;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--accent);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  display: grid;
+  gap: 10px;
+  max-height: calc(100vh - 90px);
+  overflow: auto;
+}
+
+.annotate form {
+  display: grid;
+  gap: 12px;
+}
+
+.annotate-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: flex-start;
+}
+
+.annotate-head h2 {
+  margin: 0 0 2px;
+  font-size: 1.05rem;
+}
+
+.annotate-head p {
+  margin: 0;
+}
+
+.annotate-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.annotate fieldset {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  margin: 0;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-muted);
+}
+
+.annotate legend {
+  padding: 0 6px;
+  font-weight: 700;
+  font-size: 0.82rem;
+}
+
+.annotate-foot {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.chips {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-width: 0;
+}
+
+.chips li {
+  padding: 3px 10px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  font-size: 0.76rem;
+  max-width: 320px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.annotate-result p {
+  margin: 4px 0;
+}
+
+tr.row-selected td {
+  background: var(--accent-soft);
+}
+
+.vigencia {
+  display: block;
+  font-size: 0.74rem;
+  color: var(--muted);
+}
+
+.vigencia.soon {
+  color: var(--warn-text);
+  font-weight: 600;
+}
+
+.list-inline {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 2px;
+  font-size: 0.84rem;
+}
+
+@media (max-width: 900px) {
+  .steps ol {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .modes {
+    grid-template-columns: 1fr;
+  }
+
+  .source-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .annotate {
+    position: static;
+    max-height: none;
+  }
+}
+
+.fields input,
+.fields select,
+.annotate input,
+.annotate select,
+.annotate textarea {
+  width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+}
+
+.annotate-bar {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+}
+
+.annotate-bar p {
+  margin: 0;
+}
+
+.annotate-bar .chips {
+  flex: 1 1 200px;
+}
+
+.annotate-actions {
+  display: flex;
+  gap: 8px;
+  margin-left: auto;
+}

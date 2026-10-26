@@ -4,14 +4,15 @@ import { NavLink } from "react-router-dom";
 
 import { api } from "../api";
 
-const NAV = [
-  { to: "/", label: "Resumen" },
-  { to: "/opportunities", label: "Oportunidades" },
-  { to: "/videos", label: "Videos" },
-  { to: "/compare", label: "Comparador" },
-  { to: "/runs", label: "Corridas" },
-  { to: "/settings", label: "Configuración" },
+const OVERVIEW = { to: "/", label: "Resumen" };
+// El orden sigue la ruta de exploración: descubrir, agrupar, validar y decidir.
+const EXPLORE = [
+  { to: "/runs", label: "Corridas", step: "1" },
+  { to: "/videos", label: "Videos", step: "2" },
+  { to: "/opportunities", label: "Oportunidades", step: "3-4" },
+  { to: "/compare", label: "Comparador", step: "5" },
 ];
+const OTHERS = [{ to: "/settings", label: "Configuración" }];
 
 const MANUALS_HREF = "/manual/index.html";
 
@@ -32,11 +33,30 @@ export function Layout({ children }: { children: ReactNode }) {
       <div className="body">
         <nav className="sidenav" aria-label="Principal">
           <ul>
-            {NAV.map((item) => (
+            <li>
+              <NavLink to={OVERVIEW.to} end>
+                {OVERVIEW.label}
+              </NavLink>
+            </li>
+            <li className="nav-group" aria-hidden="true">
+              Exploración
+            </li>
+            {EXPLORE.map((item) => (
               <li key={item.to}>
-                <NavLink to={item.to} end={item.to === "/"}>
+                <NavLink to={item.to}>
+                  <span className="nav-step" aria-hidden="true">
+                    {item.step}
+                  </span>
                   {item.label}
                 </NavLink>
+              </li>
+            ))}
+            <li className="nav-group" aria-hidden="true">
+              Sistema
+            </li>
+            {OTHERS.map((item) => (
+              <li key={item.to}>
+                <NavLink to={item.to}>{item.label}</NavLink>
               </li>
             ))}
             {/* Los manuales son páginas estáticas: un enlace normal, no una ruta de la aplicación. */}

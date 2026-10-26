@@ -49,6 +49,9 @@ const LABELS: Record<string, string> = {
   HUMAN: "Revisión humana",
   AI_INFERENCE: "Inferencia IA",
   discovery: "Búsqueda en YouTube",
+  vidiq: "Consulta a vidIQ",
+  vidiq_api: "vidIQ",
+  youtube_official: "YouTube oficial",
   demo: "Corrida DEMO",
   purge: "Purga de caducados",
   OK: "Correcta",
@@ -119,4 +122,10 @@ export function formatAgeHours(hours: number | null): string {
   if (hours === null) return NO_DATA;
   if (hours < 48) return `${formatNumber(Math.round(hours))} h`;
   return `${formatNumber(Math.round(hours / 24))} días`;
+}
+
+// Días que quedan antes de que caduque un dato de terceros (29 días desde que se observó).
+export function daysLeft(deadline: string | null, now: number = Date.now()): number | null {
+  if (!deadline) return null;
+  return Math.ceil((new Date(deadline).getTime() - now) / 86_400_000);
 }

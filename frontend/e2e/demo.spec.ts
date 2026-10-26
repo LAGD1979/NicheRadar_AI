@@ -43,3 +43,18 @@ test("comparar cuatro oportunidades muestra columnas y celdas sin ganador", asyn
   // La fila del índice existe en ambos modos; su valor depende de la compuerta de políticas.
   await expect(page.getByRole("rowheader", { name: /Índice integrado/ })).toBeVisible();
 });
+
+test("la ruta de exploración guía de Corridas a Videos y ofrece agrupar", async ({ page }) => {
+  await page.goto("/runs");
+  await expect(page.getByRole("navigation", { name: "Ruta de exploración" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /vidIQ/ })).toBeVisible();
+  await expect(page.getByRole("heading", { name: /YouTube · búsqueda por consulta/ })).toBeVisible();
+
+  await page.goto("/videos");
+  await expect(page.getByRole("navigation", { name: "Ruta de exploración" })).toBeVisible();
+  await page.locator('tbody input[type="checkbox"]:not([disabled])').first().check();
+  await expect(page.getByText(/1 video elegido/)).toBeVisible();
+  await page.getByRole("button", { name: /Agrupar en una oportunidad/ }).click();
+  await expect(page.getByRole("heading", { name: "Agrupar en una oportunidad" })).toBeVisible();
+  // Sin guardar nada: no se envía el formulario.
+});

@@ -1,10 +1,11 @@
 """Rutas del mercado español (M2): taxonomía, anotaciones, planes, validación y revisión."""
 
 from typing import Annotated, Any, Literal
+from uuid import uuid4
 
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
@@ -74,6 +75,70 @@ def taxonomy(session: SessionDep) -> dict[str, Any]:
         ],
         "formats": [{"id": f.id, "name": f.canonical_name_es} for f in formats],
     }
+
+
+class NicheCreate(BaseModel):
+    name: str = Field(min_length=3, max_length=200)
+    definition: str = Field(min_length=20, max_length=1000)
+
+
+class FormatCreate(BaseModel):
+    name: str = Field(min_length=3, max_length=200)
+    story_structure: str = Field(min_length=20, max_length=1000)
+    visual_grammar: str = Field(default="", max_length=1000)
+    audio_grammar: str = Field(default="", max_length=1000)
+
+
+def _clean(value: str) -> str:
+    if any(ord(ch) < 32 for ch in value):
+        raise ProblemError(422, "INVALID_TEXT", "El texto contiene caracteres de control")
+    return value.strip()
+
+
+@router.post("/taxonomy/niches", status_code=201)
+def create_niche(body: NicheCreate, session: SessionDep) -> dict[str, Any]:
+    """Nicho definido por una persona. Un nombre repetido (sin distinguir mayúsculas) se rechaza."""
+    name = _clean(body.name)
+    clash = session.scalars(
+        select(m.Niche).where(func.lower(m.Niche.canonical_name_es) == name.lower())
+    ).first()
+    if clash is not None:
+        raise ProblemError(409, "NICHE_EXISTS", "Ya existe un nicho con ese nombre", clash.id)
+    niche = m.Niche(
+        id=str(uuid4()),
+        canonical_name_es=name,
+        definition=_clean(body.definition),
+        exclusions_json=[],
+        taxonomy_version="user-v1",
+        source_data_type="HUMAN",
+    )
+    session.add(niche)
+    session.commit()
+    return {"id": niche.id, "name": niche.canonical_name_es, "definition": niche.definition}
+
+
+@router.post("/taxonomy/formats", status_code=201)
+def create_format(body: FormatCreate, session: SessionDep) -> dict[str, Any]:
+    name = _clean(body.name)
+    clash = session.scalars(
+        select(m.Format).where(func.lower(m.Format.canonical_name_es) == name.lower())
+    ).first()
+    if clash is not None:
+        raise ProblemError(409, "FORMAT_EXISTS", "Ya existe un formato con ese nombre", clash.id)
+    fmt = m.Format(
+        id=str(uuid4()),
+        canonical_name_es=name,
+        story_structure=_clean(body.story_structure),
+        visual_grammar=_clean(body.visual_grammar),
+        audio_grammar=_clean(body.audio_grammar),
+        min_assets=None,
+        requirements_json={},
+        taxonomy_version="user-v1",
+        source_data_type="HUMAN",
+    )
+    session.add(fmt)
+    session.commit()
+    return {"id": fmt.id, "name": fmt.canonical_name_es}
 
 
 @router.post("/opportunities", status_code=201)

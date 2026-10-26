@@ -126,6 +126,11 @@ class CompareResponse(BaseModel):
     items: list[CompareItem]
 
 
+class VideoOpportunityRef(BaseModel):
+    id: str
+    label: str
+
+
 class VideoItem(BaseModel):
     id: str
     youtube_video_id: str
@@ -148,6 +153,8 @@ class VideoItem(BaseModel):
     owner_authorized: bool
     retention_deadline: datetime | None
     last_refreshed_at: datetime | None
+    provider_metrics: dict[str, Any] | None = None
+    opportunities: list[VideoOpportunityRef] = Field(default_factory=list)
 
 
 class ChannelOut(BaseModel):

@@ -1,7 +1,10 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 
 import { api } from "../api";
+import { ExplorationSteps } from "../components/ExplorationSteps";
+import { VidiqCard } from "../components/VidiqCard";
 import {
   LANGUAGES,
   MAX_SEARCH_CALLS_LIMIT,
@@ -47,70 +50,93 @@ export function Runs() {
 
   return (
     <section aria-labelledby="titulo-corridas">
+      <ExplorationSteps current="discover" />
       <h1 id="titulo-corridas">Corridas</h1>
       <p className="hint">
-        Una búsqueda en YouTube consume cuota oficial (cada búsqueda cuesta {formatNumber(estimatedUnits(1))} unidades).
-        La corrida DEMO no consulta nada externo.
+        Aquí empieza la exploración: elija una fuente para traer videos. Después los verá en{" "}
+        <Link to="/videos">Videos</Link>, donde se agrupan en oportunidades.
       </p>
 
-      <form className="filters" onSubmit={submit} aria-label="Nueva búsqueda en YouTube">
-        <label>
-          Idioma
-          <select value={form.language} onChange={(e) => { setForm({ ...form, language: e.target.value }); }}>
-            {LANGUAGES.map(([code, text]) => (
-              <option key={code} value={code}>
-                {text}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Consulta
-          <input
-            type="text"
-            required
-            minLength={2}
-            maxLength={200}
-            value={form.query}
-            onChange={(e) => { setForm({ ...form, query: e.target.value }); }}
-            placeholder="p. ej. historia con mapas"
-          />
-        </label>
-        <label>
-          Ventana
-          <select value={form.window} onChange={(e) => { setForm({ ...form, window: e.target.value }); }}>
-            {WINDOWS.map(([code, text]) => (
-              <option key={code} value={code}>
-                {text}
-              </option>
-            ))}
-          </select>
-        </label>
-        <label>
-          Búsquedas máx.
-          <input
-            type="number"
-            min={1}
-            max={MAX_SEARCH_CALLS_LIMIT}
-            value={form.maxSearchCalls}
-            onChange={(e) => { setForm({ ...form, maxSearchCalls: Number(e.target.value) }); }}
-          />
-        </label>
-        <button type="submit" disabled={discovery.isPending}>
-          {discovery.isPending ? "Encolando…" : "Buscar en YouTube"}
-        </button>
-      </form>
-      <p className="muted">
-        Costo máximo estimado: {formatNumber(estimatedUnits(form.maxSearchCalls))} unidades (sin contar detalles de video).
-      </p>
+      <div className="source-grid">
+        <VidiqCard />
+
+        <article className="source-card" aria-labelledby="youtube-titulo">
+          <header className="source-head">
+            <div>
+              <h2 id="youtube-titulo">YouTube · búsqueda por consulta</h2>
+              <p className="muted">
+                Búsqueda oficial por idioma y ventana. Cada búsqueda cuesta {formatNumber(estimatedUnits(1))} unidades de
+                cuota.
+              </p>
+            </div>
+          </header>
+          <form className="source-form" onSubmit={submit} aria-label="Nueva búsqueda en YouTube">
+            <div className="fields">
+              <label>
+                Idioma
+                <select value={form.language} onChange={(e) => { setForm({ ...form, language: e.target.value }); }}>
+                  {LANGUAGES.map(([code, text]) => (
+                    <option key={code} value={code}>
+                      {text}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="wide">
+                Consulta
+                <input
+                  type="text"
+                  required
+                  minLength={2}
+                  maxLength={200}
+                  value={form.query}
+                  onChange={(e) => { setForm({ ...form, query: e.target.value }); }}
+                  placeholder="p. ej. historia con mapas"
+                />
+              </label>
+              <label>
+                Ventana
+                <select value={form.window} onChange={(e) => { setForm({ ...form, window: e.target.value }); }}>
+                  {WINDOWS.map(([code, text]) => (
+                    <option key={code} value={code}>
+                      {text}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Búsquedas máx.
+                <input
+                  type="number"
+                  min={1}
+                  max={MAX_SEARCH_CALLS_LIMIT}
+                  value={form.maxSearchCalls}
+                  onChange={(e) => { setForm({ ...form, maxSearchCalls: Number(e.target.value) }); }}
+                />
+              </label>
+            </div>
+            <footer className="source-foot">
+              <p className="muted">
+                Costo máximo estimado: {formatNumber(estimatedUnits(form.maxSearchCalls))} unidades (sin contar
+                detalles de video).
+              </p>
+              <button type="submit" disabled={discovery.isPending}>
+                {discovery.isPending ? "Encolando…" : "Buscar en YouTube"}
+              </button>
+            </footer>
+          </form>
+          {formError && <p role="alert">{formError}</p>}
+          {discovery.isSuccess && <p role="status">Búsqueda encolada. El worker la ejecuta en segundo plano.</p>}
+          {discovery.isError && <ErrorNote error={discovery.error} prefix="No se pudo iniciar la búsqueda" />}
+        </article>
+      </div>
+
       <div className="toolbar">
-        <button type="button" onClick={() => { demo.mutate(); }} disabled={demo.isPending}>
+        <h2 className="section-title">Historial de corridas</h2>
+        <button type="button" className="ghost" onClick={() => { demo.mutate(); }} disabled={demo.isPending}>
           Iniciar corrida DEMO
         </button>
       </div>
-      {formError && <p role="alert">{formError}</p>}
-      {discovery.isSuccess && <p role="status">Búsqueda encolada. El worker la ejecuta en segundo plano.</p>}
-      {discovery.isError && <ErrorNote error={discovery.error} prefix="No se pudo iniciar la búsqueda" />}
       {demo.isSuccess && <p role="status">Corrida DEMO encolada.</p>}
       {resume.isError && <ErrorNote error={resume.error} prefix="No se pudo reanudar" />}
 
@@ -143,25 +169,43 @@ export function Runs() {
   );
 }
 
-function RunRow({ run, onResume }: { run: RunOut; onResume: () => void }) {
+function resultText(run: RunOut): string {
   const queries = run.coverage.queries_completed;
   const total = run.coverage.queries_total;
   const channelCount = run.coverage.channels;
-  let result = "Sin dato";
-  if (typeof queries === "number" && typeof total === "number") {
-    result = `${String(queries)} de ${String(total)} consultas`;
-  } else if (typeof channelCount === "number") {
-    result = `${String(channelCount)} canales sintéticos`;
+  if (run.kind === "vidiq") {
+    const fresh = run.coverage.videos_new;
+    const credits = run.coverage.credits;
+    if (typeof fresh === "number" && typeof credits === "number") {
+      return `${String(fresh)} videos nuevos · ${String(credits)} créditos`;
+    }
+    return "Sin dato";
   }
+  if (typeof queries === "number" && typeof total === "number") {
+    return `${String(queries)} de ${String(total)} consultas`;
+  }
+  if (typeof channelCount === "number") return `${String(channelCount)} canales sintéticos`;
+  return "Sin dato";
+}
+
+function videosLink(run: RunOut): string | null {
+  if (run.status !== "COMPLETED" && run.status !== "PARTIAL") return null;
+  if (run.kind === "vidiq") return "/videos?provider=vidiq_api&sort=breakout&annotated=false";
+  if (run.kind === "discovery") return "/videos?provider=youtube_official&annotated=false";
+  return null;
+}
+
+function RunRow({ run, onResume }: { run: RunOut; onResume: () => void }) {
+  const link = videosLink(run);
   return (
     <tr>
       <td>
         <code>{run.id.slice(0, 8)}</code>
       </td>
-      <td>{label(run.kind)}</td>
+      <td>{label(run.kind === "vidiq" ? "vidiq" : run.kind)}</td>
       <td>{label(run.status)}</td>
       <td>{formatDateTime(run.started_at)}</td>
-      <td>{result}</td>
+      <td>{resultText(run)}</td>
       <td>
         {run.errors.length === 0
           ? "Ninguna"
@@ -173,6 +217,7 @@ function RunRow({ run, onResume }: { run: RunOut; onResume: () => void }) {
             Reanudar
           </button>
         )}
+        {link && <Link to={link}>Ver videos →</Link>}
       </td>
     </tr>
   );

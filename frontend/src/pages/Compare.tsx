@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Link, useSearchParams } from "react-router-dom";
 
 import { api } from "../api";
+import { ExplorationSteps } from "../components/ExplorationSteps";
 import { formatDateTime, formatField } from "../format";
 import { MAX_COMPARE, MIN_COMPARE, parseIds } from "../selection";
 import type { FieldValue } from "../types";
@@ -19,6 +20,7 @@ export function Compare() {
 
   return (
     <section aria-labelledby="titulo-comparador">
+      <ExplorationSteps current="decide" />
       <h1 id="titulo-comparador">Comparador</h1>
       <p className="hint">
         Compare de {MIN_COMPARE} a {MAX_COMPARE} oportunidades. Cada celda muestra su fuente y su fecha. No se
