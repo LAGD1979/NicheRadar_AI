@@ -213,7 +213,7 @@ vidIQ ofrece un servidor MCP remoto (`https://mcp.vidiq.com/mcp`) con claves de 
 - **Idioma:** el filtro de idioma del título de vidIQ **no** es idioma verificado; los videos quedan `UNKNOWN`.
 - **Sin sesgo de tema:** una consulta puede ir sin palabra clave, solo con filtros de idioma, tamaño de canal y vistas, o con una categoría de formato.
 - **Registros inválidos:** se descartan, se cuentan y la corrida queda `PARTIAL` con `RECORDS_SKIPPED`.
-- **Pendiente de licencia:** los términos de vidIQ no dicen si se pueden almacenar y reutilizar estos datos. El responsable asume la decisión con la caducidad de 29 días como medida conservadora.
+- **Términos de vidIQ (revisados por el responsable, 2026-10-25):** según su lectura, las prohibiciones de extracción automatizada no aplican al servidor MCP usado conforme a su documentación; los datos de plataformas de terceros obtenidos por MCP siguen sujetos a los términos y límites de almacenamiento de la plataforma de origen (YouTube), y vidIQ no fija un plazo propio de retención. El asistente no leyó los Términos: es una conclusión del responsable. Consecuencia: la caducidad de 29 días (D-27) es la regla aplicable, no una medida provisional.
 - **Prueba en vivo:** una consulta (`language=es`, sin tema, canales de hasta 100 mil suscriptores, 3 meses, 50 mil vistas o más) devolvió 9 videos y costó 5 créditos.
 - **Fuera de alcance:** no hay pantalla en la interfaz para lanzar estas corridas, ni uso de más herramientas de vidIQ.
 

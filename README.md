@@ -90,7 +90,7 @@ Los datos de YouTube caducan a los 29 días. La purga se lanza manualmente con `
 - **IA probada en vivo** con un plan por proveedor (OpenAI y Anthropic); sin probar reintentos ni calidad en lote.
 - **No hay scheduler automático ni purga programada** (M5). Búsquedas y purga se lanzan a mano.
 - **Índices avanzados en NULL**: falta histórico licenciado; la compuerta (D-48) está cerrada por defecto.
-- **vidIQ sin pantalla:** las corridas `kind=vidiq` se lanzan por la API; falta confirmar los términos de vidIQ sobre almacenamiento.
+- **vidIQ sin pantalla:** las corridas `kind=vidiq` se lanzan por la API; el almacenamiento sigue la regla de 29 días.
 - **No hay watchlist (Seguimiento)**, ni detección de canales espejo (T12).
 - **No hay autenticación.** `APP_ENV=production` se rechaza; exponer solo en 127.0.0.1.
 
