@@ -49,7 +49,23 @@ def purge_expired(session: Session, now: datetime) -> dict[str, int]:
         channel.subscriber_band = "EXPIRED"
         channel.uploads_playlist_id = None
 
-    counts = {"videos_expired": len(videos), "channels_expired": len(channels)}
+    observations = session.scalars(
+        select(m.DemandObservation).where(
+            m.DemandObservation.retention_deadline.is_not(None),
+            m.DemandObservation.retention_deadline < now,
+            m.DemandObservation.availability != "EXPIRED",
+        )
+    ).all()
+    for observation in observations:
+        observation.availability = "EXPIRED"
+        observation.state = "UNKNOWN"
+        observation.result_json = {}
+
+    counts = {
+        "videos_expired": len(videos),
+        "channels_expired": len(channels),
+        "demand_observations_expired": len(observations),
+    }
     session.add(
         m.AuditEvent(
             id=str(uuid4()),

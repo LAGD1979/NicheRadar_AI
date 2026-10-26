@@ -1088,3 +1088,52 @@ tr.row-selected td {
   gap: 8px;
   margin-left: auto;
 }
+
+/* ---- Demanda y persistencia ---- */
+.demand,
+.persistence {
+  margin: 18px 0;
+  padding: 16px 18px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.demand h3,
+.persistence h3 {
+  margin-top: 0;
+}
+
+.wide-field {
+  flex: 1 1 320px;
+}
+
+.checks {
+  display: grid;
+  gap: 4px;
+  margin: 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+}
+
+.checks legend {
+  padding: 0 6px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+.checks label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+.checks label.disabled {
+  color: var(--muted);
+  opacity: 0.7;
+}

@@ -12,6 +12,7 @@ CAPABILITIES: dict[str, str] = {
     "derived_metrics": "Métricas derivadas de YouTube API (outliers, cohortes, replicación)",
     "extended_history": "Históricos extendidos más allá del plazo de retención",
     "vidiq_api": "Adaptador directo a vidIQ",
+    "google_trends": "Google Trends (índice relativo, vía HasData)",
 }
 RESTRICTED_REASON = (
     "COMPLIANCE_MODE=restricted: requiere aprobación registrada en policy_approvals."

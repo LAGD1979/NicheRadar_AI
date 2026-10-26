@@ -111,13 +111,15 @@ def refresh(
     result = classify(_collect(session, opportunity_id), rules_from_config(research))
 
     previous = evaluation_service.latest_evaluation(session, opportunity_id)
-    if previous is None or previous.international_json != result:
+    # Se conservan las otras claves internacionales (p. ej. la resiliencia temporal).
+    merged = {**(previous.international_json if previous else {}), **result}
+    if previous is None or previous.international_json != merged:
         evaluation_service.append_evaluation(
             session,
             opportunity_id,
             now=now,
             source=SOURCE,
             run_id=run_id,
-            international=result,
+            international=merged,
         )
     return {"state": result["replication_state"], "result": result}

@@ -117,7 +117,7 @@ def maintenance_ratio(level: str | None) -> float | None:
     return {"LOW_EFFORT": 1.0, "MODERATE": 0.6, "HIGH_EFFORT": 0.2}.get(level or "")
 
 
-def small_access_ratio(value: object) -> float | None:
+def observed_ratio(value: object) -> float | None:
     """Ya viene medida (0 a 1) o es None; nunca se completa con un valor por defecto."""
     if isinstance(value, bool) or not isinstance(value, int | float):
         return None

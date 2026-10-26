@@ -268,6 +268,33 @@ Las dimensiones `exito_accesible`, `diferenciacion` y `mantenibilidad` del índi
 - **Pendiente conocido:** `traccion` usa el estado de replicación como sustituto, igual que `replicabilidad`: cuenta dos veces la misma señal. Debe sustituirse por una medida propia de tracción.
 - **Pendiente conocido:** el éxito accesible no se compara contra un estrato temporal (spec §10.4); usa umbrales fijos.
 
+### D-63 · Demanda con HasData y vidIQ, y persistencia de videos (2026-10-26)
+Se implementó lo investigado sobre vidIQ y se añadió Google Trends por la API REST de HasData. Con esto la demanda en español y la resiliencia temporal dejan de ser NULL fijos.
+
+**Autorización de HasData.** El responsable (Luis Gonzalez) indicó el 2026-10-26 marcar la fuente como autorizada. Se registró por línea de comandos en `policy_approvals`: capacidad `google_trends`, proveedor `hasdata`, vigente **hasta 2027-10-26** (el asistente eligió un año porque el responsable no indicó caducidad; se ajusta revocando y registrando otra). **No es una autorización de Google.** HasData obtiene los datos de Google Trends por scraping en su lado; el responsable asume esa decisión de cumplimiento, como en D-54. Los datos se tratan como de terceros: caducan a los 29 días.
+
+**HasData (REST).** `providers/hasdata.py`: `GET https://api.hasdata.com/scrape/google-trends/search` con `x-api-key`; cada consulta cuesta 10 créditos de HasData. Se usa `gprop=youtube` (búsquedas dentro de YouTube) y `date=today 12-m`. La respuesta real trae `interestOverTime.timelineData[]` (semanal; `hasData=false` es desconocido, no cero) y `relatedQueries.top/rising`. Tope diario local de 30 consultas (`HASDATA_DAILY_CALL_LIMIT`). La clave sale de `HASDATA_API_KEY`. El servidor MCP de HasData (`.mcp.json`, limitado a Trends) es solo para explorar desde Claude; el backend usa la REST.
+
+**vidIQ ampliado.** `keyword_research` (volumen mensual estimado, crecimiento; `countryVolume: null` = desconocido) y `video_stats` (serie diaria de vistas desde la publicación). 5 créditos cada una, con el mismo tope diario de créditos.
+
+**Señales de demanda** (`domain/demand_signals.py`, `demand-v1`). La demanda es «Observada» con 2 o más señales de **familias distintas**; varias palabras clave de una misma fuente cuentan una vez.
+- `google_trends`: presente si el índice relativo de las últimas 13 semanas es de 10 o más y no cayó por debajo de 0,6 de la base; con menos de 26 semanas con dato es desconocida (nunca «ausente»).
+- `vidiq_keywords`: presente con 1000 o más búsquedas al mes y sin caída fuerte.
+- `youtube_consumption`: 3 o más competidores exactos revisados con 50 000 vistas o más (métrica derivada: exige `derived_metrics`).
+Las observaciones se guardan en `demand_observations` (migración 0006) con procedencia y caducidad de 29 días; se usa la más reciente por fuente, palabra clave y país. `record_assessment` pasa de fijar 0 señales a contarlas.
+
+**Persistencia** (`domain/persistence.py`, `persist-v2`). Vistas por día de la **segunda semana** sobre las de la **primera**, ambas desde la publicación, con tope en 1 (spec: «pérdida o ganancia de velocidad en 7–14 días»). Exige historial que empiece cerca de la publicación y llegue al día 15. El agregado es la mediana de al menos 3 videos y alimenta `resiliencia_temporal`. La primera versión (`persist-v1`: última semana contra la mejor) dependía de la edad del video y dejaba a todos cerca de 0; se descartó al verla con datos reales y las medidas anteriores se recalculan solas.
+
+**Compuertas.** `google_trends` para HasData, `vidiq_api` para vidIQ y `derived_metrics` para consumo y éxito accesible. También se cerró una omisión de D-62: el éxito accesible a canales pequeños no pasaba por `derived_metrics`.
+
+**Resultado real** (oportunidad de prueba de D-60): demanda **Observada** (Trends + palabras clave de «video ensayo»: índice relativo reciente 65 de 100 y 22 318 búsquedas al mes, +55,9 %), persistencia mediana **0,53** (de 0,24 a 1,0 entre los 6 videos) e índice internacional **92,98**, el primero con valor sobre datos reales. El integrado sigue en NULL: faltan oferta abordable, éxito accesible, diferenciación y la dimensión operativa completa (revisión y valoraciones humanas).
+
+**Límites conocidos.**
+- «análisis de series» dio 0 búsquedas al mes en vidIQ y pocos datos en Trends: términos de poco volumen, con tilde o en español pueden salir vacíos. Se tratan como no alcanzados o desconocidos, no como prueba de ausencia de demanda.
+- El índice de Trends es relativo y no comparable entre palabras clave consultadas por separado.
+- `traccion` sigue usando la replicación como sustituto (doble conteo con `replicabilidad`).
+- Las evaluaciones anteriores conservan los derivados aunque los datos de origen caduquen (como en D-61 y D-62).
+
 ---
 
 ## M4 — motor analítico avanzado (detrás de la compuerta)

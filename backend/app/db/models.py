@@ -139,6 +139,28 @@ class DiscoveryMatch(Base):
     reviewed_by: Mapped[str | None] = mapped_column(String(120))
 
 
+class DemandObservation(Base):
+    """Una medida de demanda en español de una fuente externa. Caduca a los 29 días (D-63)."""
+
+    __tablename__ = "demand_observations"
+    __table_args__ = (Index("ix_demand_obs_opportunity", "opportunity_id", "family"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    opportunity_id: Mapped[str] = mapped_column(ForeignKey("opportunities.id"))
+    family: Mapped[str] = mapped_column(String(30))
+    provider: Mapped[str] = mapped_column(String(40))
+    keyword: Mapped[str] = mapped_column(String(200))
+    geo: Mapped[str | None] = mapped_column(String(10))
+    state: Mapped[str] = mapped_column(String(12))
+    reason: Mapped[str] = mapped_column(String(60))
+    result_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    run_id: Mapped[str | None] = mapped_column(String(36))
+    source_data_type: Mapped[str] = mapped_column(String(20), default="PROVIDER")
+    availability: Mapped[str] = mapped_column(String(20), default="AVAILABLE")
+    retention_deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class VideoAnnotation(Base):
     """Etiqueta de un video para un nicho y formato. Solo cuenta si tiene evidencia y autor."""
 

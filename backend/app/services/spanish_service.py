@@ -26,7 +26,8 @@ from app.domain import spanish_market
 from app.domain.search_plan import SpanishSearchPlan, query_texts
 from app.prompts import spanish_plan_v1 as prompt_v1
 from app.providers.ai import AIClient
-from app.services import evaluation_service
+from app.services import demand_state, evaluation_service
+from app.services.compliance_service import decide
 
 MATCH_QUALITIES = ("UNREVIEWED", "EXACT", "ADJACENT", "GENERIC", "FALSE_POSITIVE")
 ENTRY_TO_STATUS = {
@@ -394,8 +395,13 @@ def coverage_for(session: Session, opportunity_id: str) -> spanish_market.Spanis
 
 
 def small_channel_access(session: Session, opportunity_id: str) -> dict[str, Any]:
-    """Éxito accesible a canales pequeños, medido sobre los competidores exactos revisados."""
+    """Éxito accesible a canales pequeños, medido sobre los competidores exactos revisados.
+
+    Es una métrica derivada de datos de la API: solo se calcula con la compuerta abierta.
+    """
     settings = get_settings()
+    if not decide("derived_metrics", settings, session).allowed:
+        return {"state": "RESTRICTED", "ratio": None, "rule_version": "small-access-v1"}
     research = load_research_config(settings.research_config_path)["research"]
     rows = session.execute(
         select(m.Video, m.Channel)
@@ -428,7 +434,9 @@ def record_assessment(
 ) -> dict[str, Any]:
     """Añade una evaluación nueva con el estado español recalculado (append-only)."""
     coverage = coverage_for(session, opportunity_id)
-    result = spanish_market.assess(coverage, independent_signals=0)
+    settings = get_settings()
+    demand = demand_state.summary(session, settings, opportunity_id, now)
+    result = spanish_market.assess(coverage, independent_signals=int(demand["independent_signals"]))
     spanish = {
         "saturation_state": result.saturation_state,
         "spanish_demand_state": result.demand_state,
@@ -440,6 +448,7 @@ def record_assessment(
         "exact_matches": coverage.exact_matches,
         "match_precision_reviewed": coverage.reviewed_matches > 0,
         "small_channel_access": small_channel_access(session, opportunity_id),
+        "demand_signals": demand,
         "reason_codes": result.reason_codes,
     }
     evaluation_service.append_evaluation(

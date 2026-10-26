@@ -246,7 +246,11 @@ def test_purge_expires_old_third_party_data_without_zeros(empty_db: Session) -> 
     _seed_expiring(empty_db)
     counts = retention_service.purge_expired(empty_db, NOW)
     empty_db.commit()
-    assert counts == {"videos_expired": 1, "channels_expired": 1}
+    assert counts == {
+        "videos_expired": 1,
+        "channels_expired": 1,
+        "demand_observations_expired": 0,
+    }
     expired = empty_db.get(m.Video, "v-exp")
     assert expired is not None
     assert expired.availability == "EXPIRED"
@@ -274,7 +278,11 @@ def test_purge_is_idempotent(empty_db: Session) -> None:
     retention_service.purge_expired(empty_db, NOW)
     empty_db.commit()
     again = retention_service.purge_expired(empty_db, NOW)
-    assert again == {"videos_expired": 0, "channels_expired": 0}
+    assert again == {
+        "videos_expired": 0,
+        "channels_expired": 0,
+        "demand_observations_expired": 0,
+    }
 
 
 # --- cuota por día de Pacific Time ------------------------------------------------------------

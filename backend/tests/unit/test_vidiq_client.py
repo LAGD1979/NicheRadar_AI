@@ -161,3 +161,65 @@ def test_retry_recovers_after_429() -> None:
 def test_balance_reads_structured_content() -> None:
     client = _client(lambda _r: _sse({"structuredContent": {"totalCredits": 2014}}))
     assert client.balance() == 2014
+
+
+def test_keyword_research_reads_the_seed_and_keeps_unknown_as_none() -> None:
+    seed = {
+        "keyword": "video ensayo",
+        "volume": 64.9,
+        "competition": 31.7,
+        "estimatedMonthlySearch": 22318,
+        "searchDemandGrowthPct": 55.9,
+        "countryVolume": None,
+        "metricsAsOf": "2026-10-25T09:33:14Z",
+    }
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return _sse({"_meta": {"widgetData": {"seedKeyword": seed, "relatedKeywords": []}}})
+
+    metrics = _client(handler).keyword_research("video ensayo", country="MX")
+    assert metrics is not None
+    assert metrics.monthly_searches == 22318
+    assert metrics.growth_pct == 55.9
+    assert metrics.country_volume is None  # desconocido, no cero
+    arguments = json.loads(seen[0].content)["params"]["arguments"]
+    assert arguments["mode"] == "research"
+    assert arguments["country"] == "MX"
+
+
+def test_keyword_research_without_a_seed_is_none() -> None:
+    client = _client(lambda _r: _sse({"_meta": {"widgetData": {"relatedKeywords": []}}}))
+    assert client.keyword_research("nada") is None
+
+
+def test_video_history_parses_the_daily_series() -> None:
+    data = [
+        {
+            "timestamp": "2026-09-14T00:23:53.408Z",
+            "views": 21,
+            "likes": 1,
+            "comments": 0,
+            "vph": 5.4,
+        },
+        {"timestamp": "2026-09-15T01:33:47.974Z", "views": 455, "vph": 11.1},
+        {"timestamp": "mala fecha", "views": 9},
+        {"views": 3},
+    ]
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return _sse({"structuredContent": {"videoId": "x", "data": data}})
+
+    points = _client(handler).video_history("GNR49wMGGmo")
+    assert [p.views for p in points] == [21, 455]
+    assert points[0].timestamp.year == 2026
+    assert json.loads(seen[0].content)["params"]["arguments"]["granularity"] == "daily"
+
+
+def test_video_history_with_an_unexpected_shape_is_invalid() -> None:
+    client = _client(lambda _r: _sse({"content": [{"type": "text", "text": "raro"}]}))
+    with pytest.raises(InvalidRequest):
+        client.video_history("x")

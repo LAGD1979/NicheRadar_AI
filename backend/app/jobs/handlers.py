@@ -16,9 +16,16 @@ from app.core.config import Settings, get_settings
 from app.db import models as m
 from app.providers.ai import AIClient, build_ai_client
 from app.providers.base import ProviderError
-from app.providers.factory import build_vidiq_source
+from app.providers.factory import build_hasdata_source, build_vidiq_source
 from app.providers.vidiq_mcp import OutlierParams
-from app.services import compliance_service, retention_service, spanish_service, vidiq_service
+from app.services import (
+    compliance_service,
+    demand_service,
+    persistence_service,
+    retention_service,
+    spanish_service,
+    vidiq_service,
+)
 from app.services.ingestion_service import DiscoverySource, QueryPlan, run_discovery
 
 
@@ -27,9 +34,10 @@ class HandlerContext:
     settings: Settings
     make_source: Callable[[], DiscoverySource]
     make_ai: Callable[[], AIClient] = field(default=lambda: build_ai_client(get_settings()))
-    make_vidiq: Callable[[], vidiq_service.OutlierSource] = field(
-        default=lambda: build_vidiq_source(get_settings())
-    )
+    # Cliente de vidIQ: outliers, palabras clave e historial de videos (los dobles de prueba
+    # implementan solo lo que cada prueba necesita).
+    make_vidiq: Callable[[], Any] = field(default=lambda: build_vidiq_source(get_settings()))
+    make_hasdata: Callable[[], Any] = field(default=lambda: build_hasdata_source(get_settings()))
 
 
 def _audit(session: Session, run_id: str, event_type: str, details: dict[str, Any]) -> None:
@@ -178,6 +186,116 @@ def run_vidiq_discovery(session: Session, task: m.RunTask, ctx: HandlerContext) 
     return outcome.outcome
 
 
+def _close(client: Any) -> None:
+    close = getattr(client, "close", None)
+    if callable(close):
+        close()
+
+
+def run_demand_observation(session: Session, task: m.RunTask, ctx: HandlerContext) -> str:
+    """Mide la demanda en español con Trends (HasData) y palabras clave (vidIQ)."""
+    run = session.get(m.ResearchRun, task.run_id)
+    if run is None:
+        raise LookupError(f"Corrida inexistente: {task.run_id}")
+    payload = task.payload_json
+    gates = {"trends": "google_trends", "vidiq": "vidiq_api"}
+    allowed: list[str] = []
+    for source in payload["sources"]:
+        decision = compliance_service.decide(gates[source], ctx.settings, session)
+        if decision.allowed:
+            allowed.append(source)
+        else:
+            run.errors_json = [
+                *run.errors_json,
+                {"code": "POLICY_RESTRICTED", "detail": f"{source}: {decision.reason}"},
+            ]
+    if not allowed:
+        return "FAILED"
+    trends: Any = None
+    keywords_source: Any = None
+    try:
+        if "trends" in allowed:
+            trends = ctx.make_hasdata()
+        if "vidiq" in allowed:
+            keywords_source = ctx.make_vidiq()
+    except ProviderError as exc:
+        run.errors_json = [*run.errors_json, {"code": exc.code, "detail": str(exc)}]
+        _close(trends)
+        return "FAILED"
+    try:
+        outcome = demand_service.observe(
+            session,
+            ctx.settings,
+            opportunity_id=str(payload["opportunity_id"]),
+            keywords=[str(k) for k in payload["keywords"]],
+            geo=payload.get("geo"),
+            sources=allowed,
+            include_related=bool(payload.get("include_related", False)),
+            trends=trends,
+            vidiq=keywords_source,
+            run_id=task.run_id,
+            completed_keys=set(task.result_json.get("completed", [])),
+            now=datetime.now(UTC),
+        )
+    finally:
+        _close(trends)
+        _close(keywords_source)
+    task.result_json = {"completed": outcome.completed}
+    run.errors_json = [*run.errors_json, *outcome.errors]
+    run.coverage_json = {
+        "observations": outcome.observations,
+        "hasdata_calls": outcome.hasdata_calls,
+        "vidiq_credits": outcome.vidiq_credits,
+        "sources": allowed,
+    }
+    _audit(
+        session, task.run_id, f"DEMAND_{outcome.outcome}", {"observations": outcome.observations}
+    )
+    return outcome.outcome
+
+
+def run_vidiq_history(session: Session, task: m.RunTask, ctx: HandlerContext) -> str:
+    """Mide la persistencia de la velocidad de los videos agrupados (resiliencia temporal)."""
+    run = session.get(m.ResearchRun, task.run_id)
+    if run is None:
+        raise LookupError(f"Corrida inexistente: {task.run_id}")
+    decision = compliance_service.decide("vidiq_api", ctx.settings, session)
+    if not decision.allowed:
+        run.errors_json = [
+            *run.errors_json,
+            {"code": "POLICY_RESTRICTED", "detail": decision.reason},
+        ]
+        return "FAILED"
+    payload = task.payload_json
+    try:
+        source = ctx.make_vidiq()
+    except ProviderError as exc:
+        run.errors_json = [*run.errors_json, {"code": exc.code, "detail": str(exc)}]
+        return "FAILED"
+    try:
+        outcome = persistence_service.measure(
+            session,
+            ctx.settings,
+            source,
+            opportunity_id=str(payload["opportunity_id"]),
+            max_calls=int(payload["max_calls"]),
+            run_id=task.run_id,
+            now=datetime.now(UTC),
+        )
+    finally:
+        _close(source)
+    run.errors_json = [*run.errors_json, *outcome.errors]
+    run.coverage_json = {
+        "videos_measured": outcome.videos_measured,
+        "videos_skipped_fresh": outcome.videos_skipped_fresh,
+        "calls": outcome.calls,
+        "credits": outcome.credits,
+        "temporal_resilience": outcome.aggregate,
+    }
+    _audit(session, task.run_id, f"HISTORY_{outcome.outcome}", {"credits": outcome.credits})
+    return outcome.outcome
+
+
 def run_retention_purge(session: Session, task: m.RunTask, ctx: HandlerContext) -> str:
     run = session.get(m.ResearchRun, task.run_id)
     if run is None:
@@ -278,6 +396,8 @@ HANDLERS: dict[str, Callable[[Session, m.RunTask, HandlerContext], str]] = {
     "demo_research": run_demo_research,
     "youtube_discovery": run_youtube_discovery,
     "vidiq_discovery": run_vidiq_discovery,
+    "demand_observation": run_demand_observation,
+    "vidiq_history": run_vidiq_history,
     "retention_purge": run_retention_purge,
     "spanish_plan": run_spanish_plan,
     "spanish_validation": run_spanish_validation,

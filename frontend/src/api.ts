@@ -1,6 +1,7 @@
 import type {
   CapabilityOut,
   CompareResponse,
+  DemandSummary,
   ConfigPublic,
   OpportunityDetail,
   OpportunityItem,
@@ -140,6 +141,23 @@ export const api = {
       `/opportunities/${encodeURIComponent(opportunityId)}/feasibility`,
       { method: "POST", body: JSON.stringify(body) },
     ),
+  demand: (opportunityId: string) =>
+    request<DemandSummary>(`/opportunities/${encodeURIComponent(opportunityId)}/demand`),
+  requestDemand: (
+    opportunityId: string,
+    body: { keywords: string[]; geo: string | null; sources: string[]; include_related: boolean },
+  ) =>
+    request<{ id: string; status: string; budget: Record<string, number> }>(
+      `/opportunities/${encodeURIComponent(opportunityId)}/demand`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+  requestHistory: (opportunityId: string, maxCalls: number) =>
+    request<{ id: string; status: string; budget: Record<string, number> }>(
+      `/opportunities/${encodeURIComponent(opportunityId)}/temporal-resilience`,
+      { method: "POST", body: JSON.stringify({ max_calls: maxCalls }) },
+    ),
+  hasdataUsage: () =>
+    request<{ calls_used: number; calls_daily_limit: number; calls_remaining: number }>("/usage/hasdata"),
   saveEditorial: (
     opportunityId: string,
     body: {

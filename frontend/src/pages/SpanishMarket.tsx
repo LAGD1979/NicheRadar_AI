@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { DemandPanel } from "../components/DemandPanel";
 import { api } from "../api";
 import { label } from "../format";
 import type { SearchPlan, SearchPlanBody } from "../types";
@@ -115,6 +116,7 @@ export function SpanishMarket({ opportunityId, smallAccess }: { opportunityId: s
         </p>
       )}
       <SmallAccess value={smallAccess} />
+      <DemandPanel opportunityId={opportunityId} />
 
       <h3>Planes de búsqueda</h3>
       <div className="toolbar">

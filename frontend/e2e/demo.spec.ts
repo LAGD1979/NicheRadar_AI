@@ -58,3 +58,14 @@ test("la ruta de exploración guía de Corridas a Videos y ofrece agrupar", asyn
   await expect(page.getByRole("heading", { name: "Agrupar en una oportunidad" })).toBeVisible();
   // Sin guardar nada: no se envía el formulario.
 });
+
+test("la ficha ofrece medir demanda y persistencia sin enviar nada", async ({ page }) => {
+  await page.goto("/opportunities/syn-opp-01");
+  await page.getByRole("tab", { name: "Mercado español" }).click();
+  await expect(page.getByRole("heading", { name: "Demanda en español" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Medir demanda" })).toBeVisible();
+  await expect(page.getByText(/no un volumen de búsquedas/)).toBeVisible();
+  await page.getByRole("tab", { name: "Evidencia internacional" }).click();
+  await expect(page.getByRole("button", { name: /Medir persistencia/ })).toBeVisible();
+  // Sin enviar los formularios: no se gastan créditos.
+});

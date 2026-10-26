@@ -86,7 +86,7 @@ Los datos de YouTube caducan a los 29 días. La purga se lanza manualmente con `
 
 ## Qué no funciona todavía (y por qué)
 
-- **Sin fuente de demanda en español**: ninguna oportunidad real pasa de «demanda no demostrada».
+- **Demanda en español**: se mide con Trends (HasData) y palabras clave (vidIQ), con clave y autorización registradas. Sin ellas, queda «no demostrada».
 - **IA probada en vivo** con un plan por proveedor (OpenAI y Anthropic); sin probar reintentos ni calidad en lote.
 - **No hay scheduler automático ni purga programada** (M5). Búsquedas y purga se lanzan a mano.
 - **Índices avanzados en NULL**: falta histórico licenciado; la compuerta (D-48) está cerrada por defecto.

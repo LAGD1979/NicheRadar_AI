@@ -7,6 +7,8 @@ Documento para cualquier sesión nueva (o para una persona). Complementa `CLAUDE
 - Hitos M0, M1, M2, M3 y M4 construidos y commiteados. Último commit: `ad9bcdb`.
 - M4 (índices avanzados) **abierto** en este equipo: el modo `approved_scope` está en el `.env` local, y hay cuatro aprobaciones registradas por el responsable (D-54). No es una autorización emitida por YouTube.
 - Los índices siguen en NULL porque no existe resiliencia temporal (histórico licenciado). Es intencional.
+- HasData (D-63): Trends por API REST. Clave en la variable de usuario `HASDATA_API_KEY`; autorización registrada hasta 2027-10-26 (capacidad `google_trends`). Para renovarla: `policy_cli revoke` y `grant`. El MCP de HasData (`.mcp.json`) es solo para explorar desde Claude.
+- Demanda y persistencia reales (D-63): la ficha mide demanda con Trends y vidIQ y persistencia de videos con vidIQ. La demanda ya puede ser «Observada»; el índice internacional ya tiene valor con datos reales.
 - M4: éxito accesible, diferenciación y mantenibilidad ya puntúan (D-62). El integrado sigue en NULL por resiliencia temporal y demanda.
 - Replicación internacional calculada con datos reales (D-61): corre al agrupar videos y exige la capacidad `derived_metrics`. La oportunidad real de prueba está «Replicada».
 - Sin fuente de señales de demanda: ninguna oportunidad real llega a «listo para piloto».
@@ -35,7 +37,7 @@ Documento para cualquier sesión nueva (o para una persona). Complementa `CLAUDE
 - Lint y tipos backend: `… run --rm --no-deps api sh -c "ruff check app tests && ruff format --check app tests && mypy app"`
 - Frontend: `… run --rm --no-deps frontend sh -c "npx eslint . && npx tsc --noEmit && npx vitest run"`
 - E2E (con el stack arriba): `… --profile e2e run --rm e2e`
-- Estado esperado: 296 pruebas backend, 23 frontend, 9 E2E pasando y 1 omitido (el omitido es esperado).
+- Estado esperado: 363 pruebas backend, 23 frontend, 11 E2E pasando y 1 omitido (el omitido es esperado).
 
 Para ver cambios sin reconstruir la imagen: montar el código con `-v "<ruta>\backend:/app"` en `run`.
 

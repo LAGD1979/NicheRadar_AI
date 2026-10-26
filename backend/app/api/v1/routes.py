@@ -29,6 +29,7 @@ from app.api.v1.schemas import (
     VideoOpportunityRef,
     VidIQUsageOut,
 )
+from app.api.v1.signals_routes import router as signals_router
 from app.core.config import Settings, get_settings
 from app.core.errors import ProblemError
 from app.core.research_config import load_research_config
@@ -51,6 +52,7 @@ router = APIRouter()
 router.include_router(m2_router)
 router.include_router(m3_router)
 router.include_router(m4_router)
+router.include_router(signals_router)
 
 SessionDep = Annotated[Session, Depends(get_session)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]

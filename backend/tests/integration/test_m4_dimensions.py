@@ -1,5 +1,6 @@
 """Tres dimensiones de M4: éxito accesible, diferenciación y mantenibilidad (sin Trends)."""
 
+from collections.abc import Callable
 from datetime import UTC, datetime
 from typing import Any
 from uuid import uuid4
@@ -109,8 +110,9 @@ def _seed_competitors(session: Session, specs: list[tuple[int | None, int | None
 
 
 def test_small_channel_success_is_measured_from_reviewed_exact_competitors(
-    seeded_db: Session,
+    seeded_db: Session, open_policy: Callable[..., None]
 ) -> None:
+    open_policy("derived_metrics")
     _seed_competitors(
         seeded_db, [(120_000, 8_000), (90_000, 12_000), (400, 2_000), (800_000, 3_000_000)]
     )
@@ -123,7 +125,10 @@ def test_small_channel_success_is_measured_from_reviewed_exact_competitors(
     assert _latest(seeded_db).spanish_json["small_channel_access"]["ratio"] == 0.5
 
 
-def test_small_channel_success_stays_null_with_a_small_sample(seeded_db: Session) -> None:
+def test_small_channel_success_stays_null_with_a_small_sample(
+    seeded_db: Session, open_policy: Callable[..., None]
+) -> None:
+    open_policy("derived_metrics")
     _seed_competitors(seeded_db, [(120_000, 8_000), (None, None)])
     access = svc.record_assessment(seeded_db, OPP, None, NOW)["small_channel_access"]
     assert access["state"] == "INSUFFICIENT_SAMPLE"
@@ -181,8 +186,9 @@ def test_editing_feasibility_does_not_erase_the_editorial_assessment(
 
 
 def test_scores_use_the_three_dimensions_and_the_integrated_index_stays_null(
-    seeded_db: Session,
+    seeded_db: Session, open_policy: Callable[..., None]
 ) -> None:
+    open_policy("derived_metrics")
     _seed_competitors(seeded_db, [(120_000, 8_000), (90_000, 12_000), (70_000, 9_000)])
     svc.record_assessment(seeded_db, OPP, None, NOW)
     feasibility_service.save_editorial(
@@ -205,3 +211,12 @@ def test_scores_use_the_three_dimensions_and_the_integrated_index_stays_null(
     assert scores["dimensions"]["international"]["resiliencia_temporal"] is None
     assert scores["integrated"]["value"] is None
     assert "resiliencia_temporal" in " ".join(scores["international"]["missing"])
+
+
+def test_small_channel_success_is_restricted_without_the_derived_metrics_gate(
+    seeded_db: Session,
+) -> None:
+    _seed_competitors(seeded_db, [(120_000, 8_000), (90_000, 12_000), (70_000, 9_000)])
+    access = svc.record_assessment(seeded_db, OPP, None, NOW)["small_channel_access"]
+    assert access["state"] == "RESTRICTED"
+    assert access["ratio"] is None

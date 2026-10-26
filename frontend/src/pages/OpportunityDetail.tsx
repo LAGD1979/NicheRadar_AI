@@ -4,6 +4,7 @@ import { Link, useParams } from "react-router-dom";
 
 import { api } from "../api";
 import { ExplorationSteps } from "../components/ExplorationSteps";
+import { PersistencePanel } from "../components/PersistencePanel";
 import { ProductionPanel } from "./Production";
 import { SpanishMarket } from "./SpanishMarket";
 import { NOT_ENABLED, formatDateTime, formatField, label, stateFor } from "../format";
@@ -151,6 +152,7 @@ function Evidence({ opp, market }: { opp: Detail; market: string }) {
     return (
       <>
         {market === "SOURCE_MARKET" && <Replication opp={opp} />}
+        {market === "SOURCE_MARKET" && <PersistencePanel opp={opp} />}
         <p className="empty">
           {market === "SOURCE_MARKET"
             ? "Sin evidencia internacional registrada para esta oportunidad."
@@ -162,6 +164,7 @@ function Evidence({ opp, market }: { opp: Detail; market: string }) {
   return (
     <>
       {market === "SOURCE_MARKET" && <Replication opp={opp} />}
+      {market === "SOURCE_MARKET" && <PersistencePanel opp={opp} />}
       {market === "SPANISH_MARKET" && <Coverage opp={opp} />}
       <div className="table-wrap">
       <table>

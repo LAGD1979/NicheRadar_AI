@@ -66,13 +66,15 @@ def compute_for_evaluation(
     international = {
         "traccion": scoring.replication_ratio(_s(intl.get("replication_state"))),
         "replicabilidad": scoring.channels_ratio(channels_value),
-        "resiliencia_temporal": None,  # sin serie temporal en M4: no hay dato, no hay puntuación
+        "resiliencia_temporal": scoring.observed_ratio(
+            (intl.get("temporal_resilience") or {}).get("ratio")
+        ),
         "diversidad_independiente": scoring.channels_ratio(channels_value),
     }
     spanish_ratios = {
         "oferta_abordable": scoring.saturation_ratio(_s(spanish.get("saturation_state"))),
         "demanda_observable": scoring.demand_ratio(_s(spanish.get("spanish_demand_state"))),
-        "exito_accesible": scoring.small_access_ratio(
+        "exito_accesible": scoring.observed_ratio(
             (spanish.get("small_channel_access") or {}).get("ratio")
         ),
         "diferenciacion": scoring.differentiation_ratio(

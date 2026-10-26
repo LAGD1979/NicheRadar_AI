@@ -21,6 +21,7 @@ class Settings(BaseSettings):
     anthropic_api_key: SecretStr = SecretStr("")
     openai_api_key: SecretStr = SecretStr("")
     vidiq_api_key: SecretStr = SecretStr("")
+    hasdata_api_key: SecretStr = SecretStr("")
     app_secret_key: SecretStr = SecretStr("")
 
     # "restricted" por defecto. "approved_scope" solo abre capacidades con un registro vigente
@@ -47,6 +48,12 @@ class Settings(BaseSettings):
     vidiq_max_retries: int = 3
     vidiq_credits_per_call: int = 5
     vidiq_daily_credit_limit: int = 200
+    # HasData (Google Trends por API REST, D-63). Cada consulta cuesta 10 créditos de HasData; el
+    # tope diario es local y cuenta consultas, no el saldo real del plan.
+    hasdata_base_url: str = "https://api.hasdata.com"
+    hasdata_timeout_seconds: float = 45.0
+    hasdata_max_retries: int = 3
+    hasdata_daily_call_limit: int = 30
     # Datos de terceros no autorizados: plazo máximo de caché (spec §5.5, 30 días menos margen).
     unauthorized_cache_days: int = 29
 

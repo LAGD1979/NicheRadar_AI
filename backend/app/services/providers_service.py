@@ -6,6 +6,7 @@ def list_providers(settings: Settings) -> list[ProviderOut]:
     """Estado de adaptadores. Solo indica si hay credencial; nunca expone su valor."""
     youtube_configured = bool(settings.youtube_api_key.get_secret_value())
     vidiq_configured = bool(settings.vidiq_api_key.get_secret_value())
+    hasdata_configured = bool(settings.hasdata_api_key.get_secret_value())
     llm_key = {
         "anthropic": settings.anthropic_api_key.get_secret_value(),
         "openai": settings.openai_api_key.get_secret_value(),
@@ -44,10 +45,13 @@ def list_providers(settings: Settings) -> list[ProviderOut]:
         ),
         ProviderOut(
             id="google_trends",
-            name="Google Trends (índice relativo)",
-            enabled=False,
-            status="DISABLED",
-            license_note="Opcional; solo con método de acceso autorizado.",
+            name="Google Trends vía HasData (índice relativo)",
+            enabled=hasdata_configured,
+            status="CONFIGURED" if hasdata_configured else "NOT_CONFIGURED",
+            license_note=(
+                "Índice relativo de 0 a 100, no volúmenes. HasData obtiene los datos por scraping "
+                "de terceros: uso autorizado por el responsable (capacidad google_trends)."
+            ),
         ),
         ProviderOut(
             id="llm_analysis",

@@ -12,6 +12,8 @@ TASK_TYPES = {
     "demo": "demo_research",
     "discovery": "youtube_discovery",
     "vidiq": "vidiq_discovery",
+    "demand": "demand_observation",
+    "history": "vidiq_history",
     "purge": "retention_purge",
     "spanish_plan": "spanish_plan",
     "spanish_validation": "spanish_validation",

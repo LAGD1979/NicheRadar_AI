@@ -16,6 +16,17 @@ research:
   minimum_distinct_weeks_for_replicated: 3
   minimum_comparable_channel_videos_for_outlier: 5
   max_compare_items: 8
+  # Señales de demanda en español (D-63). Umbrales heurísticos por calibrar.
+  demand_trends_min_interest: 10          # promedio reciente mínimo del índice relativo (0-100)
+  demand_trends_min_weeks: 26             # semanas con dato necesarias para opinar
+  demand_trends_max_decline_ratio: 0.6    # reciente / base: por debajo se considera en caída
+  demand_keywords_min_monthly_searches: 1000
+  demand_keywords_min_growth_pct: -50
+  demand_consumption_min_competitors: 3   # competidores exactos con vistas altas
+  # Persistencia temporal de videos (D-63).
+  persistence_min_history_days: 15        # la serie debe cubrir hasta el día 15 desde la publicación
+  persistence_min_points: 10
+  persistence_min_videos: 3
 quota:
   youtube_search_daily_soft_cap: 80
   youtube_other_daily_soft_cap: 8000

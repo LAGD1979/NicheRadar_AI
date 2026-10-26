@@ -1,5 +1,6 @@
 from app.core.config import Settings
 from app.providers.base import ProviderNotConfigured
+from app.providers.hasdata import HasDataClient
 from app.providers.vidiq_mcp import VidIQClient
 from app.providers.youtube_official import YouTubeOfficialClient
 
@@ -27,4 +28,17 @@ def build_vidiq_source(settings: Settings) -> VidIQClient:
         url=settings.vidiq_mcp_url,
         timeout=settings.vidiq_timeout_seconds,
         max_retries=settings.vidiq_max_retries,
+    )
+
+
+def build_hasdata_source(settings: Settings) -> HasDataClient:
+    """Cliente real de HasData (Google Trends). Sin clave no se crea nada."""
+    api_key = settings.hasdata_api_key.get_secret_value()
+    if not api_key:
+        raise ProviderNotConfigured("HASDATA_API_KEY no está definida.")
+    return HasDataClient(
+        api_key=api_key,
+        base_url=settings.hasdata_base_url,
+        timeout=settings.hasdata_timeout_seconds,
+        max_retries=settings.hasdata_max_retries,
     )

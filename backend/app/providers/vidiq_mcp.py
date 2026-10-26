@@ -102,6 +102,35 @@ class OutlierVideo:
     ai_labeled: bool | None = None
 
 
+@dataclass(frozen=True)
+class KeywordMetrics:
+    """Métricas de una palabra clave de vidIQ. Nulo = desconocido, nunca cero."""
+
+    keyword: str
+    monthly_searches: int | None
+    volume_score: float | None
+    competition: float | None
+    growth_pct: float | None
+    country_volume: int | None
+    metrics_as_of: str | None
+
+
+@dataclass(frozen=True)
+class HistoryPoint:
+    timestamp: datetime
+    views: int | None
+    vph: float | None
+
+
+def _num(value: Any) -> float | None:
+    return float(value) if isinstance(value, int | float) and not isinstance(value, bool) else None
+
+
+def _count(value: Any) -> int | None:
+    number = _num(value)
+    return None if number is None else int(number)
+
+
 def _to_outlier(raw: _RawVideo) -> OutlierVideo:
     published = datetime.fromtimestamp(raw.videoPublishedAt, tz=UTC).isoformat()
     return OutlierVideo(
@@ -232,6 +261,53 @@ class VidIQClient:
             except ValidationError:
                 skipped += 1  # un registro inválido no invalida el resto
         return videos, skipped
+
+    def keyword_research(
+        self, keyword: str, *, country: str | None = None
+    ) -> KeywordMetrics | None:
+        """Métricas de una palabra clave (5 créditos). `None` si vidIQ no devuelve la semilla."""
+        arguments: dict[str, Any] = {"mode": "research", "keyword": keyword, "limit": 1}
+        if country:
+            arguments["country"] = country
+        result = self._call_tool("vidiq_keyword_research", arguments)
+        widget = (result.get("_meta") or {}).get("widgetData")
+        seed = widget.get("seedKeyword") if isinstance(widget, dict) else None
+        if not isinstance(seed, dict) or not isinstance(seed.get("keyword"), str):
+            return None
+        as_of = seed.get("metricsAsOf")
+        return KeywordMetrics(
+            keyword=seed["keyword"],
+            monthly_searches=_count(seed.get("estimatedMonthlySearch")),
+            volume_score=_num(seed.get("volume")),
+            competition=_num(seed.get("competition")),
+            growth_pct=_num(seed.get("searchDemandGrowthPct")),
+            country_volume=_count(seed.get("countryVolume")),
+            metrics_as_of=as_of if isinstance(as_of, str) else None,
+        )
+
+    def video_history(self, video_id: str) -> list[HistoryPoint]:
+        """Serie diaria de vistas de un video desde su publicación (5 créditos)."""
+        result = self._call_tool(
+            "vidiq_video_stats", {"videoId": video_id, "granularity": "daily", "order": "asc"}
+        )
+        structured = result.get("structuredContent")
+        data = structured.get("data") if isinstance(structured, dict) else None
+        if not isinstance(data, list):
+            raise InvalidRequest("Respuesta de vidIQ con formato inesperado.")
+        points: list[HistoryPoint] = []
+        for item in data:
+            if not isinstance(item, dict) or not isinstance(item.get("timestamp"), str):
+                continue
+            try:
+                moment = datetime.fromisoformat(item["timestamp"].replace("Z", "+00:00"))
+            except ValueError:
+                continue
+            points.append(
+                HistoryPoint(
+                    timestamp=moment, views=_count(item.get("views")), vph=_num(item.get("vph"))
+                )
+            )
+        return points
 
     def balance(self) -> int | None:
         """Créditos restantes. No consume créditos."""

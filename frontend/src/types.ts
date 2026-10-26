@@ -158,6 +158,25 @@ export interface Taxonomy {
   formats: Array<{ id: string; name: string }>;
 }
 
+export interface DemandSignal {
+  family: string;
+  state: string;
+  reason: string;
+  keyword?: string;
+  geo?: string | null;
+  provider?: string;
+  observed_at?: string;
+  expires_at?: string | null;
+  details?: Record<string, unknown>;
+}
+
+export interface DemandSummary {
+  independent_signals: number;
+  present_families: string[];
+  family_states: Record<string, string>;
+  signals: DemandSignal[];
+}
+
 export interface RunOut {
   id: string;
   kind: string;

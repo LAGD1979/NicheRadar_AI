@@ -90,9 +90,13 @@ Cálculo `repl-v1` (REPLICATED, PROMISING, SINGLE_OUTLIER, UNKNOWN) desde los vi
 
 Éxito accesible a canales pequeños (calculado), diferenciación editorial y mantenibilidad (valoración humana con motivo). El integrado sigue en NULL: faltan resiliencia temporal, demanda observable y las valoraciones de cada oportunidad real. Quedan pendientes los criterios de M4 de análisis de sensibilidad, evolución temporal y fórmula visible en la interfaz.
 
+## Demanda y persistencia con fuentes externas (D-63)
+
+Trends vía HasData (REST) y palabras clave de vidIQ como señales de demanda; consumo de competidores como tercera familia; persistencia de la velocidad (semana 2 sobre semana 1) como resiliencia temporal. Tabla `demand_observations` (migración 0006), corridas `demand` e `history`, endpoints y paneles en la ficha. Verificado con pruebas de dominio, clientes y flujo, y con una oportunidad real: demanda Observada, persistencia 0,53, índice internacional con valor. Autorización de HasData registrada hasta 2027-10-26.
+
 ## Estado de verificación actual
 
-296 pruebas de backend, 23 de frontend y 9 E2E pasando (1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
+363 pruebas de backend, 23 de frontend y 11 E2E pasando (1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
 
 ## Siguiente paso
 
