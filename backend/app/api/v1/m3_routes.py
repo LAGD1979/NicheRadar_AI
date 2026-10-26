@@ -32,6 +32,13 @@ class CostModelIn(BaseModel):
     lines: list[CostLineIn] = Field(min_length=1, max_length=20)
 
 
+class EditorialIn(BaseModel):
+    differentiation: Literal["HIGH", "MEDIUM", "LOW"]
+    differentiation_reason: str = Field(min_length=20, max_length=1000)
+    maintainability: Literal["LOW_EFFORT", "MODERATE", "HIGH_EFFORT"]
+    maintainability_reason: str = Field(min_length=20, max_length=1000)
+
+
 class FeasibilityIn(BaseModel):
     faceless_state: str = Field(max_length=30)
     complexity_1_to_5: int | None = Field(default=None, ge=1, le=5)
@@ -77,6 +84,26 @@ def post_cost_model(opportunity_id: str, body: CostModelIn, session: SessionDep)
         "version": model.version,
         "scenarios": model.scenarios_json,
         "missing": model.missing_json,
+    }
+
+
+@router.post("/opportunities/{opportunity_id}/editorial", status_code=201)
+def post_editorial(opportunity_id: str, body: EditorialIn, session: SessionDep) -> dict[str, Any]:
+    """Diferenciación y mantenibilidad: las valora una persona, con motivo."""
+    evaluation = feasibility_service.save_editorial(
+        session,
+        opportunity_id,
+        differentiation=body.differentiation,
+        differentiation_reason=body.differentiation_reason,
+        maintainability=body.maintainability,
+        maintainability_reason=body.maintainability_reason,
+        reviewer="local_owner",
+        now=_now(),
+    )
+    session.commit()
+    return {
+        "evaluation_version": evaluation.evaluation_version,
+        "editorial": evaluation.feasibility_json["editorial"],
     }
 
 

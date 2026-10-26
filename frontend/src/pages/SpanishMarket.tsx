@@ -41,7 +41,7 @@ const STATUS_LABEL: Record<string, string> = {
   SUPERSEDED: "Reemplazado",
 };
 
-export function SpanishMarket({ opportunityId }: { opportunityId: string }) {
+export function SpanishMarket({ opportunityId, smallAccess }: { opportunityId: string; smallAccess?: unknown }) {
   const queryClient = useQueryClient();
   const plans = useQuery({
     queryKey: ["plans", opportunityId],
@@ -114,6 +114,7 @@ export function SpanishMarket({ opportunityId }: { opportunityId: string }) {
           <strong>{competition.data.coverage.exact_matches}</strong>
         </p>
       )}
+      <SmallAccess value={smallAccess} />
 
       <h3>Planes de búsqueda</h3>
       <div className="toolbar">
@@ -261,5 +262,32 @@ export function SpanishMarket({ opportunityId }: { opportunityId: string }) {
         </div>
       )}
     </div>
+  );
+}
+
+const SMALL_ACCESS_STATES: Record<string, string> = {
+  NO_EXACT_MATCHES: "Sin competidores exactos revisados: todavía no se puede medir.",
+  INSUFFICIENT_SAMPLE: "Muestra insuficiente: faltan competidores exactos con vistas y suscriptores.",
+};
+
+// Éxito accesible a canales pequeños: evidencia observada, no un censo de competidores.
+function SmallAccess({ value }: { value: unknown }) {
+  if (typeof value !== "object" || value === null) return null;
+  const access = value as Record<string, unknown>;
+  const state = typeof access.state === "string" ? access.state : "";
+  const ratio = typeof access.ratio === "number" ? access.ratio : null;
+  return (
+    <p>
+      Éxito accesible a canales pequeños:{" "}
+      <strong>{ratio === null ? "Sin dato" : `${String(Math.round(ratio * 100))} %`}</strong>
+      {ratio === null && SMALL_ACCESS_STATES[state] ? ` · ${SMALL_ACCESS_STATES[state]}` : ""}
+      {ratio !== null && (
+        <>
+          {" "}
+          de los competidores exactos observados ({String(access.small_channel_successes)} de {String(access.evaluated)})
+          son canales pequeños con vistas altas.
+        </>
+      )}
+    </p>
   );
 }

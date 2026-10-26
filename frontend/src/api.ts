@@ -140,6 +140,19 @@ export const api = {
       `/opportunities/${encodeURIComponent(opportunityId)}/feasibility`,
       { method: "POST", body: JSON.stringify(body) },
     ),
+  saveEditorial: (
+    opportunityId: string,
+    body: {
+      differentiation: string;
+      differentiation_reason: string;
+      maintainability: string;
+      maintainability_reason: string;
+    },
+  ) =>
+    request<{ evaluation_version: number }>(`/opportunities/${encodeURIComponent(opportunityId)}/editorial`, {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
   reviewMatch: (matchId: string, matchQuality: string) =>
     request<{ id: string; match_quality: string }>(`/matches/${encodeURIComponent(matchId)}`, {
       method: "PATCH",

@@ -86,9 +86,13 @@ Cliente MCP de solo lectura (`vidiq_outliers`), corrida `kind=vidiq`, presupuest
 
 Cálculo `repl-v1` (REPLICATED, PROMISING, SINGLE_OUTLIER, UNKNOWN) desde los videos agrupados, detrás de la compuerta `derived_metrics`, con evidencia por video, versiones de evaluación y caducidad. Verificado con 14 pruebas de dominio, 5 de integración y una oportunidad real (Replicado). Pendiente: revisión de canales espejo (T12).
 
+## M4: tres dimensiones sin Trends (D-62)
+
+Éxito accesible a canales pequeños (calculado), diferenciación editorial y mantenibilidad (valoración humana con motivo). El integrado sigue en NULL: faltan resiliencia temporal, demanda observable y las valoraciones de cada oportunidad real. Quedan pendientes los criterios de M4 de análisis de sensibilidad, evolución temporal y fórmula visible en la interfaz.
+
 ## Estado de verificación actual
 
-284 pruebas de backend, 23 de frontend y 9 E2E pasando (1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
+296 pruebas de backend, 23 de frontend y 9 E2E pasando (1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
 
 ## Siguiente paso
 

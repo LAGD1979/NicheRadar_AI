@@ -72,8 +72,12 @@ def compute_for_evaluation(
     spanish_ratios = {
         "oferta_abordable": scoring.saturation_ratio(_s(spanish.get("saturation_state"))),
         "demanda_observable": scoring.demand_ratio(_s(spanish.get("spanish_demand_state"))),
-        "exito_accesible": None,  # requiere datos de canales pequeños (M4 completo)
-        "diferenciacion": None,  # requiere evaluación editorial humana
+        "exito_accesible": scoring.small_access_ratio(
+            (spanish.get("small_channel_access") or {}).get("ratio")
+        ),
+        "diferenciacion": scoring.differentiation_ratio(
+            _s(((feas.get("editorial") or {}).get("differentiation") or {}).get("level"))
+        ),
     }
     operational = {
         "automatizacion": scoring.complexity_ratio(_i(feas.get("complexity_1_to_5"))),
@@ -81,7 +85,9 @@ def compute_for_evaluation(
             float(base) if isinstance(base, int | float) else None, *cost_bounds
         ),
         "derechos_originalidad": scoring.rights_ratio(_s(feas.get("rights_risk"))),
-        "mantenibilidad": None,  # fact-check no registrado todavía
+        "mantenibilidad": scoring.maintenance_ratio(
+            _s(((feas.get("editorial") or {}).get("maintainability") or {}).get("level"))
+        ),
     }
 
     parts = {

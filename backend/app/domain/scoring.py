@@ -107,6 +107,23 @@ def rights_ratio(risk: str | None) -> float | None:
     return {"LOW": 1.0, "MEDIUM": 0.5, "HIGH": 0.0}.get(risk or "")
 
 
+def differentiation_ratio(level: str | None) -> float | None:
+    """Diferenciación editorial: la valora una persona. Sin valoración no hay puntuación."""
+    return {"HIGH": 1.0, "MEDIUM": 0.6, "LOW": 0.2}.get(level or "")
+
+
+def maintenance_ratio(level: str | None) -> float | None:
+    """Menos esfuerzo de mantener al día, mejor. Sin valoración no hay puntuación."""
+    return {"LOW_EFFORT": 1.0, "MODERATE": 0.6, "HIGH_EFFORT": 0.2}.get(level or "")
+
+
+def small_access_ratio(value: object) -> float | None:
+    """Ya viene medida (0 a 1) o es None; nunca se completa con un valor por defecto."""
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        return None
+    return _clamp(float(value))
+
+
 def cost_ratio(
     usd: float | None, cohort_min: float | None, cohort_max: float | None
 ) -> float | None:

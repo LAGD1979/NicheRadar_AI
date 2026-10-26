@@ -258,6 +258,16 @@ Un video «exitoso» tiene al menos 50 000 vistas (`long_video_views_soft_min`) 
 - **Resultado real:** la oportunidad de prueba de D-60 pasó a «Replicado» (6 canales, 6 videos, 4 semanas, concentración 17 %) y la recomendación subió de «Investigar más» a «Validar demanda con piloto». Esa replicación se apoya en seis videos que el asistente eligió por título y categoría de vidIQ.
 - **No incluido:** la métrica de `PROMISING`/`REPLICATED` no usa el desempeño frente al promedio del propio canal (mínimo 5 videos comparables) ni el desglose por idioma; la tracción, la persistencia y la resiliencia temporal siguen sin calcularse.
 
+### D-62 · Tres dimensiones de M4 sin depender de Trends (2026-10-25)
+Las dimensiones `exito_accesible`, `diferenciacion` y `mantenibilidad` del índice (`score-v1`) dejan de estar fijas en NULL.
+
+- **Éxito accesible a canales pequeños** (`domain/small_channel_access.py`, regla `small-access-v1`): entre los competidores **exactos** que una persona revisó y están verificados en español, la fracción que son canales de hasta 50 000 suscriptores con 50 000 vistas o más (umbrales de `research.yaml`). Exige al menos 3 competidores con vistas y suscriptores conocidos. Sin competidores exactos o con muestra insuficiente queda en NULL con su estado (`NO_EXACT_MATCHES`, `INSUFFICIENT_SAMPLE`); nunca cero. Se guarda en `spanish_json.small_channel_access` cada vez que se recalcula la evaluación en español.
+- **Diferenciación editorial y mantenibilidad** (`POST /opportunities/{id}/editorial`): dos valoraciones humanas, cada una con nivel y motivo de 20 o más caracteres. Diferenciación: ALTA 1,0, MEDIA 0,6, BAJA 0,2. Mantenibilidad (esfuerzo por mantener el contenido al día): POCO 1,0, MODERADO 0,6, MUCHO 0,2. Se guardan en `feasibility_json.editorial`, y guardar la factibilidad ya no las borra.
+- **Interfaz:** panel «Valoración editorial» en la pestaña de producción y una línea de éxito accesible en «Mercado español».
+- **Efecto actual:** el índice integrado sigue en NULL para toda oportunidad. Faltan `resiliencia_temporal` (sin serie histórica licenciada), `demanda_observable` (sin fuente) y, en oportunidades reales, las valoraciones humanas y la revisión de competidores.
+- **Pendiente conocido:** `traccion` usa el estado de replicación como sustituto, igual que `replicabilidad`: cuenta dos veces la misma señal. Debe sustituirse por una medida propia de tracción.
+- **Pendiente conocido:** el éxito accesible no se compara contra un estrato temporal (spec §10.4); usa umbrales fijos.
+
 ---
 
 ## M4 — motor analítico avanzado (detrás de la compuerta)

@@ -17,8 +17,11 @@ from pydantic import ValidationError
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
+from app.core.config import get_settings
 from app.core.errors import ProblemError
+from app.core.research_config import load_research_config
 from app.db import models as m
+from app.domain import small_channel_access as small_channel_access_domain
 from app.domain import spanish_market
 from app.domain.search_plan import SpanishSearchPlan, query_texts
 from app.prompts import spanish_plan_v1 as prompt_v1
@@ -390,6 +393,36 @@ def coverage_for(session: Session, opportunity_id: str) -> spanish_market.Spanis
     )
 
 
+def small_channel_access(session: Session, opportunity_id: str) -> dict[str, Any]:
+    """Éxito accesible a canales pequeños, medido sobre los competidores exactos revisados."""
+    settings = get_settings()
+    research = load_research_config(settings.research_config_path)["research"]
+    rows = session.execute(
+        select(m.Video, m.Channel)
+        .join(m.DiscoveryMatch, m.DiscoveryMatch.video_id == m.Video.id)
+        .join(m.Channel, m.Channel.id == m.Video.channel_id)
+        .where(
+            m.DiscoveryMatch.opportunity_id == opportunity_id,
+            m.DiscoveryMatch.match_quality == "EXACT",
+            m.DiscoveryMatch.is_spanish_market.is_(True),
+            m.Video.availability != "EXPIRED",
+        )
+    ).all()
+    return small_channel_access_domain.assess(
+        [
+            small_channel_access_domain.ExactCompetitor(
+                video_id=video.youtube_video_id,
+                channel_id=channel.youtube_channel_id,
+                view_count=video.view_count,
+                subscriber_count=channel.subscriber_count,
+            )
+            for video, channel in rows
+        ],
+        success_min_views=int(research.get("long_video_views_soft_min", 50_000)),
+        small_max_subscribers=int(research.get("candidate_channel_subscribers_soft_max", 50_000)),
+    )
+
+
 def record_assessment(
     session: Session, opportunity_id: str, run_id: str | None, now: datetime
 ) -> dict[str, Any]:
@@ -406,6 +439,7 @@ def record_assessment(
         "reviewed_matches": coverage.reviewed_matches,
         "exact_matches": coverage.exact_matches,
         "match_precision_reviewed": coverage.reviewed_matches > 0,
+        "small_channel_access": small_channel_access(session, opportunity_id),
         "reason_codes": result.reason_codes,
     }
     evaluation_service.append_evaluation(

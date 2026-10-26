@@ -3,6 +3,7 @@ import { useState, type FormEvent } from "react";
 
 import { api, ApiError } from "../api";
 import { formatField, formatNumber, label, stateFor } from "../format";
+import { EditorialPanel } from "../components/EditorialPanel";
 import type { EvaluationOut } from "../types";
 
 const FACELESS = [
@@ -239,6 +240,8 @@ export function ProductionPanel({ opportunityId, evaluation }: { opportunityId: 
           {label(saveFeasibility.data.recommendation)}.
         </p>
       )}
+
+      <EditorialPanel opportunityId={opportunityId} evaluation={evaluation} />
     </div>
   );
 }

@@ -17,6 +17,9 @@ from app.services import evaluation_service
 
 FACELESS_STATES = ("FACELESS_CONFIRMED", "FACELESS_LIKELY", "MIXED", "NOT_FACELESS", "UNKNOWN")
 RIGHTS_STATES = ("LOW", "MEDIUM", "HIGH", "UNKNOWN")
+DIFFERENTIATION_LEVELS = ("HIGH", "MEDIUM", "LOW")
+MAINTENANCE_LEVELS = ("LOW_EFFORT", "MODERATE", "HIGH_EFFORT")
+MIN_REASON_CHARS = 20
 CSV_INJECTION_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
 EXPORT_WARNING = (
     "Datos de terceros: caducan a los 29 días y no son datos oficiales de YouTube. "
@@ -148,6 +151,47 @@ def save_feasibility(
         "usd_per_video_scenarios": scenarios,
         "costs_are_estimates": True,
         "assessed_by": reviewer,
+    }
+    if previous and previous.feasibility_json.get("editorial"):
+        feasibility["editorial"] = previous.feasibility_json["editorial"]  # no se pierde al editar
+    return evaluation_service.append_evaluation(
+        session, opportunity_id, now=now, source="HUMAN", feasibility=feasibility
+    )
+
+
+# --- valoración editorial (diferenciación y mantenibilidad) --------------------------------------
+
+
+def save_editorial(
+    session: Session,
+    opportunity_id: str,
+    *,
+    differentiation: str,
+    differentiation_reason: str,
+    maintainability: str,
+    maintainability_reason: str,
+    reviewer: str,
+    now: datetime,
+) -> m.Evaluation:
+    """Juicio humano sobre qué tan distinta es la propuesta y cuánto cuesta mantenerla al día."""
+    if session.get(m.Opportunity, opportunity_id) is None:
+        raise ProblemError(404, "OPPORTUNITY_NOT_FOUND", "Oportunidad no encontrada")
+    if differentiation not in DIFFERENTIATION_LEVELS or maintainability not in MAINTENANCE_LEVELS:
+        raise ProblemError(422, "INVALID_STATE", "Nivel no válido")
+    for reason in (differentiation_reason, maintainability_reason):
+        if len(reason.strip()) < MIN_REASON_CHARS:
+            raise ProblemError(
+                422,
+                "EDITORIAL_REASON_REQUIRED",
+                f"Cada valoración necesita un motivo de {MIN_REASON_CHARS} caracteres o más.",
+            )
+    previous = evaluation_service.latest_evaluation(session, opportunity_id)
+    feasibility = dict(previous.feasibility_json) if previous else {}
+    feasibility["editorial"] = {
+        "differentiation": {"level": differentiation, "reason": differentiation_reason.strip()},
+        "maintainability": {"level": maintainability, "reason": maintainability_reason.strip()},
+        "assessed_by": reviewer,
+        "assessed_at": now.isoformat(),
     }
     return evaluation_service.append_evaluation(
         session, opportunity_id, now=now, source="HUMAN", feasibility=feasibility
