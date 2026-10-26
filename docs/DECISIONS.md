@@ -327,6 +327,23 @@ Los datos sintéticos (`synthetic_v1`) siguen existiendo, pero ya no tienen que 
 - **Aplicado el 2026-10-26** sobre la base local, con respaldo previo en `backups/nicheradar_antes_de_quitar_demo_*.sql` (carpeta fuera de Git). Se borraron 8 oportunidades, 20 videos, 10 canales, 5 nichos, 4 formatos, 12 evidencias, 10 evaluaciones, 4 planes, 100 coincidencias, 2 búsquedas, 1 anotación y la corrida de la carga. Se conservaron 417 videos reales, 288 canales reales, la oportunidad real y 16 corridas. El `.env` local fija `DEMO_MODE=false`. La base quedó en modo de datos REAL y sin banner.
 - **Para volver a tener la demo:** poner `DEMO_MODE=true` y reiniciar (el servicio `migrate` la carga de nuevo), o restaurar el respaldo.
 
+### D-66 · Consultas comparables de Trends y topes de HasData según el saldo real (2026-10-26)
+**Saldo real.** El panel de HasData muestra una prueba con 920 créditos disponibles hasta el 2026-11-01. Después el plan vuelve al gratuito: **1.000 créditos al mes** (100 consultas de 10 créditos) y concurrencia 1; los créditos de la prueba sin usar caducan. Un crédito solo se cobra si la consulta tiene éxito.
+
+**Topes locales (`config.py`).** `HASDATA_DAILY_CALL_LIMIT` baja de 30 a **90**, igual que el mensual, para que el límite que importe sea el saldo del mes y no una restricción diaria, y se añade `HASDATA_MONTHLY_CALL_LIMIT=90` (deja 10 consultas de margen sobre el plan gratuito). El mes se cuenta por calendario UTC, no por el ciclo de facturación de HasData; el margen cubre la diferencia. Las consultas hechas fuera del sistema (por ejemplo desde el MCP) no se cuentan aquí. `GET /usage/hasdata` y el panel de Demanda muestran el uso diario y mensual.
+
+**Términos comparables.** Probado en vivo (10 créditos): `dataType=timeseries` acepta varios términos separados por coma en una sola llamada y cuesta lo mismo que uno. Cada punto trae un valor por término, con su nombre y `hasData`. `HasDataClient.compare_interest` pide hasta 5 términos juntos y devuelve una serie por término; el índice de cada uno es relativo **al más fuerte del grupo**, así que los términos de una misma llamada se pueden comparar y los de llamadas distintas no. Los términos se identifican por el nombre que devuelve HasData y, si no coincide, por la posición. Un término sin datos sigue siendo desconocido, nunca cero. El nombre del término no puede llevar coma.
+
+**Efecto en la señal.** Frente a un término más fuerte, un índice bajo no prueba que falte demanda. Por eso, en una medición de varios términos, un resultado «índice relativo bajo» pasa a `UNKNOWN` con motivo `LOW_IN_COMPARISON` (medido solo seguiría siendo `NOT_PRESENT`). Cada observación guarda `comparison_group`, `terms` y `share_of_leader` (su índice reciente como porcentaje del más fuerte). Las consultas relacionadas siguen siendo de un término (una llamada por término).
+
+**Sin repetir gasto.** Si ya hay una medición vigente (menos de `HASDATA_REUSE_DAYS`=7 días) de los **mismos términos en el mismo grupo**, no se vuelve a pedir; la corrida lo cuenta como reutilizado. Un grupo distinto, aunque comparta un término, no es comparable y se mide de nuevo. La casilla «Repetir aunque haya una medición reciente» (`force`) lo omite. Se envía `tz=0` siempre para alinear las semanas en UTC.
+
+**Costo.** Ahora una medición de N términos cuesta 1 consulta (10 créditos), más N si se piden las relacionadas. Antes costaba N.
+
+**Saldo visible.** En lugar de depender de un tope diario restrictivo, el encabezado muestra siempre un indicador por herramienta (YouTube, vidIQ, HasData): barra y cantidad restante, ámbar bajo el 20 % y rojo al agotarse (`BalanceMeters`, `balance.ts`). Son los contadores locales contra los topes configurados, no el saldo real del proveedor. Los saldos se leen al cargar la página, al terminar una corrida y con el botón «Refrescar saldos»; no se sondean. El tope diario de HasData sube a 90 (igual al mensual) para que lo que se vea sea el saldo del mes.
+
+**Límites conocidos.** Al medir un término muy pequeño junto a uno muy grande, el pequeño queda en `UNKNOWN`; para decidir su demanda hay que medirlo solo. Los términos medidos antes de este cambio no tienen grupo y se vuelven a medir la primera vez.
+
 ---
 
 ## M4 — motor analítico avanzado (detrás de la compuerta)

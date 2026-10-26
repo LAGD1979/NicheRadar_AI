@@ -27,7 +27,7 @@ export function VidiqCard() {
   const queryClient = useQueryClient();
   const providers = useQuery({ queryKey: ["providers"], queryFn: api.providers });
   const capabilities = useQuery({ queryKey: ["capabilities"], queryFn: api.capabilities });
-  const usage = useQuery({ queryKey: ["vidiq-usage"], queryFn: api.vidiqUsage, refetchInterval: 10000 });
+  const usage = useQuery({ queryKey: ["vidiq-usage"], queryFn: api.vidiqUsage });
   const [form, setForm] = useState<VidiqForm>(INITIAL_VIDIQ_FORM);
   const [formError, setFormError] = useState<string | null>(null);
 

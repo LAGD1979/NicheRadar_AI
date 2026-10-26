@@ -1158,3 +1158,83 @@ tr.row-selected td {
   font-weight: 500;
   color: var(--text);
 }
+
+/* Saldo por herramienta, siempre visible en el encabezado */
+.balances-wrap {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+}
+
+.balances {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.balance-refresh {
+  padding: 4px 10px;
+  font-size: 0.75rem;
+}
+
+.balance {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  background: var(--surface);
+  font-size: 0.75rem;
+  white-space: nowrap;
+}
+
+.balance-name {
+  font-weight: 700;
+}
+
+.balance-bar {
+  display: inline-block;
+  width: 56px;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--border);
+  overflow: hidden;
+}
+
+.balance-bar > span {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: var(--success);
+}
+
+.balance.low .balance-bar > span {
+  background: #e0a100;
+}
+
+.balance.empty .balance-bar > span {
+  background: #d64545;
+}
+
+.balance.empty {
+  border-color: #d64545;
+}
+
+.balance.low {
+  border-color: #e0a100;
+}
+
+.balance.off,
+.balance-text small {
+  color: var(--muted);
+}
+
+.balance-text {
+  font-variant-numeric: tabular-nums;
+}

@@ -12,7 +12,7 @@ export function Settings() {
   const config = useQuery({ queryKey: ["config"], queryFn: api.config });
   const providers = useQuery({ queryKey: ["providers"], queryFn: api.providers });
   const capabilities = useQuery({ queryKey: ["capabilities"], queryFn: api.capabilities });
-  const usage = useQuery({ queryKey: ["usage"], queryFn: api.usage, refetchInterval: 30_000 });
+  const usage = useQuery({ queryKey: ["usage"], queryFn: api.usage });
 
   return (
     <section aria-labelledby="titulo-config">

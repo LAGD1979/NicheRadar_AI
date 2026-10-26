@@ -48,12 +48,16 @@ class Settings(BaseSettings):
     vidiq_max_retries: int = 3
     vidiq_credits_per_call: int = 5
     vidiq_daily_credit_limit: int = 200
-    # HasData (Google Trends por API REST, D-63). Cada consulta cuesta 10 créditos de HasData; el
-    # tope diario es local y cuenta consultas, no el saldo real del plan.
+    # HasData (Google Trends por API REST, D-63). Cada consulta cuesta 10 créditos de HasData; los
+    # topes son locales y cuentan consultas, no el saldo real del plan. El plan gratuito da 1.000
+    # créditos al mes (100 consultas); el tope mensual deja un margen de 10 consultas.
     hasdata_base_url: str = "https://api.hasdata.com"
     hasdata_timeout_seconds: float = 45.0
     hasdata_max_retries: int = 3
-    hasdata_daily_call_limit: int = 30
+    hasdata_daily_call_limit: int = 90
+    hasdata_monthly_call_limit: int = 90
+    # Una medición de Trends más reciente que esto, con los mismos términos, no se repite.
+    hasdata_reuse_days: int = 7
     # Datos de terceros no autorizados: plazo máximo de caché (spec §5.5, 30 días menos margen).
     unauthorized_cache_days: int = 29
 

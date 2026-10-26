@@ -145,7 +145,7 @@ export const api = {
     request<DemandSummary>(`/opportunities/${encodeURIComponent(opportunityId)}/demand`),
   requestDemand: (
     opportunityId: string,
-    body: { keywords: string[]; geo: string | null; sources: string[]; include_related: boolean },
+    body: { keywords: string[]; geo: string | null; sources: string[]; include_related: boolean; force?: boolean },
   ) =>
     request<{ id: string; status: string; budget: Record<string, number> }>(
       `/opportunities/${encodeURIComponent(opportunityId)}/demand`,
@@ -157,7 +157,14 @@ export const api = {
       { method: "POST", body: JSON.stringify({ max_calls: maxCalls }) },
     ),
   hasdataUsage: () =>
-    request<{ calls_used: number; calls_daily_limit: number; calls_remaining: number }>("/usage/hasdata"),
+    request<{
+      calls_used: number;
+      calls_daily_limit: number;
+      calls_remaining: number;
+      calls_month_used: number;
+      calls_monthly_limit: number;
+      calls_month_remaining: number;
+    }>("/usage/hasdata"),
   saveEditorial: (
     opportunityId: string,
     body: {

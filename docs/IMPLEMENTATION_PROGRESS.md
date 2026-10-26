@@ -98,9 +98,13 @@ Trends vía HasData (REST) y palabras clave de vidIQ como señales de demanda; c
 
 La IA sugiere la calidad de cada competidor en español y una persona acepta, corrige o acepta en bloque; la saturación exige revisar al menos el 80 % de los videos; la cohorte de costos no mezcla demo y datos reales. Probado con la IA real sobre 186 videos. Pendiente: que el responsable revise para medir la precisión de la IA.
 
+## Trends comparables y topes de HasData (D-66)
+
+Los términos de una medición se piden juntos en una sola llamada (índices comparables, 10 créditos en total); frente a un término más fuerte, un índice bajo es «desconocido». Una medición reciente de los mismos términos no se repite. Tope local de 90 consultas al mes según el saldo real, y un indicador de saldo por herramienta siempre visible en el encabezado (1.000 créditos al mes tras la prueba).
+
 ## Estado de verificación actual
 
-408 pruebas de backend, 23 de frontend y 11 E2E pasando (1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
+422 pruebas de backend y 23 de frontend pasando (11 E2E en la última corrida completa, anterior a D-66; 1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
 
 ## Siguiente paso
 

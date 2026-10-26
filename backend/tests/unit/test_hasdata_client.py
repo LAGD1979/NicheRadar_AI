@@ -42,6 +42,31 @@ def _timeline(values: list[tuple[str, int | None, bool]]) -> dict[str, Any]:
     }
 
 
+def _multi(terms: list[str], rows: list[tuple[str, list[int | None]]]) -> dict[str, Any]:
+    """Respuesta de varios términos: un valor por término en cada punto, con su nombre."""
+    return {
+        "requestMetadata": {"status": "ok"},
+        "interestOverTime": {
+            "timelineData": [
+                {
+                    "timestamp": ts,
+                    "isPartial": False,
+                    "values": [
+                        {
+                            "query": term,
+                            "value": "0" if v is None else str(v),
+                            "extractedValue": 0 if v is None else v,
+                            "hasData": v is not None,
+                        }
+                        for term, v in zip(terms, values, strict=True)
+                    ],
+                }
+                for ts, values in rows
+            ]
+        },
+    }
+
+
 def _client(handler: Any, retries: int = 3) -> HasDataClient:
     return HasDataClient(
         api_key=KEY,
@@ -167,3 +192,64 @@ def test_bad_input_and_unexpected_bodies_are_invalid_requests() -> None:
     not_json = _client(lambda _r: httpx.Response(200, text="<html>"))
     with pytest.raises(InvalidRequest):
         not_json.interest_over_time("x")
+
+
+def test_every_request_sends_a_fixed_utc_offset() -> None:
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json=_timeline([("1761436800", 10, False)]))
+
+    _client(handler).interest_over_time("x")
+    assert seen[0].url.params["tz"] == "0"
+
+
+def test_several_terms_go_in_one_request_and_come_back_by_name() -> None:
+    seen: list[httpx.Request] = []
+    body = _multi(
+        ["video essay", "ensayo en video"],
+        [("1761436800", [50, None]), ("1762041600", [60, None])],
+    )
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json=body)
+
+    series = _client(handler).compare_interest(["video essay", "ensayo en video"], geo="MX")
+    assert len(seen) == 1
+    assert seen[0].url.params["q"] == "video essay,ensayo en video"
+    assert [p.value for p in series["video essay"]] == [50, 60]
+    # Un término sin datos es desconocido, no cero.
+    assert [p.value for p in series["ensayo en video"]] == [None, None]
+
+
+def test_terms_are_matched_by_name_even_if_the_order_differs() -> None:
+    body = _multi(["b b", "a a"], [("1761436800", [7, 9])])
+    series = _client(lambda _r: httpx.Response(200, json=body)).compare_interest(["a a", "b b"])
+    assert series["a a"][0].value == 9
+    assert series["b b"][0].value == 7
+
+
+def test_names_are_matched_without_regard_to_case() -> None:
+    body = _multi(["video essay"], [("1761436800", [40])])
+    series = _client(lambda _r: httpx.Response(200, json=body)).compare_interest(["Video Essay"])
+    assert series["Video Essay"][0].value == 40
+
+
+def test_comparison_rejects_bad_term_lists() -> None:
+    client = _client(lambda _r: httpx.Response(200, json=_timeline([("1761436800", 1, False)])))
+    with pytest.raises(InvalidRequest):
+        client.compare_interest([])
+    with pytest.raises(InvalidRequest):
+        client.compare_interest(["a a", "b b", "c c", "d d", "e e", "f f"])
+    with pytest.raises(InvalidRequest):
+        client.compare_interest(["a, b"])
+    with pytest.raises(InvalidRequest):
+        client.compare_interest(["Mismo", "mismo"])
+
+
+def test_related_queries_accept_a_single_term_only() -> None:
+    client = _client(lambda _r: httpx.Response(200, json={"requestMetadata": {"status": "ok"}}))
+    with pytest.raises(InvalidRequest):
+        client.related_queries("uno,dos")

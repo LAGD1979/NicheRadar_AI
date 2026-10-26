@@ -26,20 +26,32 @@ PUBLISHED = datetime(2026, 9, 1, 10, 0, tzinfo=UTC)  # fecha de publicación de 
 
 
 class FakeTrends:
-    def __init__(self, values: list[int | None] | None = None, error: Exception | None = None):
+    def __init__(
+        self,
+        values: list[int | None] | None = None,
+        error: Exception | None = None,
+        per_term: dict[str, list[int | None]] | None = None,
+    ):
         self.values = values if values is not None else [40] * 52
+        self.per_term = per_term or {}
         self.error = error
-        self.calls: list[tuple[str, str]] = []
+        self.calls: list[tuple[str, str]] = []  # (términos unidos por coma, país)
         self.closed = False
 
-    def interest_over_time(self, query: str, *, geo: str = "", **_: Any) -> list[TrendPoint]:
-        self.calls.append((query, geo))
+    def compare_interest(
+        self, queries: list[str], *, geo: str = "", **_: Any
+    ) -> dict[str, list[TrendPoint]]:
+        self.calls.append((",".join(queries), geo))
         if self.error:
             raise self.error
-        return [
-            TrendPoint(NOW - timedelta(weeks=len(self.values) - i), value, False)
-            for i, value in enumerate(self.values)
-        ]
+        out: dict[str, list[TrendPoint]] = {}
+        for query in queries:
+            values = self.per_term.get(query, self.values)
+            out[query] = [
+                TrendPoint(NOW - timedelta(weeks=len(values) - i), value, False)
+                for i, value in enumerate(values)
+            ]
+        return out
 
     def related_queries(self, query: str, **_: Any) -> list[RelatedQuery]:
         return [RelatedQuery("consulta relacionada", "top", 100)]
@@ -154,6 +166,7 @@ def test_the_latest_observation_replaces_the_previous_one(seeded_db: Session) ->
         vidiq=None,
         trends=FakeTrends([2] * 52),
         now=NOW + timedelta(minutes=5),
+        force=True,
     )
     spanish = _spanish(seeded_db)
     assert spanish["demand_signals"]["family_states"]["google_trends"] == "NOT_PRESENT"
@@ -166,20 +179,183 @@ def test_daily_hasdata_limit_pauses_the_run(
     monkeypatch.setenv("HASDATA_DAILY_CALL_LIMIT", "2")
     get_settings.cache_clear()
     trends = FakeTrends()
+    # 1 llamada comparable + una de «relacionadas» por término: el tope corta a la segunda.
     outcome = _observe(
         seeded_db,
         keywords=["uno uno", "dos dos", "tres tres"],
         sources=["trends"],
         vidiq=None,
         trends=trends,
+        include_related=True,
     )
     assert outcome.outcome == "PAUSED_QUOTA"
-    assert len(trends.calls) == 2
+    assert len(trends.calls) == 1
     snapshot = demand_service.hasdata_snapshot(seeded_db, get_settings(), NOW)
     assert snapshot["calls_used"] == 2
     assert snapshot["calls_remaining"] == 0
+    # Lo medido no se pierde: los tres términos quedaron guardados, solo sin «relacionadas».
+    rows = seeded_db.scalars(select(m.DemandObservation)).all()
+    assert len(rows) == 3
+    assert sum("related" in r.result_json for r in rows) == 1
     monkeypatch.delenv("HASDATA_DAILY_CALL_LIMIT")
     get_settings.cache_clear()
+
+
+def test_monthly_hasdata_limit_pauses_the_run(
+    seeded_db: Session, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setenv("HASDATA_MONTHLY_CALL_LIMIT", "1")
+    get_settings.cache_clear()
+    first = _observe(seeded_db, sources=["trends"], vidiq=None, keywords=["uno uno"])
+    assert first.outcome == "COMPLETED"
+    # Otro día del mismo mes: el tope diario alcanza, el mensual no.
+    later = NOW + timedelta(days=1) if NOW.day < 28 else NOW - timedelta(days=1)
+    second = _observe(
+        seeded_db, sources=["trends"], vidiq=None, keywords=["otro otro"], now=later, force=True
+    )
+    assert second.outcome == "PAUSED_QUOTA"
+    snapshot = demand_service.hasdata_snapshot(seeded_db, get_settings(), NOW)
+    assert snapshot["calls_month_used"] == 1
+    assert snapshot["calls_month_remaining"] == 0
+    monkeypatch.delenv("HASDATA_MONTHLY_CALL_LIMIT")
+    get_settings.cache_clear()
+
+
+# --- términos comparables en una sola llamada ----------------------------------------------------
+
+
+def test_several_terms_go_in_one_call_and_are_stored_as_a_comparison_group(
+    seeded_db: Session,
+) -> None:
+    trends = FakeTrends(per_term={"video ensayo": [60] * 52, "ensayo audiovisual": [30] * 52})
+    outcome = _observe(
+        seeded_db,
+        keywords=["video ensayo", "ensayo audiovisual"],
+        sources=["trends"],
+        vidiq=None,
+        trends=trends,
+    )
+    assert outcome.hasdata_calls == 1
+    assert trends.calls == [("video ensayo,ensayo audiovisual", "")]
+    rows = {r.keyword: r for r in seeded_db.scalars(select(m.DemandObservation))}
+    assert set(rows) == {"video ensayo", "ensayo audiovisual"}
+    group = ["ensayo audiovisual", "video ensayo"]
+    assert all(r.result_json["comparison_group"] == group for r in rows.values())
+    assert rows["video ensayo"].result_json["share_of_leader"] == 100.0
+    assert rows["ensayo audiovisual"].result_json["share_of_leader"] == 50.0
+    assert rows["video ensayo"].state == "PRESENT"
+
+
+def test_a_low_index_next_to_a_stronger_term_is_unknown_not_absent(seeded_db: Session) -> None:
+    trends = FakeTrends(per_term={"fuerte fuerte": [90] * 52, "debil debil": [3] * 52})
+    _observe(
+        seeded_db,
+        keywords=["fuerte fuerte", "debil debil"],
+        sources=["trends"],
+        vidiq=None,
+        trends=trends,
+    )
+    rows = {r.keyword: r for r in seeded_db.scalars(select(m.DemandObservation))}
+    assert rows["debil debil"].state == "UNKNOWN"
+    assert rows["debil debil"].reason == "LOW_IN_COMPARISON"
+    # Medido solo, el mismo índice bajo sí es una señal de que falta demanda.
+    _observe(
+        seeded_db,
+        keywords=["solo solo"],
+        sources=["trends"],
+        vidiq=None,
+        trends=FakeTrends([3] * 52),
+    )
+    solo = seeded_db.scalars(
+        select(m.DemandObservation).where(m.DemandObservation.keyword == "solo solo")
+    ).one()
+    assert (solo.state, solo.reason) == ("NOT_PRESENT", "LOW_RELATIVE_INTEREST")
+
+
+def test_a_term_without_data_in_the_group_stays_unknown(seeded_db: Session) -> None:
+    trends = FakeTrends(per_term={"con datos": [50] * 52, "sin datos": [None] * 52})
+    _observe(
+        seeded_db,
+        keywords=["con datos", "sin datos"],
+        sources=["trends"],
+        vidiq=None,
+        trends=trends,
+    )
+    rows = {r.keyword: r for r in seeded_db.scalars(select(m.DemandObservation))}
+    assert rows["con datos"].state == "PRESENT"
+    assert (rows["sin datos"].state, rows["sin datos"].reason) == ("UNKNOWN", "INSUFFICIENT_DATA")
+
+
+def test_a_recent_measurement_of_the_same_terms_is_reused(seeded_db: Session) -> None:
+    kwargs: dict[str, Any] = {
+        "keywords": ["video ensayo", "ensayo audiovisual"],
+        "sources": ["trends"],
+        "vidiq": None,
+    }
+    first = FakeTrends()
+    _observe(seeded_db, trends=first, **kwargs)
+    again = FakeTrends()
+    outcome = _observe(seeded_db, trends=again, now=NOW + timedelta(days=3), **kwargs)
+    assert again.calls == []
+    assert (outcome.hasdata_calls, outcome.reused, outcome.observations) == (0, 1, 0)
+    assert sorted(outcome.completed) == [
+        "trends:ensayo audiovisual:",
+        "trends:video ensayo:",
+    ]
+    assert seeded_db.scalar(select(func.count()).select_from(m.DemandObservation)) == 2
+
+
+def test_force_old_measurements_and_different_groups_are_measured_again(
+    seeded_db: Session,
+) -> None:
+    kwargs: dict[str, Any] = {"sources": ["trends"], "vidiq": None}
+    _observe(seeded_db, keywords=["video ensayo", "ensayo audiovisual"], **kwargs)
+    forced = FakeTrends()
+    _observe(
+        seeded_db,
+        keywords=["video ensayo", "ensayo audiovisual"],
+        trends=forced,
+        force=True,
+        now=NOW + timedelta(days=1),
+        **kwargs,
+    )
+    assert len(forced.calls) == 1
+    old = FakeTrends()
+    _observe(
+        seeded_db,
+        keywords=["video ensayo", "ensayo audiovisual"],
+        trends=old,
+        now=NOW + timedelta(days=9),  # pasó el plazo de reutilización
+        **kwargs,
+    )
+    assert len(old.calls) == 1
+    other = FakeTrends()
+    # Un grupo distinto no es comparable con el anterior, aunque comparta un término.
+    _observe(
+        seeded_db,
+        keywords=["video ensayo", "documental"],
+        trends=other,
+        now=NOW + timedelta(days=9, minutes=1),
+        **kwargs,
+    )
+    assert len(other.calls) == 1
+
+
+def test_related_queries_are_not_reused_when_the_old_measurement_lacks_them(
+    seeded_db: Session,
+) -> None:
+    kwargs: dict[str, Any] = {"keywords": ["video ensayo"], "sources": ["trends"], "vidiq": None}
+    _observe(seeded_db, **kwargs)
+    with_related = FakeTrends()
+    outcome = _observe(
+        seeded_db,
+        trends=with_related,
+        include_related=True,
+        now=NOW + timedelta(days=1),
+        **kwargs,
+    )
+    assert len(with_related.calls) == 1
+    assert outcome.hasdata_calls == 2
 
 
 def test_provider_errors_are_reported_without_inventing_data(seeded_db: Session) -> None:
@@ -467,6 +643,7 @@ def test_demand_endpoint_rejects_bad_input_and_unknown_opportunities(
     assert client.post(url, json={**BODY, "keywords": ["a"]}).status_code == 422
     assert client.post(url, json={**BODY, "keywords": ["uno\x07dos"]}).status_code == 422
     assert client.post(url, json={**BODY, "keywords": ["a b"] * 9}).status_code == 422
+    assert client.post(url, json={**BODY, "keywords": ["uno, dos"]}).status_code == 422
     assert client.post(url, json={**BODY, "geo": "mx"}).status_code == 422
     assert client.post(url, json={**BODY, "sources": ["otra"]}).status_code == 422
     assert client.post("/api/v1/opportunities/no-existe/demand", json=BODY).status_code == 404
@@ -503,6 +680,21 @@ def test_end_to_end_demand_run_through_the_worker(
     detail = client.get(f"/api/v1/opportunities/{OPP}").json()
     assert detail["evaluation"]["spanish"]["spanish_demand_state"] == "OBSERVED"
     assert client.get("/api/v1/usage/hasdata").json()["calls_used"] == 1
+
+
+def test_budget_counts_one_call_for_all_terms_plus_related_per_term(
+    client: TestClient, providers_on: None, open_policy: Callable[..., None]
+) -> None:
+    open_policy("google_trends")
+    url = f"/api/v1/opportunities/{OPP}/demand"
+    body = {"keywords": ["uno uno", "dos dos", "tres tres"], "sources": ["trends"]}
+    plain = client.post(url, json=body).json()["budget"]
+    assert (plain["hasdata_calls_estimate"], plain["hasdata_credits_estimate"]) == (1, 10)
+    related = client.post(url, json={**body, "include_related": True}).json()["budget"]
+    assert (related["hasdata_calls_estimate"], related["hasdata_credits_estimate"]) == (4, 40)
+    usage = client.get("/api/v1/usage/hasdata").json()
+    assert usage["calls_monthly_limit"] == 90
+    assert usage["calls_month_remaining"] == 90
 
 
 def test_worker_skips_a_source_whose_gate_is_closed(

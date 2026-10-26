@@ -39,6 +39,7 @@ class DemandRequest(BaseModel):
     geo: str | None = Field(default=None, pattern=r"^[A-Z]{2}(-[A-Z0-9]{1,3})?$")
     sources: list[Source] = Field(default_factory=_all_sources, min_length=1, max_length=2)
     include_related: bool = False
+    force: bool = False  # repetir aunque haya una medición reciente con los mismos términos
 
     @field_validator("keywords")
     @classmethod
@@ -50,6 +51,8 @@ class DemandRequest(BaseModel):
                 raise ValueError("cada palabra clave debe tener entre 2 y 80 caracteres")
             if any(ord(ch) < 32 for ch in text):
                 raise ValueError("contiene caracteres de control")
+            if "," in text:
+                raise ValueError("no puede contener comas (la coma separa los términos)")
             if text.lower() not in {c.lower() for c in cleaned}:
                 cleaned.append(text)
         return cleaned
@@ -106,10 +109,9 @@ def request_demand(
             capability="vidiq_api",
             name="vidIQ",
         )
+    # Los términos van juntos en una sola llamada; las relacionadas cuestan una por término.
     hasdata_calls = (
-        len(body.keywords)
-        * (2 if body.include_related else 1)
-        * (1 if "trends" in body.sources else 0)
+        (1 + (len(body.keywords) if body.include_related else 0)) if "trends" in body.sources else 0
     )
     vidiq_calls = len(body.keywords) if "vidiq" in body.sources else 0
     run = enqueue_run(
@@ -122,6 +124,7 @@ def request_demand(
             "geo": body.geo,
             "sources": body.sources,
             "include_related": body.include_related,
+            "force": body.force,
         },
         params={"opportunity_id": opportunity_id, "keywords": len(body.keywords), "geo": body.geo},
         algorithm_version="demand-v1",

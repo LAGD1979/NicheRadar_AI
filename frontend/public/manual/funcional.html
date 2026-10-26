@@ -125,6 +125,11 @@
         <h2><span class="num">4</span>La pantalla principal</h2>
         <p>Todas las pantallas comparten la misma estructura. A la izquierda está el menú; a la derecha, el contenido.</p>
 
+        <div class="tip">
+          <strong>Saldo siempre a la vista</strong>
+          En la barra superior hay un indicador por herramienta (YouTube, vidIQ y HasData) con una barra y lo que queda: verde cuando hay saldo, ámbar cuando queda menos del 20 % y rojo cuando se agotó. Son los contadores del propio sistema contra sus topes, no el saldo que muestra cada proveedor en su panel; si el proveedor tiene menos, manda el proveedor. HasData muestra el tope que se agote primero, el diario o el mensual. Los saldos se leen al abrir la página y cada vez que termina una corrida; no se actualizan solos cada pocos segundos. Para verlos al momento, pulse <strong>Refrescar saldos</strong>.
+        </div>
+
         <figure>
           <svg viewBox="0 0 800 380" role="img" aria-labelledby="fig-pantalla">
             <title id="fig-pantalla">Esquema de la pantalla: menú a la izquierda y contenido a la derecha</title>
@@ -396,9 +401,13 @@
           </tbody>
         </table>
         <p>La demanda pasa a <em>Observada</em> cuando al menos <strong>dos fuentes distintas</strong> la muestran. Varias palabras clave de una misma fuente cuentan una sola vez. Un resultado <em>Desconocida</em> significa que faltan datos, y <em>No alcanza</em> que se observó poco: ninguno prueba que no haya demanda.</p>
+        <div class="tip">
+          <strong>Palabras clave comparables</strong>
+          Al medir varias palabras clave a la vez, el índice de Trends de cada una se calcula contra la más fuerte del grupo, así que puede ver cuál se busca más y cuánto (por ejemplo, «50 % del más fuerte»). Una palabra pequeña junto a una muy grande puede quedar en «Desconocida»: para decidir su demanda, mídala sola. Si ya midió los mismos términos hace menos de 7 días, no se vuelven a pedir (marque «Repetir aunque haya una medición reciente» para forzarlo).
+        </div>
         <div class="warn">
           <strong>Cuesta créditos</strong>
-          Cada palabra clave gasta una consulta de HasData (10 créditos de HasData) y 5 créditos de vidIQ. El panel muestra el costo antes de enviar. Los términos muy específicos o con tilde pueden devolver pocos datos.
+          Todas las palabras clave de Trends se piden <strong>juntas en una sola consulta</strong> de HasData (10 créditos), y cada una gasta 5 créditos de vidIQ. Si activa «Incluir consultas relacionadas», suma una consulta de HasData por palabra clave. El panel muestra el costo antes de enviar y cuántas consultas lleva este mes. Los términos muy específicos o con tilde pueden devolver pocos datos.
         </div>
 
         <div class="warn">

@@ -237,6 +237,7 @@ def run_demand_observation(session: Session, task: m.RunTask, ctx: HandlerContex
             run_id=task.run_id,
             completed_keys=set(task.result_json.get("completed", [])),
             now=datetime.now(UTC),
+            force=bool(payload.get("force", False)),
         )
     finally:
         _close(trends)

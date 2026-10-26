@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { NavLink } from "react-router-dom";
 
 import { api } from "../api";
+import { BalanceMeters } from "./BalanceMeters";
 
 const OVERVIEW = { to: "/", label: "Resumen" };
 // El orden sigue la ruta de exploración: descubrir, agrupar, validar y decidir.
@@ -40,6 +41,7 @@ export function Layout({ children }: { children: ReactNode }) {
             {banner.text}
           </span>
         )}
+        <BalanceMeters />
       </header>
       <div className="body">
         <nav className="sidenav" aria-label="Principal">

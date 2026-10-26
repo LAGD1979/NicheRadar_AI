@@ -37,8 +37,14 @@ function detail(signal: DemandSignal): string {
   if (signal.family === "google_trends") {
     const recent = num(d.recent_mean);
     const base = num(d.base_mean);
+    const share = num(d.share_of_leader);
     if (recent === null) return `${String(num(d.weeks_with_data) ?? 0)} semanas con dato: insuficiente`;
-    return `Índice relativo reciente ${formatNumber(recent)} de 100${base === null ? "" : ` (base ${formatNumber(base)})`}`;
+    const others = Array.isArray(d.terms) ? d.terms.length - 1 : 0;
+    const comparison =
+      others > 0
+      ? ` · comparado con ${String(others)} término(s)${share === null ? "" : `: ${formatNumber(share)} % del más fuerte`}`
+      : "";
+    return `Índice relativo reciente ${formatNumber(recent)} de 100${base === null ? "" : ` (base ${formatNumber(base)})`}${comparison}`;
   }
   if (signal.family === "vidiq_keywords") {
     const monthly = num(d.monthly_searches);
@@ -57,6 +63,7 @@ export function DemandPanel({ opportunityId }: { opportunityId: string }) {
   const [trends, setTrends] = useState(true);
   const [vidiq, setVidiq] = useState(true);
   const [related, setRelated] = useState(false);
+  const [force, setForce] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
   const demand = useQuery({
@@ -66,7 +73,7 @@ export function DemandPanel({ opportunityId }: { opportunityId: string }) {
   });
   const providers = useQuery({ queryKey: ["providers"], queryFn: api.providers });
   const capabilities = useQuery({ queryKey: ["capabilities"], queryFn: api.capabilities });
-  const usage = useQuery({ queryKey: ["hasdata-usage"], queryFn: api.hasdataUsage, refetchInterval: 15000 });
+  const usage = useQuery({ queryKey: ["hasdata-usage"], queryFn: api.hasdataUsage });
 
   const run = useMutation({
     mutationFn: () =>
@@ -75,6 +82,7 @@ export function DemandPanel({ opportunityId }: { opportunityId: string }) {
         geo: geo || null,
         sources: [...(trends ? ["trends"] : []), ...(vidiq ? ["vidiq"] : [])],
         include_related: related,
+        force,
       }),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["runs"] });
@@ -89,7 +97,9 @@ export function DemandPanel({ opportunityId }: { opportunityId: string }) {
   const vidiqReady = providerOk("vidiq_api") && capabilityOk("vidiq_api");
 
   const list = parseKeywords(keywords);
-  const hasdataCalls = trends ? list.length * (related ? 2 : 1) : 0;
+  // Los términos van juntos en una sola llamada (sus índices quedan comparables);
+  // las consultas relacionadas cuestan una llamada por término.
+  const hasdataCalls = trends && list.length > 0 ? 1 + (related ? list.length : 0) : 0;
   const vidiqCalls = vidiq ? list.length : 0;
 
   function problem(): string | null {
@@ -119,7 +129,8 @@ export function DemandPanel({ opportunityId }: { opportunityId: string }) {
       <h3 id="demanda-titulo">Demanda en español</h3>
       <p className="hint">
         La demanda es «Observada» con al menos dos señales de fuentes distintas. Varias palabras clave de una misma
-        fuente cuentan una vez, y la falta de datos nunca se toma como falta de demanda.
+        fuente cuentan una vez, y la falta de datos nunca se toma como falta de demanda. Los términos de una
+        misma medición se piden juntos, así que sus índices son comparables entre sí.
       </p>
 
       {data && (
@@ -203,16 +214,23 @@ export function DemandPanel({ opportunityId }: { opportunityId: string }) {
             <input type="checkbox" checked={related} disabled={!trendsReady || !trends} onChange={(e) => { setRelated(e.target.checked); }} />
             Incluir consultas relacionadas
           </label>
+          <label className={trendsReady ? undefined : "disabled"}>
+            <input type="checkbox" checked={force} disabled={!trendsReady || !trends} onChange={(e) => { setForce(e.target.checked); }} />
+            Repetir aunque haya una medición reciente
+          </label>
         </fieldset>
         <button type="submit" disabled={run.isPending}>
           {run.isPending ? "Encolando…" : "Medir demanda"}
         </button>
       </form>
       <p className="muted small">
-        Costo estimado: {hasdataCalls} consultas a HasData ({formatNumber(hasdataCalls * HASDATA_CREDITS)} créditos de
+        Costo estimado: {hasdataCalls} {hasdataCalls === 1 ? "consulta" : "consultas"} a HasData ({formatNumber(hasdataCalls * HASDATA_CREDITS)} créditos de
         HasData) y {formatNumber(vidiqCalls * VIDIQ_CREDITS)} créditos de vidIQ.
         {usage.data && (
-          <> Hoy: {usage.data.calls_used} de {usage.data.calls_daily_limit} consultas a HasData.</>
+          <>
+            {" "}Hoy: {usage.data.calls_used} de {usage.data.calls_daily_limit} consultas a HasData; este mes:{" "}
+            {usage.data.calls_month_used} de {usage.data.calls_monthly_limit}.
+          </>
         )}{" "}
         El índice de Google Trends es relativo (0 a 100), no un volumen de búsquedas.
       </p>

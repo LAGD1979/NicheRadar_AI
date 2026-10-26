@@ -7,6 +7,10 @@
   `google_trends`).
 - Los valores son un **índice relativo de 0 a 100**, no volúmenes de búsqueda. Una consulta sin
   datos suficientes se devuelve como desconocida (`None`), nunca como cero.
+- `timeseries` acepta hasta 5 términos separados por coma en una sola llamada (probado en vivo: 10
+  créditos). El índice de cada término queda **relativo al más fuerte del grupo**, de modo que los
+  términos de una misma llamada son comparables entre sí y los de llamadas distintas no.
+- Se envía `tz=0` siempre para que las semanas se alineen en UTC, no en la hora del Pacífico.
 - La clave nunca aparece en errores ni logs.
 """
 
@@ -30,6 +34,8 @@ SEARCH_PATH = "/scrape/google-trends/search"
 RETRYABLE_STATUS = {429, 500, 502, 503, 504}
 DATE_PRESETS = ("today 3-m", "today 12-m", "today 5-y", "all")
 GPROPS = ("", "youtube", "news", "images", "froogle")
+MAX_TERMS = 5
+TZ_MINUTES = "0"
 
 
 @dataclass(frozen=True)
@@ -113,11 +119,13 @@ class HasDataClient:
     def _params(query: str, geo: str, date: str, gprop: str, data_type: str) -> dict[str, str]:
         if not query.strip():
             raise InvalidRequest("HasData: la consulta no puede estar vacía.")
+        if "," in query and data_type != "timeseries":
+            raise InvalidRequest("HasData: este tipo de consulta admite un solo término.")
         if date not in DATE_PRESETS:
             raise InvalidRequest("HasData: rango de fechas no permitido.")
         if gprop not in GPROPS:
             raise InvalidRequest("HasData: propiedad de Google no permitida.")
-        params = {"q": query.strip(), "date": date, "dataType": data_type}
+        params = {"q": query.strip(), "date": date, "dataType": data_type, "tz": TZ_MINUTES}
         if geo:
             params["geo"] = geo
         if gprop:
@@ -128,11 +136,34 @@ class HasDataClient:
         self, query: str, *, geo: str = "", date: str = "today 12-m", gprop: str = "youtube"
     ) -> list[TrendPoint]:
         """Índice relativo semanal de una sola consulta (10 créditos de HasData)."""
-        body = self._get(self._params(query, geo, date, gprop, "timeseries"))
+        return self.compare_interest([query], geo=geo, date=date, gprop=gprop)[query.strip()]
+
+    def compare_interest(
+        self,
+        queries: list[str],
+        *,
+        geo: str = "",
+        date: str = "today 12-m",
+        gprop: str = "youtube",
+    ) -> dict[str, list[TrendPoint]]:
+        """Serie semanal de hasta 5 términos en **una** llamada (10 créditos).
+
+        El índice de cada término es relativo al más fuerte del grupo. Devuelve una serie por
+        término pedido; un término sin datos trae `value=None` en todas sus semanas.
+        """
+        terms = [q.strip() for q in queries if q.strip()]
+        if not 1 <= len(terms) <= MAX_TERMS:
+            raise InvalidRequest(f"HasData: entre 1 y {MAX_TERMS} términos por llamada.")
+        if any("," in t for t in terms):
+            raise InvalidRequest("HasData: un término no puede contener comas.")
+        if len({t.lower() for t in terms}) != len(terms):
+            raise InvalidRequest("HasData: términos repetidos.")
+        body = self._get(self._params(",".join(terms), geo, date, gprop, "timeseries"))
         timeline = (body.get("interestOverTime") or {}).get("timelineData")
         if not isinstance(timeline, list):
             raise InvalidRequest("HasData: respuesta sin serie temporal.")
-        points: list[TrendPoint] = []
+        by_name = {t.lower(): t for t in terms}
+        series: dict[str, list[TrendPoint]] = {t: [] for t in terms}
         for item in timeline:
             if not isinstance(item, dict):
                 continue
@@ -141,13 +172,31 @@ class HasDataClient:
             except (KeyError, ValueError, TypeError):
                 continue
             values = item.get("values")
-            first = values[0] if isinstance(values, list) and values else {}
-            has_data = isinstance(first, dict) and first.get("hasData") is True
-            value = _int_or_none(first.get("extractedValue")) if has_data else None
-            points.append(
-                TrendPoint(timestamp=moment, value=value, partial=bool(item.get("isPartial")))
-            )
-        return points
+            if not isinstance(values, list):
+                continue
+            entries = [e for e in values if isinstance(e, dict)]
+            names = [str(e.get("query", "")).strip().lower() for e in entries]
+            # Por el nombre que devuelve HasData; si no coincide (p. ej. normaliza el texto),
+            # por la posición, que respeta el orden pedido.
+            by_name_ok = all(n in by_name for n in names) and len(set(names)) == len(names)
+            for position, entry in enumerate(entries):
+                if by_name_ok:
+                    term = by_name[names[position]]
+                elif position < len(terms) and len(entries) == len(terms):
+                    term = terms[position]
+                else:
+                    continue
+                value = (
+                    _int_or_none(entry.get("extractedValue"))
+                    if entry.get("hasData") is True
+                    else None
+                )
+                series[term].append(
+                    TrendPoint(timestamp=moment, value=value, partial=bool(item.get("isPartial")))
+                )
+        if not any(series.values()):
+            raise InvalidRequest("HasData: la respuesta no trae los términos pedidos.")
+        return series
 
     def related_queries(
         self, query: str, *, geo: str = "", date: str = "today 12-m", gprop: str = "youtube"

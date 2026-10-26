@@ -161,7 +161,9 @@
               <tr><td><code>VIDIQ_API_KEY</code></td><td>vacía</td><td>Clave MCP de vidIQ (solo lectura). Vacía = sin consultas a vidIQ. Las corridas exigen además la compuerta de políticas.</td></tr>
               <tr><td><code>DEMO_MODE</code></td><td>true</td><td><code>true</code> carga los datos sintéticos de la demo al arrancar. <code>false</code> deja la base solo con lo real y desactiva la corrida DEMO. Para quitar la demo de una base existente: <code>python -m app.demo.purge</code> (simula) y <code>--apply</code> (borra).</td></tr>
               <tr><td><code>HASDATA_API_KEY</code></td><td>vacía</td><td>Clave de HasData (Google Trends por REST). Vacía = sin mediciones de Trends. Exige además la capacidad <code>google_trends</code>.</td></tr>
-              <tr><td><code>HASDATA_DAILY_CALL_LIMIT</code></td><td>30</td><td>Tope diario local de consultas a HasData (cada una cuesta 10 créditos de HasData).</td></tr>
+              <tr><td><code>HASDATA_DAILY_CALL_LIMIT</code></td><td>90</td><td>Tope diario local (igual al mensual: no restringe) de consultas a HasData (cada una cuesta 10 créditos de HasData).</td></tr>
+              <tr><td><code>HASDATA_MONTHLY_CALL_LIMIT</code></td><td>90</td><td>Tope mensual local (mes de calendario UTC). El plan gratuito da 1.000 créditos al mes, es decir 100 consultas; el tope deja un margen.</td></tr>
+              <tr><td><code>HASDATA_REUSE_DAYS</code></td><td>7</td><td>Una medición de Trends más reciente que esto, con los mismos términos, no se repite (salvo <code>force</code>).</td></tr>
               <tr><td><code>VIDIQ_DAILY_CREDIT_LIMIT</code></td><td>200</td><td>Tope diario local de créditos de vidIQ (cada consulta cuesta 5). No es el saldo del plan.</td></tr>
               <tr><td><code>COMPLIANCE_MODE</code></td><td>restricted</td><td><code>restricted</code> cierra todo. <code>approved_scope</code> abre solo lo que tenga aprobación vigente.</td></tr>
               <tr><td><code>ADVANCED_ANALYTICS_ENABLED</code></td><td>false</td><td>Segunda condición de la compuerta de M4. Por sí sola no abre nada.</td></tr>
