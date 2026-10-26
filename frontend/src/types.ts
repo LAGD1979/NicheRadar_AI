@@ -327,3 +327,60 @@ export interface ProblemBody {
   detail?: string | null;
   request_id?: string | null;
 }
+
+export interface AssistantStatus {
+  configured: boolean;
+  provider: string;
+  model: string | null;
+  messages_used_today: number;
+  messages_daily_limit: number;
+  messages_remaining: number;
+}
+
+export interface AssistantContext {
+  context: Record<string, unknown>;
+  sections: string[];
+  tokens_estimate: number;
+}
+
+export interface AssistantAnswer {
+  answer: string;
+  citations: string[];
+  unknowns: string[];
+  next_steps: string[];
+  structured: boolean;
+  unsourced: boolean;
+  model: string;
+  context_tokens_estimate: number;
+  messages_remaining: number;
+}
+
+export interface AssistantTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface AiModelOption {
+  provider: string;
+  model: string;
+  label: string;
+  description: string;
+  available: boolean;
+}
+
+export interface AiFunctionSetting {
+  id: string;
+  label: string;
+  description: string;
+  suggestion: string;
+  provider: string;
+  model: string | null;
+  source: "user" | "default";
+  configured: boolean;
+}
+
+export interface AiSettings {
+  functions: AiFunctionSetting[];
+  catalog: AiModelOption[];
+  default: { provider: string; model: string | null };
+}

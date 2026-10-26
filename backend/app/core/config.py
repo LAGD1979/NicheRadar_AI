@@ -32,6 +32,9 @@ class Settings(BaseSettings):
     # Modelo configurable por entorno; vacío = no hay modelo y la IA no se ejecuta (spec §17).
     ai_model: str = ""
     ai_max_usd_per_run: float = 5.0
+    # Asistente de IA por oportunidad (D-67): solo lectura, con contexto agregado.
+    assistant_daily_message_limit: int = 100
+    assistant_max_output_tokens: int = 4000
     demo_mode: bool = True
 
     # Cuota de YouTube Data API: pool diario compartido en unidades (search.list = 100 u.).

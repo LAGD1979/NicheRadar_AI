@@ -352,6 +352,18 @@ class PolicyApproval(Base):
     notes: Mapped[str | None] = mapped_column(Text)
 
 
+class AiSelection(Base):
+    """Modelo de IA elegido para una función. Sin fila, rige AI_PROVIDER y AI_MODEL del entorno."""
+
+    __tablename__ = "ai_selections"
+
+    function_id: Mapped[str] = mapped_column(String(30), primary_key=True)
+    provider: Mapped[str] = mapped_column(String(20))
+    model: Mapped[str] = mapped_column(String(80))
+    updated_by: Mapped[str] = mapped_column(String(60))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
 class AuditEvent(Base):
     __tablename__ = "audit_events"
 

@@ -3,6 +3,7 @@ import { useState } from "react";
 import { Link, useParams } from "react-router-dom";
 
 import { api } from "../api";
+import { AssistantPanel } from "../components/AssistantPanel";
 import { ExplorationSteps } from "../components/ExplorationSteps";
 import { PersistencePanel } from "../components/PersistencePanel";
 import { ProductionPanel } from "./Production";
@@ -15,6 +16,7 @@ const TABS = [
   "Mercado español",
   "Producción IA",
   "Evaluación",
+  "Asistente",
   "Fuente y auditoría",
 ] as const;
 type Tab = (typeof TABS)[number];
@@ -80,6 +82,7 @@ export function OpportunityDetail() {
           </>
         )}
         {tab === "Evaluación" && <Evaluation opp={opp} />}
+        {tab === "Asistente" && <AssistantPanel opportunityId={opp.id} />}
         {tab === "Fuente y auditoría" && <Audit opp={opp} />}
       </section>
     </article>

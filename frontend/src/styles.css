@@ -1238,3 +1238,102 @@ tr.row-selected td {
 .balance-text {
   font-variant-numeric: tabular-nums;
 }
+
+/* Asistente de IA */
+.assistant-context {
+  margin: 12px 0;
+  padding: 8px 12px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+}
+
+.assistant-context summary {
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.assistant-json {
+  max-height: 280px;
+  overflow: auto;
+  padding: 10px;
+  border-radius: var(--radius-sm);
+  background: var(--surface-muted);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  white-space: pre-wrap;
+}
+
+.assistant-log {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 12px 0;
+}
+
+.suggestions {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  align-items: flex-start;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.suggestions button {
+  text-align: left;
+}
+
+.bubble {
+  max-width: 820px;
+  padding: 10px 14px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+}
+
+.bubble.user {
+  align-self: flex-end;
+  background: var(--accent-soft);
+}
+
+.bubble header {
+  margin-bottom: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--muted);
+}
+
+.bubble-text {
+  margin: 0 0 8px;
+  white-space: pre-wrap;
+}
+
+.bubble ul {
+  margin: 4px 0 8px;
+  padding-left: 20px;
+}
+
+.citations .pill {
+  margin-right: 4px;
+}
+
+.warn-inline {
+  margin: 6px 0;
+  padding: 6px 10px;
+  border-radius: var(--radius-sm);
+  background: var(--warn-bg);
+  color: var(--warn-text);
+  font-size: 0.85rem;
+}
+
+.assistant-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.ai-settings th small {
+  font-weight: 400;
+}

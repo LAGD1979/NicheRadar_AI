@@ -102,9 +102,17 @@ La IA sugiere la calidad de cada competidor en español y una persona acepta, co
 
 Los términos de una medición se piden juntos en una sola llamada (índices comparables, 10 créditos en total); frente a un término más fuerte, un índice bajo es «desconocido». Una medición reciente de los mismos términos no se repite. Tope local de 90 consultas al mes según el saldo real, y un indicador de saldo por herramienta siempre visible en el encabezado (1.000 créditos al mes tras la prueba).
 
+## Asistente de IA por oportunidad (D-67)
+
+Pestaña «Asistente» en la ficha: asesor de solo lectura que ve un resumen agregado (sin títulos, canales ni identificadores), cita las secciones de las que sale cada dato y no decide. Probado con la IA real. Pendiente: etapa 2 (modo general) y acciones propuestas con confirmación, solo si la etapa 1 resulta útil.
+
+## IA y modelo por función (D-68)
+
+Configuración permite elegir proveedor y modelo para el asistente, la clasificación de competidores y el plan de búsqueda, entre los del catálogo de `config/research.yaml` (Claude y los tres GPT-6). Sin elección rige el `.env`. Probado en vivo con GPT-6 Luna, Sol y Astra.
+
 ## Estado de verificación actual
 
-422 pruebas de backend y 23 de frontend pasando (11 E2E en la última corrida completa, anterior a D-66; 1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
+452 pruebas de backend y 26 de frontend pasando (11 E2E en la última corrida completa, anterior a D-66; 1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
 
 ## Siguiente paso
 

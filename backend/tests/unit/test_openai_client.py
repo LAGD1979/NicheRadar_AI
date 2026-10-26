@@ -40,7 +40,7 @@ def test_request_asks_for_json_with_system_and_user_messages() -> None:
     assert request.headers["authorization"] == f"Bearer {KEY}"
     body = json.loads(request.content)
     assert body["model"] == "modelo-prueba"
-    assert body["temperature"] == 0
+    assert "temperature" not in body  # los modelos GPT-6 rechazan 0
     assert body["response_format"] == {"type": "json_object"}
     assert body["messages"] == [
         {"role": "system", "content": "sistema"},

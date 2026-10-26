@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../api";
+import { AiModelSettings } from "../components/AiModelSettings";
 import { formatDateTime, formatField, formatNumber, label, stateFor } from "../format";
 
 // Un límite ausente se muestra como «Sin dato», no como 0 llamadas.
@@ -55,6 +56,9 @@ export function Settings() {
           <dd>{formatSoftCap(config.data.quota_soft_caps.youtube_search_daily)} llamadas</dd>
         </dl>
       )}
+
+      <h2>IA y modelo por función</h2>
+      <AiModelSettings />
 
       <h2>Proveedores</h2>
       {providers.isSuccess && (

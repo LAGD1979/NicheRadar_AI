@@ -156,13 +156,15 @@
               <tr><td><code>DATABASE_URL</code></td><td>postgresql+psycopg://nicheradar:nicheradar@db:5432/nicheradar</td><td>Conexión a la base dentro de la red de Compose.</td></tr>
               <tr><td><code>YOUTUBE_API_KEY</code></td><td>vacía</td><td>Clave de YouTube Data API v3. Vacía = sin búsquedas. Se lee del entorno del host.</td></tr>
               <tr><td><code>AI_PROVIDER</code></td><td>none</td><td><code>none</code>, <code>anthropic</code> u <code>openai</code>.</td></tr>
-              <tr><td><code>AI_MODEL</code></td><td>vacío</td><td>Nombre del modelo. Vacío = la IA no se ejecuta.</td></tr>
+              <tr><td><code>AI_MODEL</code></td><td>vacío</td><td>Nombre del modelo. Vacío = la IA no se ejecuta. Es el valor <em>predeterminado</em>: cada función puede tener el suyo desde Configuración (tabla <code>ai_selections</code>), entre los modelos de <code>config/research.yaml</code> (sección <code>ai.models</code>).</td></tr>
               <tr><td><code>ANTHROPIC_API_KEY</code> / <code>OPENAI_API_KEY</code></td><td>vacías</td><td>Claves del proveedor elegido. Nunca se muestran en respuestas ni en logs.</td></tr>
               <tr><td><code>VIDIQ_API_KEY</code></td><td>vacía</td><td>Clave MCP de vidIQ (solo lectura). Vacía = sin consultas a vidIQ. Las corridas exigen además la compuerta de políticas.</td></tr>
               <tr><td><code>DEMO_MODE</code></td><td>true</td><td><code>true</code> carga los datos sintéticos de la demo al arrancar. <code>false</code> deja la base solo con lo real y desactiva la corrida DEMO. Para quitar la demo de una base existente: <code>python -m app.demo.purge</code> (simula) y <code>--apply</code> (borra).</td></tr>
               <tr><td><code>HASDATA_API_KEY</code></td><td>vacía</td><td>Clave de HasData (Google Trends por REST). Vacía = sin mediciones de Trends. Exige además la capacidad <code>google_trends</code>.</td></tr>
               <tr><td><code>HASDATA_DAILY_CALL_LIMIT</code></td><td>90</td><td>Tope diario local (igual al mensual: no restringe) de consultas a HasData (cada una cuesta 10 créditos de HasData).</td></tr>
               <tr><td><code>HASDATA_MONTHLY_CALL_LIMIT</code></td><td>90</td><td>Tope mensual local (mes de calendario UTC). El plan gratuito da 1.000 créditos al mes, es decir 100 consultas; el tope deja un margen.</td></tr>
+              <tr><td><code>ASSISTANT_DAILY_MESSAGE_LIMIT</code></td><td>100</td><td>Mensajes diarios al asistente de IA (cada intento cuenta).</td></tr>
+              <tr><td><code>ASSISTANT_MAX_OUTPUT_TOKENS</code></td><td>4000</td><td>Tope de tokens de cada respuesta del asistente.</td></tr>
               <tr><td><code>HASDATA_REUSE_DAYS</code></td><td>7</td><td>Una medición de Trends más reciente que esto, con los mismos términos, no se repite (salvo <code>force</code>).</td></tr>
               <tr><td><code>VIDIQ_DAILY_CREDIT_LIMIT</code></td><td>200</td><td>Tope diario local de créditos de vidIQ (cada consulta cuesta 5). No es el saldo del plan.</td></tr>
               <tr><td><code>COMPLIANCE_MODE</code></td><td>restricted</td><td><code>restricted</code> cierra todo. <code>approved_scope</code> abre solo lo que tenga aprobación vigente.</td></tr>
@@ -391,6 +393,8 @@ powershell -File scripts\e2e.ps1   # entorno aislado con la demo; no toca la bas
               <tr><td>Índices (M4)</td><td><code>GET /opportunities/{id}/scores</code>, <code>POST /opportunities/{id}/scores</code>, <code>POST /cohorts/ranking</code></td></tr>
               <tr><td>Videos y canales</td><td><code>GET /videos</code> (filtros: <code>q</code>, <code>provider</code>, <code>annotated</code>, <code>video_type</code>, <code>language_state</code>; orden: <code>sort=recent|breakout</code>; incluye <code>provider_metrics</code> y las oportunidades de cada video), <code>GET /channels/{id}</code></td></tr>
               <tr><td>Corridas</td><td><code>GET /research-runs</code>, <code>GET /research-runs/{id}</code>, <code>POST /research-runs</code> (<code>demo</code>, <code>discovery</code>, <code>purge</code>), <code>POST …/resume</code></td></tr>
+              <tr><td>IA por función</td><td><code>GET /ai/settings</code>, <code>PUT /ai/settings/{assistant|classification|plan}</code> (proveedor y modelo del catálogo; 422 si no está permitido, 409 si falta la clave) y <code>DELETE</code> para volver al predeterminado</td></tr>
+              <tr><td>Asistente de IA</td><td><code>GET /assistant/status</code>, <code>GET /opportunities/{id}/assistant/context</code> (lo que recibe la IA), <code>POST /opportunities/{id}/assistant</code> (pregunta e historial; solo lectura, síncrono; el prompt <code>A1-2</code> exige citar secciones y no decidir)</td></tr>
               <tr><td>Revisión asistida</td><td><code>GET /opportunities/{id}/competition</code> (un renglón por video; cobertura y precisión de la IA), <code>POST …/competition/ai-review</code>, <code>POST …/competition/accept-ai</code>, <code>PATCH /matches/{id}</code></td></tr>
               <tr><td>Demanda y persistencia</td><td><code>POST|GET /opportunities/{id}/demand</code>, <code>POST /opportunities/{id}/temporal-resilience</code>, <code>GET /usage/hasdata</code></td></tr>
               <tr><td>vidIQ</td><td><code>POST /research-runs</code> con <code>kind=vidiq</code> y <code>vidiq.searches</code>, <code>GET /usage/vidiq</code></td></tr>
@@ -468,7 +472,7 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/v1/research-runs -
             <tr><td><code>backend/app/providers/</code></td><td>Adaptadores externos: YouTube, IA (Anthropic, OpenAI) y factoría.</td></tr>
             <tr><td><code>backend/app/jobs/</code></td><td>Worker, manejadores de tareas y CLI de aprobaciones.</td></tr>
             <tr><td><code>backend/app/db/models.py</code></td><td>Modelos SQLAlchemy.</td></tr>
-            <tr><td><code>backend/alembic/versions/</code></td><td>Migraciones 0001 a 0007.</td></tr>
+            <tr><td><code>backend/alembic/versions/</code></td><td>Migraciones 0001 a 0008.</td></tr>
             <tr><td><code>backend/tests/</code></td><td>Pruebas unitarias (<code>unit/</code>), de integración (<code>integration/</code>) y fakes sin red (<code>fakes.py</code>).</td></tr>
             <tr><td><code>frontend/src/pages/</code></td><td>Pantallas de la interfaz.</td></tr>
             <tr><td><code>frontend/public/manual/</code></td><td>Estos manuales.</td></tr>

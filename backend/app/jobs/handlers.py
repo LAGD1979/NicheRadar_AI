@@ -14,11 +14,12 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.db import models as m
-from app.providers.ai import AIClient, build_ai_client
+from app.providers.ai import AIClient
 from app.providers.base import ProviderError
 from app.providers.factory import build_hasdata_source, build_vidiq_source
 from app.providers.vidiq_mcp import OutlierParams
 from app.services import (
+    ai_selection_service,
     competitor_ai_service,
     compliance_service,
     demand_service,
@@ -34,11 +35,19 @@ from app.services.ingestion_service import DiscoverySource, QueryPlan, run_disco
 class HandlerContext:
     settings: Settings
     make_source: Callable[[], DiscoverySource]
-    make_ai: Callable[[], AIClient] = field(default=lambda: build_ai_client(get_settings()))
+    # Sin esto, cada función usa el modelo elegido en Configuración (ai_selections) o, si no hay
+    # elección, AI_PROVIDER y AI_MODEL. Las pruebas lo reemplazan por un doble.
+    make_ai: Callable[[], AIClient] | None = None
     # Cliente de vidIQ: outliers, palabras clave e historial de videos (los dobles de prueba
     # implementan solo lo que cada prueba necesita).
     make_vidiq: Callable[[], Any] = field(default=lambda: build_vidiq_source(get_settings()))
     make_hasdata: Callable[[], Any] = field(default=lambda: build_hasdata_source(get_settings()))
+
+
+def _ai_client(session: Session, ctx: HandlerContext, function: str) -> AIClient:
+    if ctx.make_ai is not None:
+        return ctx.make_ai()
+    return ai_selection_service.build_client(session, ctx.settings, function)
 
 
 def _audit(session: Session, run_id: str, event_type: str, details: dict[str, Any]) -> None:
@@ -304,7 +313,7 @@ def run_match_ai_review(session: Session, task: m.RunTask, ctx: HandlerContext) 
     if run is None:
         raise LookupError(f"Corrida inexistente: {task.run_id}")
     try:
-        client = ctx.make_ai()
+        client = _ai_client(session, ctx, "classification")
     except ProviderError as exc:
         run.errors_json = [*run.errors_json, {"code": exc.code, "detail": str(exc)}]
         return "FAILED"
@@ -343,7 +352,7 @@ def run_spanish_plan(session: Session, task: m.RunTask, ctx: HandlerContext) -> 
     if run is None:
         raise LookupError(f"Corrida inexistente: {task.run_id}")
     try:
-        client = ctx.make_ai()
+        client = _ai_client(session, ctx, "plan")
     except ProviderError as exc:
         run.errors_json = [*run.errors_json, {"code": exc.code, "detail": str(exc)}]
         return "FAILED"

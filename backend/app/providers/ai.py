@@ -103,7 +103,10 @@ class AnthropicClient:
 
 
 class OpenAIClient:
-    """Chat Completions con salida JSON forzada. Requiere que el prompt mencione JSON (lo hace)."""
+    """Chat Completions con salida JSON forzada. Requiere que el prompt mencione JSON (lo hace).
+
+    No envía `temperature`: los modelos GPT-6 solo admiten el valor por defecto y responden 400.
+    """
 
     def __init__(
         self,
@@ -131,7 +134,6 @@ class OpenAIClient:
     def complete(self, system: str, user: str) -> str:
         body: dict[str, Any] = {
             "model": self._model,
-            "temperature": 0,
             "max_completion_tokens": self._max_output_tokens,
             "response_format": {"type": "json_object"},
             "messages": [
@@ -172,15 +174,26 @@ def _openai_text(payload: dict[str, Any]) -> str:
     return content
 
 
-def build_ai_client(settings: Settings) -> AIClient:
-    if settings.ai_provider == "none":
+def build_ai_client(
+    settings: Settings,
+    *,
+    max_output_tokens: int = MAX_OUTPUT_TOKENS,
+    provider: str | None = None,
+    model: str | None = None,
+) -> AIClient:
+    """Cliente del proveedor y modelo pedidos; sin ellos, los del entorno."""
+    provider = provider or settings.ai_provider
+    model = model or settings.ai_model
+    if provider == "none":
         raise ProviderNotConfigured("AI_PROVIDER=none: la fase de IA está desactivada.")
-    if settings.ai_provider == "openai":
+    if provider == "openai":
         return OpenAIClient(
             api_key=settings.openai_api_key.get_secret_value(),
-            model=settings.ai_model,
+            model=model,
+            max_output_tokens=max_output_tokens,
         )
     return AnthropicClient(
         api_key=settings.anthropic_api_key.get_secret_value(),
-        model=settings.ai_model,
+        model=model,
+        max_tokens=max_output_tokens,
     )

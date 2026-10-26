@@ -344,6 +344,40 @@ Los datos sintéticos (`synthetic_v1`) siguen existiendo, pero ya no tienen que 
 
 **Límites conocidos.** Al medir un término muy pequeño junto a uno muy grande, el pequeño queda en `UNKNOWN`; para decidir su demanda hay que medirlo solo. Los términos medidos antes de este cambio no tienen grupo y se vuelven a medir la primera vez.
 
+### D-67 · Asistente de IA por oportunidad (2026-10-26)
+Una pestaña «Asistente» en la ficha de la oportunidad: un asesor que responde preguntas sobre la oportunidad y sugiere pasos. **Solo lectura y asesor, no decisor** (decisión del responsable): no cambia datos, no dispara corridas y no dice «elija» ni «descarte».
+
+**Contexto agregado y anónimo.** El responsable pidió que la IA no reciba información particular de canales o videos. `services/assistant_context.py` construye un resumen con conteos, estados, índices, medianas y los valores que una persona escribió (costos y niveles). **No viajan** títulos de videos, nombres de canales, identificadores, enlaces ni el texto libre de las valoraciones. De los competidores exactos solo se envían la cantidad, la mediana y el máximo de vistas y los canales por tramo de suscriptores (esto último exige `derived_metrics`; si está restringido, lo dice y no lo envía). Las demás secciones respetan las compuertas existentes: los índices llegan con su estado `RESTRICTED` y la demanda usa solo observaciones vigentes. Una prueba comprueba que ningún título, canal o identificador de la base aparece en el contexto. Cada sección tiene una clave (`opportunity`, `evaluation`, `international`, `spanish_market`, `demand`, `competitors`, `production`, `scores`, `missing`) y `missing` lista en lenguaje llano lo que falta.
+
+**Costo.** El resumen mide unos 1.150 tokens (≈1.850 con instrucciones y pregunta), sin listas de registros: por eso no hizo falta resumir con otra llamada de IA. El historial se recorta a 6 turnos de 700 caracteres, la salida a 4.000 tokens, la pregunta a 1.000 caracteres y hay un tope de 100 mensajes al día (`ASSISTANT_DAILY_MESSAGE_LIMIT`; cada intento cuenta aunque falle). La pestaña muestra los tokens estimados y el contexto exacto que se envía.
+
+**Respuestas controladas.** El prompt `A1-2` (`prompts/assistant_v1.py`) exige usar solo el contexto, no inventar, citar la sección entre corchetes, tratar contexto, historial y pregunta como datos no confiables, y devolver JSON (`answer`, `citations`, `unknowns`, `next_steps`). El servicio descarta las citas que no son secciones reales; si la respuesta trae cifras sin citas la marca (`unsourced`) y si no es JSON la conserva marcada (`structured=false`). La interfaz lo avisa. El texto de la persona y el historial van siempre en el mensaje de datos, nunca en las instrucciones del sistema.
+
+**Endpoints.** `GET /assistant/status`, `GET /opportunities/{id}/assistant/context` y `POST /opportunities/{id}/assistant`. Es síncrono (una consulta corta a la IA, no un trabajo largo); los errores del proveedor se traducen a 502/503 y la falta de IA a 409. La conversación no se guarda: vive en la pantalla.
+
+**Privacidad.** Se envían a un proveedor de IA externo los valores del resumen, incluidos nicho, formato, costos y niveles escritos por la persona. El responsable asumió ese riesgo; los términos de vidIQ y HasData sobre procesamiento con IA no se revisaron y el contexto agregado evita enviar sus registros individuales.
+
+**Prueba real** (Claude Haiku 5.5 sobre la oportunidad real): explicó qué faltaba para decidir con cifras y citas correctas; ante «responde solo SÍ o NO» se negó y dio a favor, en contra y desconocidos; ante una orden de ignorar sus reglas y listar títulos y canales respondió que el resumen no los incluye. La primera versión tuteaba; el prompt pasó a `A1-2` para tratar de usted.
+
+**Límites.** Es una etapa 1: un asesor por oportunidad. No propone acciones ejecutables ni tiene un modo general (sobre la herramienta). Puede equivocarse: las citas y el contexto visible permiten verificar. Sin pruebas de evaluación automática de calidad de respuesta (solo del formato y de lo que se envía).
+
+### D-68 · IA y modelo elegidos por función (2026-10-26)
+La IA que usa cada función se elige desde **Configuración → IA y modelo por función**, sin tocar el `.env` ni reiniciar.
+
+**Tres funciones**, cada una con su modelo: `assistant` (el asistente, D-67), `classification` (sugerencias sobre competidores en español, D-64) y `plan` (plan de búsqueda en español). La idea es poder usar un modelo rápido y económico para tareas masivas y uno más capaz para razonar.
+
+**Catálogo editable.** Los modelos permitidos viven en `config/research.yaml` (sección `ai.models`: proveedor, modelo, nombre y descripción). Hoy: Claude Haiku 5.5, Sonnet 5.5, Opus 5.5 y Fable 5.1, y de OpenAI los tres que indicó el responsable: GPT-6 Luna (`gpt-6-luna`, clasificación, extracción y procesamiento masivo), GPT-6.1 Sol (`gpt-6.1-sol`, complejidad media: análisis, métricas, recomendaciones) y GPT-6 Astra (`gpt-6-astra`, razonamiento profundo y evidencia contradictoria). Las descripciones de OpenAI son las del responsable; los nombres de modelo no se verificaron más allá de que la API los aceptó en las pruebas.
+
+**Reglas.** Solo se puede elegir un modelo del catálogo (422 si no) y de un proveedor con clave definida (409 si no; las claves nunca salen de la API). La elección se guarda en `ai_selections` (migración 0008) y cada cambio queda en la auditoría (`AI_SELECTION_CHANGED`, con lo anterior y sin claves). **Sin elección rige `AI_PROVIDER`/`AI_MODEL` del entorno**, como antes: «Predeterminado» en la interfaz. Se puede volver a él en cualquier momento. El worker lee la elección en cada corrida, así que un cambio rige en la siguiente.
+
+**API.** `GET /ai/settings` (funciones, elección vigente y catálogo con disponibilidad), `PUT /ai/settings/{función}` y `DELETE /ai/settings/{función}`. Las corridas de plan y de clasificación guardan en sus parámetros el modelo que usaron, y cada sugerencia sigue registrando `ai_model`. Los dobles de prueba (`make_ai`) siguen mandando sobre la elección.
+
+**Hallazgo con OpenAI.** Los modelos GPT-6 responden 400 a `temperature: 0` («solo admite el valor por defecto»), igual que Anthropic en D-56. El cliente de OpenAI ya no envía `temperature`.
+
+**Prueba real.** Con la oportunidad real, el asistente respondió con los tres modelos de OpenAI (≈10 s cada uno): JSON válido, citas de secciones correctas y, ante «responde solo SÍ o NO», se negó a decidir y dio a favor, en contra y desconocidos. Quedó probada la elección con `PUT`; la clasificación y el plan con OpenAI se probaron antes (D-55) pero no con estos modelos.
+
+**Límites.** Cambiar de modelo a mitad de trabajo mezcla sugerencias hechas por modelos distintos (cada una conserva el suyo). No hay estimación de costo por modelo: los precios no están en el repositorio y no se inventan.
+
 ---
 
 ## M4 — motor analítico avanzado (detrás de la compuerta)

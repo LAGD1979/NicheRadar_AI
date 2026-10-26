@@ -15,7 +15,12 @@ from app.db import models as m
 from app.db.session import get_session
 from app.domain import spanish_market
 from app.domain.search_plan import SpanishSearchPlan
-from app.services import competitor_ai_service, replication_service, spanish_service
+from app.services import (
+    ai_selection_service,
+    competitor_ai_service,
+    replication_service,
+    spanish_service,
+)
 from app.services.research_service import enqueue_run
 
 router = APIRouter()
@@ -53,18 +58,6 @@ class ValidationRequest(BaseModel):
 
 class MatchReview(BaseModel):
     match_quality: Literal["UNREVIEWED", "EXACT", "ADJACENT", "GENERIC", "FALSE_POSITIVE"]
-
-
-def _ai_configured(settings: Settings) -> bool:
-    keys = {
-        "anthropic": settings.anthropic_api_key.get_secret_value(),
-        "openai": settings.openai_api_key.get_secret_value(),
-    }
-    return (
-        settings.ai_provider in keys
-        and bool(keys[settings.ai_provider])
-        and bool(settings.ai_model)
-    )
 
 
 @router.get("/taxonomy")
@@ -224,7 +217,7 @@ def create_manual_plan(
 def generate_plan(
     opportunity_id: str, session: SessionDep, settings: SettingsDep
 ) -> dict[str, Any]:
-    if not _ai_configured(settings):
+    if not ai_selection_service.configured(session, settings, "plan"):
         raise ProblemError(
             409,
             "AI_NOT_CONFIGURED",
@@ -238,7 +231,10 @@ def generate_plan(
         kind="spanish_plan",
         policy_mode=settings.compliance_mode,
         payload={"opportunity_id": opportunity_id},
-        params={"opportunity_id": opportunity_id, "model": settings.ai_model},
+        params={
+            "opportunity_id": opportunity_id,
+            "model": ai_selection_service.selection(session, settings, "plan")["model"],
+        },
         algorithm_version="m2-plan-1",
         budget={"ai_usd_cap": settings.ai_max_usd_per_run},
     )
@@ -319,7 +315,7 @@ def request_ai_review(
     opportunity_id: str, session: SessionDep, settings: SettingsDep
 ) -> dict[str, Any]:
     """Encola la clasificación asistida: la IA propone, una persona acepta o corrige."""
-    if not _ai_configured(settings):
+    if not ai_selection_service.configured(session, settings, "classification"):
         raise ProblemError(
             409,
             "AI_NOT_CONFIGURED",
@@ -341,7 +337,11 @@ def request_ai_review(
         kind="match_review",
         policy_mode=settings.compliance_mode,
         payload={"opportunity_id": opportunity_id},
-        params={"opportunity_id": opportunity_id, "model": settings.ai_model, "pending": pending},
+        params={
+            "opportunity_id": opportunity_id,
+            "model": ai_selection_service.selection(session, settings, "classification")["model"],
+            "pending": pending,
+        },
         algorithm_version="match-review-1",
         budget={
             "ai_usd_cap": settings.ai_max_usd_per_run,

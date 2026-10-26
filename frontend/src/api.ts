@@ -1,4 +1,10 @@
 import type {
+  AiFunctionSetting,
+  AiSettings,
+  AssistantAnswer,
+  AssistantContext,
+  AssistantStatus,
+  AssistantTurn,
   CapabilityOut,
   CompareResponse,
   DemandSummary,
@@ -156,6 +162,21 @@ export const api = {
       `/opportunities/${encodeURIComponent(opportunityId)}/temporal-resilience`,
       { method: "POST", body: JSON.stringify({ max_calls: maxCalls }) },
     ),
+  aiSettings: () => request<AiSettings>("/ai/settings"),
+  setAiSetting: (fn: string, provider: string, model: string) =>
+    request<AiFunctionSetting>(`/ai/settings/${fn}`, {
+      method: "PUT",
+      body: JSON.stringify({ provider, model }),
+    }),
+  clearAiSetting: (fn: string) => request<AiFunctionSetting>(`/ai/settings/${fn}`, { method: "DELETE" }),
+  assistantStatus: () => request<AssistantStatus>("/assistant/status"),
+  assistantContext: (opportunityId: string) =>
+    request<AssistantContext>(`/opportunities/${opportunityId}/assistant/context`),
+  assistantAsk: (opportunityId: string, message: string, history: AssistantTurn[]) =>
+    request<AssistantAnswer>(`/opportunities/${opportunityId}/assistant`, {
+      method: "POST",
+      body: JSON.stringify({ message, history }),
+    }),
   hasdataUsage: () =>
     request<{
       calls_used: number;

@@ -30,6 +30,8 @@
         <li><a href="#buscar">5. Buscar y agrupar videos</a></li>
         <li><a href="#radar">6. Revisar el radar</a></li>
         <li><a href="#ficha">7. Abrir una oportunidad</a></li>
+        <li><a href="#asistente">7b. El asistente de IA</a></li>
+        <li><a href="#ia-modelos">7c. Elegir la IA y el modelo</a></li>
         <li><a href="#espanol">8. Comprobar el mercado en español</a></li>
         <li><a href="#costos">9. Calcular costos y factibilidad</a></li>
         <li><a href="#comparar">10. Comparar oportunidades</a></li>
@@ -171,7 +173,7 @@
             <tr><td><strong>Videos</strong></td><td>Los videos encontrados, con su idioma, antigüedad, origen y vigencia. Aquí se eligen y se agrupan en oportunidades.</td></tr>
             <tr><td><strong>Comparador</strong></td><td>Pone de dos a ocho oportunidades una al lado de otra.</td></tr>
             <tr><td><strong>Corridas</strong></td><td>Lanza búsquedas en YouTube y consultas a vidIQ, y muestra su estado.</td></tr>
-            <tr><td><strong>Configuración</strong></td><td>Cuota de YouTube, proveedores y qué funciones están disponibles.</td></tr>
+            <tr><td><strong>Configuración</strong></td><td>Cuota de YouTube, qué IA y modelo usa cada función, proveedores y qué funciones están disponibles.</td></tr>
             <tr><td><strong>Manuales</strong></td><td>Abre esta guía y el manual técnico.</td></tr>
           </tbody>
         </table>
@@ -319,6 +321,39 @@
 
         <h3>La persistencia de la velocidad</h3>
         <p>En la pestaña <strong>Evidencia internacional</strong>, debajo de la replicación, está la <em>persistencia</em>: compara las vistas por día de la segunda semana de un video con las de la primera. Un valor cercano a 1 significa que el video mantuvo su ritmo; cerca de 0, que se apagó. Se muestra la mediana de los videos agrupados que tienen historial suficiente (al menos tres). Pulse <strong>Medir persistencia (vidIQ)</strong> para calcularla; cuesta 5 créditos de vidIQ por video.</p>
+      </section>
+
+      <section id="ia-modelos">
+        <h2><span class="num">7c</span>Elegir la IA y el modelo de cada función</h2>
+        <p>En <strong>Configuración → IA y modelo por función</strong> puede elegir qué IA usa cada función: el <em>Asistente</em>, la <em>Clasificación de competidores</em> y el <em>Plan de búsqueda en español</em>. El cambio rige en la siguiente consulta, sin reiniciar nada.</p>
+        <div class="tip">
+          <strong>Cómo elegir</strong>
+          Un modelo rápido y económico (por ejemplo GPT-6 Luna o Claude Haiku) sirve para tareas masivas como clasificar cientos de competidores. Un modelo de complejidad media (GPT-6.1 Sol o Claude Sonnet) conviene para interpretar métricas y recomendar. Uno de razonamiento profundo (GPT-6 Astra o Claude Opus) es para casos difíciles y cuesta más. Debajo de la tabla, «Qué hace cada modelo» describe cada uno.
+        </div>
+        <ul>
+          <li><strong>Predeterminado</strong> usa lo que defina el sistema en su configuración. Puede volver a él cuando quiera.</li>
+          <li>Un proveedor sin clave aparece deshabilitado («sin clave»).</li>
+          <li>Cada sugerencia de la IA conserva el nombre del modelo que la hizo, así que puede cambiar de modelo sin perder esa información.</li>
+        </ul>
+      </section>
+
+      <section id="asistente">
+        <h2><span class="num">7b</span>El asistente de IA</h2>
+        <p>En la ficha de cada oportunidad hay una pestaña <strong>Asistente</strong>: un asesor al que puede preguntarle en sus propias palabras, por ejemplo «¿qué me falta para decidir?» o «¿por qué la saturación sigue en Desconocida?». Responde con lo que la herramienta ya sabe de esa oportunidad.</p>
+        <div class="tip">
+          <strong>Qué ve y qué no</strong>
+          Ve un resumen: conteos, estados, índices y los valores que usted escribió. <strong>No recibe</strong> títulos de videos, nombres de canales, identificadores ni enlaces. Puede abrir «Qué información recibe la IA» para ver exactamente el contenido que se envía y su tamaño aproximado.
+        </div>
+        <ul>
+          <li><strong>Es un asesor, no quien decide.</strong> Presenta lo que apoya la idea, lo que la debilita y lo que se desconoce. Si le pide un «sí» o un «no», se negará.</li>
+          <li><strong>Cita sus fuentes.</strong> Debajo de cada respuesta aparecen las secciones en las que se basa («Demanda», «Competidores»…). Si una respuesta trae cifras sin fuente, la herramienta se lo advierte.</li>
+          <li><strong>No cambia nada.</strong> No acepta clasificaciones, no lanza búsquedas ni gasta saldo de YouTube, vidIQ o HasData. Solo usa la IA configurada y tiene un tope diario de mensajes.</li>
+          <li><strong>La conversación no se guarda:</strong> desaparece al salir de la ficha.</li>
+        </ul>
+        <div class="warn">
+          <strong>Puede equivocarse</strong>
+          Es una IA. Compare las cifras con las demás pestañas antes de decidir. Si la IA no está configurada, la pestaña se lo indica.
+        </div>
       </section>
 
       <section id="espanol">

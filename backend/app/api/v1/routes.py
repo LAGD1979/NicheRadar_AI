@@ -5,6 +5,8 @@ from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session
 
+from app.api.v1.ai_routes import router as ai_router
+from app.api.v1.assistant_routes import router as assistant_router
 from app.api.v1.m2_routes import router as m2_router
 from app.api.v1.m3_routes import router as m3_router
 from app.api.v1.m4_routes import router as m4_router
@@ -53,6 +55,8 @@ router.include_router(m2_router)
 router.include_router(m3_router)
 router.include_router(m4_router)
 router.include_router(signals_router)
+router.include_router(assistant_router)
+router.include_router(ai_router)
 
 SessionDep = Annotated[Session, Depends(get_session)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]
