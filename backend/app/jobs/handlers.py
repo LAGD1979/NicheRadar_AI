@@ -20,6 +20,7 @@ from app.providers.factory import build_hasdata_source, build_vidiq_source
 from app.providers.vidiq_mcp import OutlierParams
 from app.services import (
     ai_selection_service,
+    alerts_service,
     competitor_ai_service,
     compliance_service,
     demand_service,
@@ -27,6 +28,7 @@ from app.services import (
     retention_service,
     spanish_service,
     vidiq_service,
+    watchlist_service,
 )
 from app.services.ingestion_service import DiscoverySource, QueryPlan, run_discovery
 
@@ -346,6 +348,24 @@ def run_retention_purge(session: Session, task: m.RunTask, ctx: HandlerContext) 
     return "COMPLETED"
 
 
+def run_alerts_check(session: Session, task: m.RunTask, ctx: HandlerContext) -> str:
+    """Busca alertas del sistema con los datos ya guardados (sin llamar a proveedores)."""
+    run = session.get(m.ResearchRun, task.run_id)
+    if run is None:
+        raise LookupError(f"Corrida inexistente: {task.run_id}")
+    run.coverage_json = alerts_service.check_system(session, ctx.settings, datetime.now(UTC))
+    return "COMPLETED"
+
+
+def run_watchlist_recheck(session: Session, task: m.RunTask, ctx: HandlerContext) -> str:
+    """Recalcula las oportunidades en seguimiento con datos guardados y avisa de cambios."""
+    run = session.get(m.ResearchRun, task.run_id)
+    if run is None:
+        raise LookupError(f"Corrida inexistente: {task.run_id}")
+    run.coverage_json = watchlist_service.recheck(session, ctx.settings, datetime.now(UTC))
+    return "COMPLETED"
+
+
 def run_spanish_plan(session: Session, task: m.RunTask, ctx: HandlerContext) -> str:
     """Pide a la IA un plan en español. Si la respuesta no es válida, queda NEEDS_REVIEW."""
     run = session.get(m.ResearchRun, task.run_id)
@@ -441,6 +461,8 @@ HANDLERS: dict[str, Callable[[Session, m.RunTask, HandlerContext], str]] = {
     "vidiq_history": run_vidiq_history,
     "match_ai_review": run_match_ai_review,
     "retention_purge": run_retention_purge,
+    "alerts_check": run_alerts_check,
+    "watchlist_recheck": run_watchlist_recheck,
     "spanish_plan": run_spanish_plan,
     "spanish_validation": run_spanish_validation,
 }

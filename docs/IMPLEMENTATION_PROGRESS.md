@@ -110,10 +110,14 @@ Pestaña «Asistente» en la ficha: asesor de solo lectura que ve un resumen agr
 
 Configuración permite elegir proveedor y modelo para el asistente, la clasificación de competidores y el plan de búsqueda, entre los del catálogo de `config/research.yaml` (Claude y los tres GPT-6). Sin elección rige el `.env`. Probado en vivo con GPT-6 Luna, Sol y Astra.
 
+## M5, primer tramo: programación, seguimiento y alertas (D-69)
+
+Rama `m5-programacion-y-seguimiento` (desde el tag `m4-listo-para-probar`). Trabajos programados en el worker (purga diaria, alertas, revisión semanal del seguimiento), alertas dentro de la aplicación, pantalla Seguimiento con plan de piloto y registro de decisiones. Pendiente de M5: límites de costo de IA, export licenciado, permisos, prueba de carga, backups y checklist de operación.
+
 ## Estado de verificación actual
 
-452 pruebas de backend y 26 de frontend pasando (11 E2E en la última corrida completa, anterior a D-66; 1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
+477 pruebas de backend, 26 de frontend y 15 E2E pasando (1 omitido a propósito); antes del tramo M5 eran 452 y 11 (11 E2E en la última corrida completa, anterior a D-66; 1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
 
 ## Siguiente paso
 
-Las dos cosas que más limitan el radar: una fuente de señales de demanda en español (con licencia) y una prueba real de la IA con clave. En paralelo, iniciar M5 (scheduler, purga programada, watchlist). Pendientes completos: `docs/HANDOFF.md` §7.
+Las dos cosas que más limitan el radar: una fuente de señales de demanda en español (con licencia) y una prueba real de la IA con clave. M5 ya tiene su primer tramo (D-69); falta el resto de la lista. Pendientes completos: `docs/HANDOFF.md` §7.

@@ -14,7 +14,7 @@ interface Meter {
   note: string;
 }
 
-const BALANCE_KEYS = [["usage"], ["vidiq-usage"], ["hasdata-usage"]];
+const BALANCE_KEYS = [["usage"], ["vidiq-usage"], ["hasdata-usage"], ["alerts"]];
 const ACTIVE = new Set(["QUEUED", "RUNNING"]);
 
 // Saldo de cada herramienta, siempre visible. Son los contadores del sistema contra sus topes

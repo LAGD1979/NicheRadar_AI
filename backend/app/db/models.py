@@ -364,6 +364,69 @@ class AiSelection(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
 
 
+class ScheduledJob(Base):
+    """Trabajo recurrente (M5): el worker lo encola cuando llega `next_run_at`."""
+
+    __tablename__ = "scheduled_jobs"
+
+    job_type: Mapped[str] = mapped_column(String(40), primary_key=True)
+    enabled: Mapped[bool] = mapped_column(Boolean)
+    interval_hours: Mapped[int] = mapped_column(Integer)
+    next_run_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    last_run_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    last_run_id: Mapped[str | None] = mapped_column(String(36))
+    updated_by: Mapped[str] = mapped_column(String(60))
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Watchlist(Base):
+    """Oportunidad en seguimiento: prioridad, próxima revisión, notas y plan de piloto."""
+
+    __tablename__ = "watchlists"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    opportunity_id: Mapped[str] = mapped_column(ForeignKey("opportunities.id"), unique=True)
+    priority: Mapped[str] = mapped_column(String(10))
+    next_review_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    notes: Mapped[str | None] = mapped_column(Text)
+    pilot_plan_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    # Foto de los indicadores en la última revisión: sirve para ver qué cambió, sin inventar.
+    snapshot_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    snapshot_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class ReviewAction(Base):
+    """Decisiones de una persona sobre una oportunidad. Solo se agregan, nunca se editan."""
+
+    __tablename__ = "review_actions"
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    opportunity_id: Mapped[str] = mapped_column(ForeignKey("opportunities.id"), index=True)
+    action: Mapped[str] = mapped_column(String(30))
+    reason: Mapped[str | None] = mapped_column(Text)
+    actor: Mapped[str] = mapped_column(String(60))
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+
+
+class Alert(Base):
+    """Alerta dentro de la aplicación. `dedupe_key` evita repetir la misma por el mismo hecho."""
+
+    __tablename__ = "alerts"
+    __table_args__ = (Index("ix_alerts_open", "acknowledged_at", "created_at"),)
+
+    id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    alert_type: Mapped[str] = mapped_column(String(40))
+    severity: Mapped[str] = mapped_column(String(10))
+    opportunity_id: Mapped[str | None] = mapped_column(ForeignKey("opportunities.id"))
+    message: Mapped[str] = mapped_column(Text)
+    details_json: Mapped[dict[str, Any]] = mapped_column(JSONB, default=dict)
+    dedupe_key: Mapped[str] = mapped_column(String(160), unique=True)
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), server_default=func.now())
+    acknowledged_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
+
 class AuditEvent(Base):
     __tablename__ = "audit_events"
 

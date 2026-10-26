@@ -384,3 +384,60 @@ export interface AiSettings {
   catalog: AiModelOption[];
   default: { provider: string; model: string | null };
 }
+
+export interface SchedulerJob {
+  job_type: string;
+  label: string;
+  description: string;
+  enabled: boolean;
+  interval_hours: number;
+  next_run_at: string;
+  last_run_at: string | null;
+  last_run_id: string | null;
+  last_status: string | null;
+}
+
+export interface AlertItem {
+  id: string;
+  alert_type: string;
+  severity: "INFO" | "WARNING" | "CRITICAL";
+  opportunity_id: string | null;
+  message: string;
+  created_at: string;
+  acknowledged_at: string | null;
+}
+
+export interface AlertsOut {
+  open: number;
+  critical: number;
+  items: AlertItem[];
+}
+
+export interface PilotPlan {
+  hypothesis: string;
+  proposed_videos: string[];
+  success_metrics: string;
+}
+
+export interface WatchChange {
+  key: string;
+  before: string | number | null;
+  after: string | number | null;
+}
+
+export interface WatchEntry {
+  opportunity_id: string;
+  niche: string | null;
+  format: string | null;
+  video_type: string;
+  status: string;
+  priority: "LOW" | "MEDIUM" | "HIGH";
+  notes: string | null;
+  pilot_plan: Partial<PilotPlan>;
+  next_review_at: string;
+  review_overdue: boolean;
+  snapshot_at: string;
+  changes: WatchChange[];
+  open_alerts: number;
+  last_action: { action: string; reason: string | null; actor: string; created_at: string } | null;
+}

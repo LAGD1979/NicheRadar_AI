@@ -1,5 +1,10 @@
 import type {
   AiFunctionSetting,
+  AlertItem,
+  AlertsOut,
+  PilotPlan,
+  SchedulerJob,
+  WatchEntry,
   AiSettings,
   AssistantAnswer,
   AssistantContext,
@@ -162,6 +167,38 @@ export const api = {
       `/opportunities/${encodeURIComponent(opportunityId)}/temporal-resilience`,
       { method: "POST", body: JSON.stringify({ max_calls: maxCalls }) },
     ),
+  schedulerJobs: () => request<SchedulerJob[]>("/scheduler/jobs"),
+  updateJob: (jobType: string, body: { enabled?: boolean; interval_hours?: number }) =>
+    request<SchedulerJob>(`/scheduler/jobs/${jobType}`, { method: "PATCH", body: JSON.stringify(body) }),
+  runJob: (jobType: string) =>
+    request<{ id: string }>(`/scheduler/jobs/${jobType}/run`, { method: "POST" }),
+  alerts: (includeAcknowledged = false) =>
+    request<AlertsOut>(`/alerts?include_acknowledged=${String(includeAcknowledged)}`),
+  acknowledgeAlert: (id: string) =>
+    request<AlertItem>(`/alerts/${id}/acknowledge`, { method: "POST" }),
+  acknowledgeAllAlerts: () =>
+    request<{ acknowledged: number }>("/alerts/acknowledge-all", { method: "POST" }),
+  watchlist: () => request<WatchEntry[]>("/watchlist"),
+  watch: (opportunityId: string, priority: string, notes: string | null) =>
+    request<WatchEntry>(`/opportunities/${opportunityId}/watch`, {
+      method: "POST",
+      body: JSON.stringify({ priority, notes }),
+    }),
+  updateWatch: (
+    opportunityId: string,
+    body: { priority?: string; notes?: string; next_review_at?: string; pilot_plan?: PilotPlan },
+  ) =>
+    request<WatchEntry>(`/watchlist/${opportunityId}`, { method: "PATCH", body: JSON.stringify(body) }),
+  reviewedWatch: (opportunityId: string, reviewDays: number) =>
+    request<WatchEntry>(`/watchlist/${opportunityId}/reviewed`, {
+      method: "POST",
+      body: JSON.stringify({ review_days: reviewDays }),
+    }),
+  removeWatch: (opportunityId: string, reason: string) =>
+    request<{ status: string }>(`/watchlist/${opportunityId}/remove`, {
+      method: "POST",
+      body: JSON.stringify({ reason }),
+    }),
   aiSettings: () => request<AiSettings>("/ai/settings"),
   setAiSetting: (fn: string, provider: string, model: string) =>
     request<AiFunctionSetting>(`/ai/settings/${fn}`, {

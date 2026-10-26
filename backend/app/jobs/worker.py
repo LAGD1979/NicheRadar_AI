@@ -8,6 +8,7 @@
 
 import signal
 import threading
+import time
 from datetime import UTC, datetime, timedelta
 from typing import Any
 
@@ -21,10 +22,12 @@ from app.db import models as m
 from app.db.session import get_session_factory
 from app.jobs.handlers import HANDLERS, HandlerContext
 from app.providers.factory import build_youtube_source
+from app.services import scheduler_service
 
 LEASE = timedelta(minutes=5)
 MAX_ATTEMPTS = 3
 POLL_SECONDS = 2.0
+TICK_SECONDS = 30.0
 
 log = structlog.get_logger("worker")
 
@@ -126,6 +129,21 @@ def _record_failure(
             log.warning("task_retry_scheduled", task_id=task_id, error_class=error_class)
 
 
+def run_scheduler_tick(
+    factory: sessionmaker[Session], settings: Settings, now: datetime | None = None
+) -> list[str]:
+    """Encola los trabajos programados vencidos. Un fallo aquí no detiene el worker."""
+    try:
+        with factory() as session, session.begin():
+            enqueued = scheduler_service.tick(session, settings, now or datetime.now(UTC))
+    except Exception as exc:
+        log.error("scheduler_tick_failed", error_class=type(exc).__name__)
+        return []
+    if enqueued:
+        log.info("scheduled_jobs_enqueued", jobs=enqueued)
+    return enqueued
+
+
 def main() -> None:
     settings = get_settings()
     configure_logging(settings.log_level)
@@ -141,7 +159,11 @@ def main() -> None:
     factory = get_session_factory()
     ctx = default_context(settings)
     log.info("worker_started")
+    last_tick = float("-inf")
     while not stop.is_set():
+        if time.monotonic() - last_tick >= TICK_SECONDS:
+            run_scheduler_tick(factory, settings)
+            last_tick = time.monotonic()
         if not process_once(factory, ctx):
             stop.wait(POLL_SECONDS)
     log.info("worker_stopped")

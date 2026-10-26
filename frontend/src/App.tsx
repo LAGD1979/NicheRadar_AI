@@ -6,6 +6,7 @@ import { OpportunityDetail } from "./pages/OpportunityDetail";
 import { Opportunities } from "./pages/Opportunities";
 import { Runs } from "./pages/Runs";
 import { Settings } from "./pages/Settings";
+import { Watchlist } from "./pages/Watchlist";
 import { Summary } from "./pages/Summary";
 import { Videos } from "./pages/Videos";
 
@@ -19,6 +20,7 @@ export function App() {
         <Route path="/compare" element={<Compare />} />
         <Route path="/videos" element={<Videos />} />
         <Route path="/runs" element={<Runs />} />
+        <Route path="/watchlist" element={<Watchlist />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="*" element={<p role="alert">Página no encontrada.</p>} />
       </Routes>

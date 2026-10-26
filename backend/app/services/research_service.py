@@ -16,6 +16,8 @@ TASK_TYPES = {
     "history": "vidiq_history",
     "match_review": "match_ai_review",
     "purge": "retention_purge",
+    "alerts": "alerts_check",
+    "watchlist": "watchlist_recheck",
     "spanish_plan": "spanish_plan",
     "spanish_validation": "spanish_validation",
 }
@@ -31,6 +33,7 @@ def enqueue_run(
     params: dict[str, Any],
     algorithm_version: str,
     budget: dict[str, Any],
+    actor: str = "local_owner",
 ) -> m.ResearchRun:
     """Crea la corrida y su tarea en cola. El trabajo lo ejecuta el worker, no el request."""
     if kind not in TASK_TYPES:
@@ -67,7 +70,7 @@ def enqueue_run(
         m.AuditEvent(
             id=str(uuid4()),
             run_id=run.id,
-            actor="local_owner",
+            actor=actor,
             event_type="RUN_REQUESTED",
             object_type="research_run",
             object_id=run.id,

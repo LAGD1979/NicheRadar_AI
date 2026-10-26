@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 import { NavLink } from "react-router-dom";
 
 import { api } from "../api";
+import { AlertsBadge } from "./AlertsBadge";
 import { BalanceMeters } from "./BalanceMeters";
 
 const OVERVIEW = { to: "/", label: "Resumen" };
@@ -13,7 +14,10 @@ const EXPLORE = [
   { to: "/opportunities", label: "Oportunidades", step: "3-4" },
   { to: "/compare", label: "Comparador", step: "5" },
 ];
-const OTHERS = [{ to: "/settings", label: "Configuración" }];
+const OTHERS = [
+  { to: "/watchlist", label: "Seguimiento" },
+  { to: "/settings", label: "Configuración" },
+];
 
 const BANNERS: Record<"SYNTHETIC" | "MIXED" | "REAL", { text: string; title: string } | null> = {
   SYNTHETIC: { text: "DATOS SINTÉTICOS · DEMO", title: "Todos los datos son de la demo, no de YouTube." },
@@ -41,6 +45,7 @@ export function Layout({ children }: { children: ReactNode }) {
             {banner.text}
           </span>
         )}
+        <AlertsBadge />
         <BalanceMeters />
       </header>
       <div className="body">

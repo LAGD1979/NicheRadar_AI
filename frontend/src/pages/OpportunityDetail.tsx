@@ -6,6 +6,7 @@ import { api } from "../api";
 import { AssistantPanel } from "../components/AssistantPanel";
 import { ExplorationSteps } from "../components/ExplorationSteps";
 import { PersistencePanel } from "../components/PersistencePanel";
+import { WatchButton } from "../components/WatchButton";
 import { ProductionPanel } from "./Production";
 import { SpanishMarket } from "./SpanishMarket";
 import { NOT_ENABLED, formatDateTime, formatField, label, stateFor } from "../format";
@@ -56,6 +57,7 @@ export function OpportunityDetail() {
         )}
       </p>
       <p className="hint">{opp.niche.definition}</p>
+      <WatchButton opportunityId={opp.id} />
 
       <div role="tablist" aria-label="Secciones de la ficha" className="tabs">
         {TABS.map((name) => (

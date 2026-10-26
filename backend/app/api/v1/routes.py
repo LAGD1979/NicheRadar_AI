@@ -10,6 +10,7 @@ from app.api.v1.assistant_routes import router as assistant_router
 from app.api.v1.m2_routes import router as m2_router
 from app.api.v1.m3_routes import router as m3_router
 from app.api.v1.m4_routes import router as m4_router
+from app.api.v1.m5_routes import router as m5_router
 from app.api.v1.schemas import (
     CapabilityOut,
     ChannelOut,
@@ -57,6 +58,7 @@ router.include_router(m4_router)
 router.include_router(signals_router)
 router.include_router(assistant_router)
 router.include_router(ai_router)
+router.include_router(m5_router)
 
 SessionDep = Annotated[Session, Depends(get_session)]
 SettingsDep = Annotated[Settings, Depends(get_settings)]

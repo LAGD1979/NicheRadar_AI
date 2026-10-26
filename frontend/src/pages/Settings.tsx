@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 
 import { api } from "../api";
 import { AiModelSettings } from "../components/AiModelSettings";
+import { JobsPanel } from "../components/JobsPanel";
 import { formatDateTime, formatField, formatNumber, label, stateFor } from "../format";
 
 // Un límite ausente se muestra como «Sin dato», no como 0 llamadas.
@@ -59,6 +60,9 @@ export function Settings() {
 
       <h2>IA y modelo por función</h2>
       <AiModelSettings />
+
+      <h2>Trabajos programados</h2>
+      <JobsPanel />
 
       <h2>Proveedores</h2>
       {providers.isSuccess && (

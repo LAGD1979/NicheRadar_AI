@@ -11,6 +11,7 @@ export function Summary() {
   });
   const runs = useQuery({ queryKey: ["runs"], queryFn: api.runs });
   const config = useQuery({ queryKey: ["config"], queryFn: api.config });
+  const alerts = useQuery({ queryKey: ["alerts", "summary"], queryFn: () => api.alerts() });
 
   const items = opportunities.data?.items ?? [];
   const evaluated = items.filter((o) => o.confidence !== null).length;
@@ -50,13 +51,23 @@ export function Summary() {
       </ul>
 
       <h2>Alertas</h2>
+      {alerts.isSuccess && alerts.data.items.length === 0 && <p className="empty">No hay alertas abiertas.</p>}
       <ul className="list">
-        <li>Búsqueda en español: sin búsquedas reales en el demo; la validación queda pendiente.</li>
-        <li>Fuente caducada: una evidencia de «Evidencia internacional» debe refrescarse antes de decidir.</li>
+        {alerts.data?.items.slice(0, 5).map((a) => (
+          <li key={a.id}>
+            <strong>{a.severity === "CRITICAL" ? "Crítica" : a.severity === "WARNING" ? "Aviso" : "Informativa"}:</strong>{" "}
+            {a.message}
+          </li>
+        ))}
         {config.data?.compliance_mode === "restricted" && (
           <li>Modo restringido: las métricas derivadas y las puntuaciones están bloqueadas.</li>
         )}
       </ul>
+      {alerts.isSuccess && alerts.data.open > 5 && (
+        <p>
+          <Link to="/watchlist#alertas">Ver las {alerts.data.open} alertas abiertas</Link>
+        </p>
+      )}
       {latestRun && (
         <p className="muted">
           Última corrida: {formatDateTime(latestRun.started_at)} · <Link to="/runs">ver corridas</Link>

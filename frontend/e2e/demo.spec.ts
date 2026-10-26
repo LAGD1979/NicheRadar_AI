@@ -22,7 +22,7 @@ test("el radar abre la ficha con evidencia y pestañas", async ({ page }) => {
 test("ninguna página principal produce desplazamiento horizontal", async ({ page }, testInfo) => {
   // Las tablas anchas se desplazan dentro de su caja; la página entera no debe hacerlo.
   test.skip(testInfo.project.name !== "mobile", "Solo relevante en viewport de 390 px");
-  for (const path of ["/", "/opportunities", "/opportunities/syn-opp-01", "/videos", "/runs", "/settings"]) {
+  for (const path of ["/", "/opportunities", "/opportunities/syn-opp-01", "/videos", "/runs", "/watchlist", "/settings"]) {
     await page.goto(path);
     await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
     const overflow = await page.evaluate(
@@ -71,4 +71,25 @@ test("la ficha ofrece medir demanda y persistencia sin enviar nada", async ({ pa
   await page.getByRole("tab", { name: "Evidencia internacional" }).click();
   await expect(page.getByRole("button", { name: /Medir persistencia/ })).toBeVisible();
   // Sin enviar los formularios: no se gastan créditos.
+});
+
+test("se puede añadir una oportunidad al seguimiento y verla con sus notas", async ({ page }) => {
+  await page.goto("/opportunities/syn-opp-01");
+  const add = page.getByRole("button", { name: "Añadir a seguimiento" });
+  const watching = page.getByText("En seguimiento", { exact: true });
+  await expect(add.or(watching)).toBeVisible(); // espera a que cargue el estado
+  if (await add.isVisible()) await add.click();
+  await expect(watching).toBeVisible();
+  await page.getByRole("link", { name: "Seguimiento" }).first().click();
+  await expect(page.getByRole("heading", { level: 1, name: "Seguimiento" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 3 })).toContainText("Historia explicada con mapas");
+  await expect(page.getByText("Qué cambió desde su última revisión")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Alertas" })).toBeVisible();
+});
+
+test("Configuración muestra los trabajos programados y la elección de IA por función", async ({ page }) => {
+  await page.goto("/settings");
+  await expect(page.getByRole("heading", { name: "Trabajos programados" })).toBeVisible();
+  await expect(page.getByText("Purga de datos caducados")).toBeVisible();
+  await expect(page.getByRole("heading", { name: "IA y modelo por función" })).toBeVisible();
 });
