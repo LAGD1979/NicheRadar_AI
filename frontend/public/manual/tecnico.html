@@ -264,7 +264,7 @@ docker compose --project-directory "&lt;ruta&gt;" run --rm --no-deps frontend sh
 
 # E2E de navegador (requiere el stack arriba)
 docker compose --project-directory "&lt;ruta&gt;" --profile e2e run --rm e2e</code></pre>
-        <p>Resultado de referencia: 257 pruebas de backend, 15 de frontend y 7 E2E pasando, con 1 E2E omitido a propósito (la comprobación de desbordamiento solo corre en móvil).</p>
+        <p>Resultado de referencia: 265 pruebas de backend, 23 de frontend y 9 E2E pasando, con 1 E2E omitido a propósito (la comprobación de desbordamiento solo corre en móvil).</p>
       </section>
 
       <section id="datos">
@@ -496,7 +496,7 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/v1/research-runs -
           <li><strong>IA sin probar contra APIs reales.</strong> Los adaptadores están probados con transporte simulado. Algunos modelos de razonamiento pueden rechazar <code>temperature=0</code> (D-47).</li>
           <li><strong>Índices cerrados por falta de datos.</strong> La resiliencia temporal requiere un histórico licenciado; sin él, los índices integrados quedan en NULL (D-50).</li>
           <li><strong>Pendientes de producto.</strong> Scheduler automático y purga programada (M5), watchlist, detección de canales espejo y revisión humana de 30 a 50 videos para medir precisión. Lista completa en <code>docs/HANDOFF.md</code>.</li>
-          <li><strong>Banner fijo.</strong> El banner «DATOS SINTÉTICOS · DEMO» no distingue todavía datos mixtos.</li>
+          <li><strong>Banner por modo de datos.</strong> <code>GET /config/public</code> devuelve <code>data_mode</code> (SYNTHETIC, MIXED o REAL) y la interfaz muestra la etiqueta correspondiente (D-59).</li>
           <li><strong>Sin autenticación.</strong> La API y la interfaz solo se deben exponer en 127.0.0.1.</li>
           <li><strong>Datos de demostración en la base.</strong> <code>syn-opp-06</code> mezcla un video real con datos sintéticos.</li>
           <li><strong>Proceso manual.</strong> Anotaciones, importaciones, purgas y aprobaciones son acciones de administración, no pantallas.</li>

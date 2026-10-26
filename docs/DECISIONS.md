@@ -225,7 +225,20 @@ El flujo de la interfaz sigue cinco pasos, visibles en una guía en lo alto de c
 - **Agrupar:** una barra fija al pie lleva a un formulario para elegir o crear nicho y formato, indicar la confianza y el motivo. Cada video genera una anotación humana (`label_source=HUMAN`) y varios videos del mismo nicho y formato comparten una sola oportunidad (T08).
 - **Taxonomía propia:** `POST /taxonomy/niches` y `/taxonomy/formats`, con nombre único sin distinguir mayúsculas, definición mínima y rechazo de caracteres de control. Se guardan con `taxonomy_version=user-v1` y `source_data_type=HUMAN`. Quien agrupa decide qué es un nicho y un formato: la herramienta no lo infiere.
 - **API de videos:** `GET /videos` acepta `provider`, `annotated` y `sort=breakout`, y devuelve `provider_metrics` y las oportunidades de cada video.
-- **No incluido:** el banner «DATOS SINTÉTICOS · DEMO» sigue fijo aunque haya datos reales.
+- **Banner:** quedó resuelto después en D-59.
+
+### D-59 · Banner según el modo de datos (2026-10-25)
+`GET /config/public` devuelve `data_mode`: `SYNTHETIC` (solo datos de la demo), `MIXED` (demo y datos reales) o `REAL` (sin datos de la demo), calculado con el origen de los videos guardados. El banner muestra «DATOS SINTÉTICOS · DEMO», «DATOS MIXTOS · REALES + DEMO» o nada. Mientras no se conoce el modo se asume la demo: nunca se presenta como real sin saberlo. `synthetic_banner` se conserva por compatibilidad.
+
+### D-60 · Prueba completa con integraciones reales y límite de tokens de la IA (2026-10-25)
+Recorrido real de punta a punta: consulta a vidIQ por formato (`video_essay`, 15 videos de 11 canales, 5 créditos) → seis videos de seis canales distintos agrupados en una oportunidad («Ensayos en video sobre series y películas» + «Ensayo en video analítico») → plan en español generado con Anthropic (`claude-haiku-5-5`) → plan aprobado → validación contra YouTube (6 búsquedas, 612 unidades).
+
+- **Error encontrado:** la primera generación del plan devolvió `INVALID_JSON`. Causa: los modelos con razonamiento gastan parte del límite de salida pensando (731 de 1907 tokens en la repetición) y el límite de 2000 truncaba la respuesta. Corrección: `MAX_OUTPUT_TOKENS = 8000` en ambos adaptadores, y una respuesta truncada (`stop_reason=max_tokens` o `finish_reason=length`) se reporta como error de IA, no como JSON inválido.
+- **Aislamiento de pruebas:** las pruebas heredaban las claves de IA y el proveedor del `.env` local, así que `test_generate_plan_without_ai_is_refused` fallaba cuando las claves estaban presentes (causa del fallo intermitente de antes). `conftest.py` ahora anula `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`, `AI_PROVIDER` y `AI_MODEL`.
+- **Quién decidió qué:** el asistente eligió los seis videos, escribió el nicho y el formato, y aprobó el plan, por instrucción del responsable de hacer la prueba completa. La agrupación se basa en la categoría de vidIQ y en el título, no en revisar el contenido; consta así en el motivo de cada anotación. Es una oportunidad de prueba y puede descartarse.
+- **Resultado del sistema:** saturación `UNKNOWN` (ningún competidor revisado), demanda `UNPROVEN`, decisión `DEMAND_UNPROVEN`, recomendación `MORE_RESEARCH`, confianza baja. Es el comportamiento esperado sin revisión humana ni fuente de demanda.
+- **Lo que mostró la validación:** 252 coincidencias, 194 en español verificado y 133 canales distintos. Hay mucho contenido de análisis de series y películas en español, pero está mezclado: la revisión humana debe separar los competidores exactos.
+- **Corrida parcial por diseño:** el plan tiene 18 consultas y se usó un presupuesto de 6.
 
 ---
 

@@ -57,15 +57,19 @@ def _post_with_retries(
     raise ProviderUnavailable(f"{label}: reintentos agotados")
 
 
+# Los modelos con razonamiento gastan parte del límite pensando; 2000 truncaba planes completos.
+MAX_OUTPUT_TOKENS = 8000
+
+
 class AnthropicClient:
     def __init__(
         self,
         *,
         api_key: str,
         model: str,
-        max_tokens: int = 2000,
+        max_tokens: int = MAX_OUTPUT_TOKENS,
         transport: httpx.BaseTransport | None = None,
-        timeout: float = 60.0,
+        timeout: float = 120.0,
     ) -> None:
         if not api_key or not model:
             raise ProviderNotConfigured("Faltan ANTHROPIC_API_KEY o AI_MODEL.")
@@ -105,9 +109,9 @@ class OpenAIClient:
         *,
         api_key: str,
         model: str,
-        max_output_tokens: int = 2000,
+        max_output_tokens: int = MAX_OUTPUT_TOKENS,
         transport: httpx.BaseTransport | None = None,
-        timeout: float = 60.0,
+        timeout: float = 120.0,
     ) -> None:
         if not api_key or not model:
             raise ProviderNotConfigured("Faltan OPENAI_API_KEY o AI_MODEL.")
@@ -143,6 +147,8 @@ class OpenAIClient:
 
 
 def _anthropic_text(payload: dict[str, Any]) -> str:
+    if payload.get("stop_reason") == "max_tokens":
+        raise InvalidRequest("IA: respuesta truncada por el límite de tokens")
     parts = payload.get("content") or []
     texts = [
         str(p.get("text", "")) for p in parts if isinstance(p, dict) and p.get("type") == "text"
@@ -156,6 +162,8 @@ def _openai_text(payload: dict[str, Any]) -> str:
     choices = payload.get("choices") or []
     if not choices or not isinstance(choices[0], dict):
         raise InvalidRequest("IA (OpenAI): respuesta sin opciones")
+    if choices[0].get("finish_reason") == "length":
+        raise InvalidRequest("IA (OpenAI): respuesta truncada por el límite de tokens")
     message = choices[0].get("message") or {}
     content = message.get("content") if isinstance(message, dict) else None
     if not isinstance(content, str) or not content.strip():

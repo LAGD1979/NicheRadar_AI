@@ -43,6 +43,11 @@ def test_database_url() -> Iterator[str]:
     # Las pruebas nunca llaman a YouTube: la clave real, si existe en el entorno, se anula aquí.
     os.environ["YOUTUBE_API_KEY"] = ""
     os.environ["VIDIQ_API_KEY"] = ""
+    # Ni la IA real ni el proveedor local (.env) entran en las pruebas: nunca salen a la red.
+    os.environ["ANTHROPIC_API_KEY"] = ""
+    os.environ["OPENAI_API_KEY"] = ""
+    os.environ["AI_PROVIDER"] = "none"
+    os.environ["AI_MODEL"] = ""
     # Las pruebas fijan el modo de cumplimiento: no heredan la configuración local (.env).
     os.environ["COMPLIANCE_MODE"] = "restricted"
     os.environ["ADVANCED_ANALYTICS_ENABLED"] = "false"

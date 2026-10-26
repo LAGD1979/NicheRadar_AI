@@ -75,7 +75,7 @@ Datos reales en la base: el video real «Stalingrado: la batalla que cambió…�
 - **Sin revisión humana masiva**: el conjunto de 30–50 videos de §13.3 no existe todavía; la precisión por idioma no se ha medido.
 - **Espejos (T12)**: no se detecta que varios canales sean del mismo creador. Pendiente.
 - **Datos mezclados**: ver la nota de `syn-opp-06` arriba.
-- **Banner DEMO**: sigue diciendo «DATOS SINTÉTICOS · DEMO» aunque haya datos reales (ver M1).
+- **Banner**: ahora distingue datos sintéticos, mixtos y reales (D-59).
 - **Sin autenticación**: la API acepta peticiones desde `127.0.0.1` sin login.
 
 ## vidIQ por MCP (D-57)
@@ -84,7 +84,7 @@ Cliente MCP de solo lectura (`vidiq_outliers`), corrida `kind=vidiq`, presupuest
 
 ## Estado de verificación actual
 
-261 pruebas de backend, 23 de frontend y 9 E2E pasando (1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
+265 pruebas de backend, 23 de frontend y 9 E2E pasando (1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
 
 ## Siguiente paso
 

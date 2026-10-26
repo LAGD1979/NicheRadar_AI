@@ -58,14 +58,36 @@ UNIT_COST_SEARCH = 100
 
 
 @router.get("/config/public", response_model=ConfigPublic)
-def config_public(settings: SettingsDep) -> ConfigPublic:
+def config_public(session: SessionDep, settings: SettingsDep) -> ConfigPublic:
+    synthetic = (
+        session.scalar(
+            select(func.count()).select_from(m.Video).where(m.Video.source_data_type == "SYNTHETIC")
+        )
+        or 0
+    )
+    real = (
+        session.scalar(
+            select(func.count()).select_from(m.Video).where(m.Video.source_data_type != "SYNTHETIC")
+        )
+        or 0
+    )
+    data_mode: Literal["SYNTHETIC", "MIXED", "REAL"]
+    if real == 0:
+        data_mode = "SYNTHETIC"
+    elif synthetic == 0:
+        data_mode = "REAL"
+    else:
+        data_mode = "MIXED"
     research = load_research_config(settings.research_config_path)
     r = research["research"]
     q = research["quota"]
     return ConfigPublic(
         app_env=settings.app_env,
         demo_mode=settings.demo_mode,
-        synthetic_banner=settings.demo_mode,
+        synthetic_banner=data_mode != "REAL" and settings.demo_mode,
+        data_mode=data_mode,
+        real_video_count=int(real),
+        synthetic_video_count=int(synthetic),
         compliance_mode=settings.compliance_mode,
         advanced_analytics_enabled=False,
         target_language=r["target_language"],

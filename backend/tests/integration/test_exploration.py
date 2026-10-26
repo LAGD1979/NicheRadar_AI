@@ -140,3 +140,16 @@ def test_annotating_links_video_to_opportunity_and_filters(
 
     detail = client.get(f"/api/v1/opportunities/{ref['id']}")
     assert detail.status_code == 200
+
+
+def test_banner_mode_turns_mixed_when_real_data_arrives(
+    client: TestClient, seeded_db: Session
+) -> None:
+    before = client.get("/api/v1/config/public").json()
+    assert before["data_mode"] == "SYNTHETIC"
+    _load(seeded_db)
+    after = client.get("/api/v1/config/public").json()
+    assert after["data_mode"] == "MIXED"
+    assert after["synthetic_banner"] is True
+    assert after["real_video_count"] == 3
+    assert after["synthetic_video_count"] > 0

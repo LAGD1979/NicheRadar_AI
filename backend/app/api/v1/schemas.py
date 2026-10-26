@@ -301,6 +301,10 @@ class ConfigPublic(BaseModel):
     app_env: str
     demo_mode: bool
     synthetic_banner: bool
+    # SYNTHETIC: solo datos de la demo. MIXED: demo y datos reales. REAL: sin datos de la demo.
+    data_mode: Literal["SYNTHETIC", "MIXED", "REAL"]
+    real_video_count: int
+    synthetic_video_count: int
     compliance_mode: str
     advanced_analytics_enabled: bool
     target_language: str

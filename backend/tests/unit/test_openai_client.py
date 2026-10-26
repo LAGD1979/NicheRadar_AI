@@ -98,3 +98,18 @@ def test_factory_refuses_openai_without_key_or_model() -> None:
         build_ai_client(Settings(ai_provider="openai", openai_api_key="", ai_model="m"))  # type: ignore[arg-type]
     with pytest.raises(ProviderNotConfigured):
         build_ai_client(Settings(ai_provider="openai", openai_api_key=KEY, ai_model=""))  # type: ignore[arg-type]
+
+
+def test_openai_truncated_response_is_reported() -> None:
+    def handler(_request: httpx.Request) -> httpx.Response:
+        return httpx.Response(
+            200,
+            json={
+                "choices": [
+                    {"finish_reason": "length", "message": {"role": "assistant", "content": "{"}}
+                ]
+            },
+        )
+
+    with pytest.raises(InvalidRequest):
+        _client(handler).complete("s", "u")

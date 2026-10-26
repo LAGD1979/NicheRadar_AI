@@ -14,19 +14,30 @@ const EXPLORE = [
 ];
 const OTHERS = [{ to: "/settings", label: "Configuración" }];
 
+const BANNERS: Record<"SYNTHETIC" | "MIXED" | "REAL", { text: string; title: string } | null> = {
+  SYNTHETIC: { text: "DATOS SINTÉTICOS · DEMO", title: "Todos los datos son de la demo, no de YouTube." },
+  MIXED: {
+    text: "DATOS MIXTOS · REALES + DEMO",
+    title: "Hay videos reales y de la demo. Revise el origen de cada dato antes de decidir.",
+  },
+  REAL: null,
+};
+
 const MANUALS_HREF = "/manual/index.html";
 
 export function Layout({ children }: { children: ReactNode }) {
   const config = useQuery({ queryKey: ["config"], queryFn: api.config });
-  const showBanner = config.data?.synthetic_banner ?? true;
+  // Hasta conocer el modo de datos se asume la demo: nunca se muestra como real sin saberlo.
+  const mode = config.data?.data_mode ?? "SYNTHETIC";
+  const banner = BANNERS[mode];
 
   return (
     <div className="shell">
       <header className="topbar">
         <strong className="brand">NicheRadar AI</strong>
-        {showBanner && (
-          <span className="demo-banner" role="status">
-            DATOS SINTÉTICOS · DEMO
+        {banner && (
+          <span className={`demo-banner ${mode.toLowerCase()}`} role="status" title={banner.title}>
+            {banner.text}
           </span>
         )}
       </header>

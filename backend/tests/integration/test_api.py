@@ -11,6 +11,8 @@ def test_health_live_and_ready(client: TestClient) -> None:
 def test_config_public_is_demo_and_restricted(client: TestClient) -> None:
     body = client.get("/api/v1/config/public").json()
     assert body["synthetic_banner"] is True
+    assert body["data_mode"] == "SYNTHETIC"
+    assert body["real_video_count"] == 0
     assert body["compliance_mode"] == "restricted"
     assert body["advanced_analytics_enabled"] is False
     assert body["target_language"] == "es"

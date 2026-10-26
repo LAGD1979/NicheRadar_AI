@@ -272,6 +272,9 @@ export interface ConfigPublic {
   app_env: string;
   demo_mode: boolean;
   synthetic_banner: boolean;
+  data_mode: "SYNTHETIC" | "MIXED" | "REAL";
+  real_video_count: number;
+  synthetic_video_count: number;
   compliance_mode: string;
   advanced_analytics_enabled: boolean;
   target_language: string;

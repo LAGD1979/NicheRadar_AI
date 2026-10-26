@@ -33,7 +33,7 @@ Documento para cualquier sesión nueva (o para una persona). Complementa `CLAUDE
 - Lint y tipos backend: `… run --rm --no-deps api sh -c "ruff check app tests && ruff format --check app tests && mypy app"`
 - Frontend: `… run --rm --no-deps frontend sh -c "npx eslint . && npx tsc --noEmit && npx vitest run"`
 - E2E (con el stack arriba): `… --profile e2e run --rm e2e`
-- Estado esperado: 261 pruebas backend, 23 frontend, 9 E2E pasando y 1 omitido (el omitido es esperado).
+- Estado esperado: 265 pruebas backend, 23 frontend, 9 E2E pasando y 1 omitido (el omitido es esperado).
 
 Para ver cambios sin reconstruir la imagen: montar el código con `-v "<ruta>\backend:/app"` en `run`.
 
@@ -47,7 +47,8 @@ Para ver cambios sin reconstruir la imagen: montar el código con `-v "<ruta>\ba
 
 - `syn-opp-06` tiene una anotación real (el video «Stalingrado…») y una validación real en español. Mezcla datos reales y sintéticos. Conviene borrarla antes de cualquier demo limpia.
 - Hay videos reales `OFFICIAL` de la búsqueda de M1. Caducan a los 29 días; la purga es manual (`kind=purge`).
-- El banner sigue diciendo «DATOS SINTÉTICOS · DEMO» aunque haya datos reales. Pendiente.
+- El banner distingue datos sintéticos, mixtos y reales (D-59). Hoy muestra «MIXTOS».
+- Hay una oportunidad real de prueba (D-60): «Ensayos en video sobre series y películas · Ensayo en video analítico». Sus 252 coincidencias esperan revisión humana; puede descartarse.
 
 ## 6. Reglas que no se deben romper
 
