@@ -13,8 +13,9 @@ from app.core.config import Settings, get_settings
 from app.core.errors import ProblemError
 from app.db import models as m
 from app.db.session import get_session
+from app.domain import spanish_market
 from app.domain.search_plan import SpanishSearchPlan
-from app.services import replication_service, spanish_service
+from app.services import competitor_ai_service, replication_service, spanish_service
 from app.services.research_service import enqueue_run
 
 router = APIRouter()
@@ -300,9 +301,71 @@ def competition(opportunity_id: str, session: SessionDep) -> dict[str, Any]:
             "es_verified_videos": coverage.es_verified_videos,
             "reviewed_matches": coverage.reviewed_matches,
             "exact_matches": coverage.exact_matches,
+            "review_share": spanish_market.review_share(coverage),
+            "min_review_share": spanish_service.min_review_share(),
+            "ai_pending": competitor_ai_service.pending_count(session, opportunity_id),
         },
+        "ai_assist": spanish_service.ai_assist_stats(session, opportunity_id),
         "matches": spanish_service.competition(session, opportunity_id),
     }
+
+
+class AcceptAI(BaseModel):
+    min_confidence: Literal["HIGH", "MEDIUM"] = "HIGH"
+
+
+@router.post("/opportunities/{opportunity_id}/competition/ai-review", status_code=202)
+def request_ai_review(
+    opportunity_id: str, session: SessionDep, settings: SettingsDep
+) -> dict[str, Any]:
+    """Encola la clasificación asistida: la IA propone, una persona acepta o corrige."""
+    if not _ai_configured(settings):
+        raise ProblemError(
+            409,
+            "AI_NOT_CONFIGURED",
+            "La IA no está configurada",
+            "Defina AI_PROVIDER, la clave del proveedor y AI_MODEL, y reinicie el worker.",
+        )
+    if session.get(m.Opportunity, opportunity_id) is None:
+        raise ProblemError(404, "OPPORTUNITY_NOT_FOUND", "Oportunidad no encontrada")
+    pending = competitor_ai_service.pending_count(session, opportunity_id)
+    if pending == 0:
+        raise ProblemError(
+            409,
+            "NO_PENDING_MATCHES",
+            "No hay competidores en español pendientes de sugerencia",
+            "Todos están revisados o ya tienen una sugerencia de la IA.",
+        )
+    run = enqueue_run(
+        session,
+        kind="match_review",
+        policy_mode=settings.compliance_mode,
+        payload={"opportunity_id": opportunity_id},
+        params={"opportunity_id": opportunity_id, "model": settings.ai_model, "pending": pending},
+        algorithm_version="match-review-1",
+        budget={
+            "ai_usd_cap": settings.ai_max_usd_per_run,
+            "batches_estimate": -(-pending // competitor_ai_service.BATCH_SIZE),
+        },
+    )
+    session.commit()
+    return {"id": run.id, "kind": run.kind, "status": run.status, "pending": pending}
+
+
+@router.post("/opportunities/{opportunity_id}/competition/accept-ai")
+def accept_ai(opportunity_id: str, body: AcceptAI, session: SessionDep) -> dict[str, Any]:
+    """Acción humana: acepta en bloque las sugerencias con la confianza indicada."""
+    if session.get(m.Opportunity, opportunity_id) is None:
+        raise ProblemError(404, "OPPORTUNITY_NOT_FOUND", "Oportunidad no encontrada")
+    result = competitor_ai_service.accept_suggestions(
+        session,
+        opportunity_id,
+        min_confidence=body.min_confidence,
+        reviewer="local_owner",
+        now=datetime.now(UTC),
+    )
+    session.commit()
+    return result
 
 
 @router.patch("/matches/{match_id}")

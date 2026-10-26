@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState } from "react";
 
+import { CompetitionPanel } from "../components/CompetitionPanel";
 import { DemandPanel } from "../components/DemandPanel";
 import { api } from "../api";
 import { label } from "../format";
@@ -10,13 +11,6 @@ const WINDOW_OPTIONS: Array<[string, string]> = [
   ["0-7", "0 a 7 días"],
   ["8-30", "8 a 30 días"],
   ["31-90", "31 a 90 días"],
-];
-const QUALITY_OPTIONS: Array<[string, string]> = [
-  ["UNREVIEWED", "Sin revisar"],
-  ["EXACT", "Exacto (mismo formato)"],
-  ["ADJACENT", "Cercano (no es el mismo)"],
-  ["GENERIC", "Genérico"],
-  ["FALSE_POSITIVE", "Falso positivo"],
 ];
 const PLAN_TEMPLATE: SearchPlanBody = {
   schema_version: "1.0",
@@ -68,10 +62,6 @@ export function SpanishMarket({ opportunityId, smallAccess }: { opportunityId: s
   const approve = useMutation({
     mutationFn: (plan: SearchPlan) =>
       api.updatePlan(plan.id, { plan: plan.plan, approve: true }),
-    onSuccess: refresh,
-  });
-  const review = useMutation({
-    mutationFn: ({ id, quality }: { id: string; quality: string }) => api.reviewMatch(id, quality),
     onSuccess: refresh,
   });
 
@@ -218,51 +208,7 @@ export function SpanishMarket({ opportunityId, smallAccess }: { opportunityId: s
       {validate.isSuccess && <p role="status">Validación encolada.</p>}
       {validate.isError && <p role="alert">No se pudo validar: {validate.error.message}.</p>}
 
-      <h3>Competidores encontrados</h3>
-      {competition.isSuccess && competition.data.matches.length === 0 && (
-        <p className="empty">Sin coincidencias todavía.</p>
-      )}
-      {competition.isSuccess && competition.data.matches.length > 0 && (
-        <div className="table-wrap">
-          <table>
-            <thead>
-              <tr>
-                <th scope="col">Video</th>
-                <th scope="col">Canal</th>
-                <th scope="col">Idioma verificado</th>
-                <th scope="col">Búsqueda</th>
-                <th scope="col">Revisión</th>
-              </tr>
-            </thead>
-            <tbody>
-              {competition.data.matches.map((match) => (
-                <tr key={match.id}>
-                  <td>{match.video_title}</td>
-                  <td>{match.channel_title}</td>
-                  <td>
-                    {label(match.video_language)}
-                    {match.is_spanish_market ? "" : " · no cuenta como español"}
-                  </td>
-                  <td>{match.query}</td>
-                  <td>
-                    <select
-                      aria-label={`Revisión de ${match.video_title}`}
-                      value={match.match_quality}
-                      onChange={(e) => { review.mutate({ id: match.id, quality: e.target.value }); }}
-                    >
-                      {QUALITY_OPTIONS.map(([code, text]) => (
-                        <option key={code} value={code}>
-                          {text}
-                        </option>
-                      ))}
-                    </select>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
+      <CompetitionPanel opportunityId={opportunityId} />
     </div>
   );
 }

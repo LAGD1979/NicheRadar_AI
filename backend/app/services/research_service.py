@@ -14,6 +14,7 @@ TASK_TYPES = {
     "vidiq": "vidiq_discovery",
     "demand": "demand_observation",
     "history": "vidiq_history",
+    "match_review": "match_ai_review",
     "purge": "retention_purge",
     "spanish_plan": "spanish_plan",
     "spanish_validation": "spanish_validation",

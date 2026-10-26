@@ -31,6 +31,12 @@ class InvalidRequest(ProviderError):
     code = "INVALID_REQUEST"
 
 
+class ResponseTruncated(InvalidRequest):
+    """La IA agotó su límite de tokens a mitad de la respuesta: conviene pedir menos por lote."""
+
+    code = "RESPONSE_TRUNCATED"
+
+
 class ProviderUnavailable(ProviderError):
     """Timeout, 429 transitorio o 5xx tras agotar reintentos."""
 

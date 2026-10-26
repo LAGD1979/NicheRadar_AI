@@ -26,6 +26,7 @@ const INITIAL_FORM: DiscoveryForm = {
 export function Runs() {
   const queryClient = useQueryClient();
   const runs = useQuery({ queryKey: ["runs"], queryFn: api.runs, refetchInterval: 5000 });
+  const config = useQuery({ queryKey: ["config"], queryFn: api.config });
   const [form, setForm] = useState<DiscoveryForm>(INITIAL_FORM);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -133,9 +134,11 @@ export function Runs() {
 
       <div className="toolbar">
         <h2 className="section-title">Historial de corridas</h2>
-        <button type="button" className="ghost" onClick={() => { demo.mutate(); }} disabled={demo.isPending}>
-          Iniciar corrida DEMO
-        </button>
+        {config.data?.demo_mode !== false && (
+          <button type="button" className="ghost" onClick={() => { demo.mutate(); }} disabled={demo.isPending}>
+            Iniciar corrida DEMO
+          </button>
+        )}
       </div>
       {demo.isSuccess && <p role="status">Corrida DEMO encolada.</p>}
       {resume.isError && <ErrorNote error={resume.error} prefix="No se pudo reanudar" />}

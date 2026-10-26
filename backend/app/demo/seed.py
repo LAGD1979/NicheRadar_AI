@@ -136,7 +136,12 @@ def seed_fixture(session: Session, data: dict[str, Any]) -> dict[str, int]:
 
 
 def main() -> None:
-    configure_logging(get_settings().log_level)
+    settings = get_settings()
+    configure_logging(settings.log_level)
+    if not settings.demo_mode:
+        # Sin demo, la base solo tiene lo real. Para cargarla: DEMO_MODE=true (D-65).
+        log.info("seed_skipped", reason="DEMO_MODE=false")
+        return
     data = load_fixture()
     with get_session_factory()() as session, session.begin():
         counts = seed_fixture(session, data)

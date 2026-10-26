@@ -94,9 +94,13 @@ Cálculo `repl-v1` (REPLICATED, PROMISING, SINGLE_OUTLIER, UNKNOWN) desde los vi
 
 Trends vía HasData (REST) y palabras clave de vidIQ como señales de demanda; consumo de competidores como tercera familia; persistencia de la velocidad (semana 2 sobre semana 1) como resiliencia temporal. Tabla `demand_observations` (migración 0006), corridas `demand` e `history`, endpoints y paneles en la ficha. Verificado con pruebas de dominio, clientes y flujo, y con una oportunidad real: demanda Observada, persistencia 0,53, índice internacional con valor. Autorización de HasData registrada hasta 2027-10-26.
 
+## Revisión asistida de competidores (D-64)
+
+La IA sugiere la calidad de cada competidor en español y una persona acepta, corrige o acepta en bloque; la saturación exige revisar al menos el 80 % de los videos; la cohorte de costos no mezcla demo y datos reales. Probado con la IA real sobre 186 videos. Pendiente: que el responsable revise para medir la precisión de la IA.
+
 ## Estado de verificación actual
 
-363 pruebas de backend, 23 de frontend y 11 E2E pasando (1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
+408 pruebas de backend, 23 de frontend y 11 E2E pasando (1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
 
 ## Siguiente paso
 

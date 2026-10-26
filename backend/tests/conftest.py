@@ -45,6 +45,7 @@ def test_database_url() -> Iterator[str]:
     os.environ["YOUTUBE_API_KEY"] = ""
     os.environ["VIDIQ_API_KEY"] = ""
     os.environ["HASDATA_API_KEY"] = ""
+    os.environ["DEMO_MODE"] = "true"  # las pruebas usan la demo, aunque el .env local la apague
     # Ni la IA real ni el proveedor local (.env) entran en las pruebas: nunca salen a la red.
     os.environ["ANTHROPIC_API_KEY"] = ""
     os.environ["OPENAI_API_KEY"] = ""

@@ -65,6 +65,9 @@ test("la ficha ofrece medir demanda y persistencia sin enviar nada", async ({ pa
   await expect(page.getByRole("heading", { name: "Demanda en español" })).toBeVisible();
   await expect(page.getByRole("button", { name: "Medir demanda" })).toBeVisible();
   await expect(page.getByText(/no un volumen de búsquedas/)).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Competidores encontrados" })).toBeVisible();
+  await expect(page.getByRole("button", { name: /Clasificar con IA/ })).toBeVisible();
+  await expect(page.getByText(/La IA solo propone/)).toBeVisible();
   await page.getByRole("tab", { name: "Evidencia internacional" }).click();
   await expect(page.getByRole("button", { name: /Medir persistencia/ })).toBeVisible();
   // Sin enviar los formularios: no se gastan créditos.

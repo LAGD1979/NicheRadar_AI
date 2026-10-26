@@ -228,6 +228,18 @@ export interface CompetitionMatch {
   region: string | null;
   position: number;
   run_id: string;
+  queries_count: number;
+  ai_quality: string | null;
+  ai_confidence: string | null;
+  ai_reason: string | null;
+}
+
+export interface AiAssistStats {
+  videos_with_suggestion: number;
+  reviewed_individually: number;
+  accepted_in_bulk: number;
+  agreed: number;
+  agreement: number | null;
 }
 
 export interface Competition {
@@ -237,7 +249,11 @@ export interface Competition {
     es_verified_videos: number;
     reviewed_matches: number;
     exact_matches: number;
+    review_share: number | null;
+    min_review_share: number;
+    ai_pending: number;
   };
+  ai_assist: AiAssistStats;
   matches: CompetitionMatch[];
 }
 

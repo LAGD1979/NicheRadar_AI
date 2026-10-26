@@ -411,6 +411,13 @@ def _discovery_budget(payload: DiscoveryPayload) -> dict[str, Any]:
 def create_run(body: RunCreate, session: SessionDep, settings: SettingsDep) -> RunAccepted:
     """Encola la corrida y responde 202. El worker la ejecuta; el request no espera."""
     if body.kind == "demo":
+        if not settings.demo_mode:
+            raise ProblemError(
+                409,
+                "DEMO_DISABLED",
+                "El modo DEMO está desactivado",
+                "Con DEMO_MODE=false no hay datos de demostración sobre los que correr.",
+            )
         run = enqueue_run(
             session,
             kind="demo",

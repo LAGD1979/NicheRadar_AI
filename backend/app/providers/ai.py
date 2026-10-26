@@ -15,6 +15,7 @@ from app.providers.base import (
     ProviderAuthError,
     ProviderNotConfigured,
     ProviderUnavailable,
+    ResponseTruncated,
 )
 
 ANTHROPIC_URL = "https://api.anthropic.com/v1/messages"
@@ -148,7 +149,7 @@ class OpenAIClient:
 
 def _anthropic_text(payload: dict[str, Any]) -> str:
     if payload.get("stop_reason") == "max_tokens":
-        raise InvalidRequest("IA: respuesta truncada por el límite de tokens")
+        raise ResponseTruncated("IA: respuesta truncada por el límite de tokens")
     parts = payload.get("content") or []
     texts = [
         str(p.get("text", "")) for p in parts if isinstance(p, dict) and p.get("type") == "text"
@@ -163,7 +164,7 @@ def _openai_text(payload: dict[str, Any]) -> str:
     if not choices or not isinstance(choices[0], dict):
         raise InvalidRequest("IA (OpenAI): respuesta sin opciones")
     if choices[0].get("finish_reason") == "length":
-        raise InvalidRequest("IA (OpenAI): respuesta truncada por el límite de tokens")
+        raise ResponseTruncated("IA (OpenAI): respuesta truncada por el límite de tokens")
     message = choices[0].get("message") or {}
     content = message.get("content") if isinstance(message, dict) else None
     if not isinstance(content, str) or not content.strip():

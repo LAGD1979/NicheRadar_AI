@@ -380,11 +380,15 @@ def coverage_for(session: Session, opportunity_id: str) -> spanish_market.Spanis
         )
     ).all()
     matches = session.scalars(
-        select(m.DiscoveryMatch).where(m.DiscoveryMatch.opportunity_id == opportunity_id)
+        select(m.DiscoveryMatch).where(
+            m.DiscoveryMatch.opportunity_id == opportunity_id,
+            m.DiscoveryMatch.is_spanish_market.is_(True),
+        )
     ).all()
-    es_videos = {mt.video_id for mt in matches if mt.is_spanish_market}
-    reviewed = [mt for mt in matches if mt.match_quality != "UNREVIEWED"]
-    exact = [mt for mt in matches if mt.match_quality == "EXACT"]
+    # Se cuenta por video único: un mismo video hallado por dos búsquedas es un solo competidor.
+    es_videos = {mt.video_id for mt in matches}
+    reviewed = {mt.video_id for mt in matches if mt.match_quality != "UNREVIEWED"}
+    exact = {mt.video_id for mt in matches if mt.match_quality == "EXACT"}
     return spanish_market.SpanishCoverage(
         queries_run=len(queries),
         query_variants=len({q.query_text.lower() for q in queries}),
@@ -392,6 +396,48 @@ def coverage_for(session: Session, opportunity_id: str) -> spanish_market.Spanis
         reviewed_matches=len(reviewed),
         exact_matches=len(exact),
     )
+
+
+def min_review_share() -> float:
+    research = load_research_config(get_settings().research_config_path)["research"]
+    return float(research.get("spanish_review_min_share", spanish_market.MIN_REVIEW_SHARE))
+
+
+def ai_assist_stats(session: Session, opportunity_id: str) -> dict[str, Any]:
+    """Cuántas sugerencias de la IA hay y cuánto coinciden con la revisión humana."""
+    rows = session.execute(
+        select(
+            m.DiscoveryMatch.video_id,
+            m.DiscoveryMatch.match_quality,
+            m.DiscoveryMatch.ai_quality,
+            m.DiscoveryMatch.reviewed_by,
+        )
+        .where(
+            m.DiscoveryMatch.opportunity_id == opportunity_id,
+            m.DiscoveryMatch.is_spanish_market.is_(True),
+            m.DiscoveryMatch.ai_quality.is_not(None),
+        )
+        .order_by(m.DiscoveryMatch.video_id)
+    ).all()
+    suggested: dict[str, str] = {}
+    individual: dict[str, str] = {}  # revisados uno a uno: miden la precisión de la IA
+    in_bulk: set[str] = set()  # aceptados en bloque: coinciden por construcción
+    for video_id, quality, ai_quality, reviewed_by in rows:
+        suggested.setdefault(video_id, str(ai_quality))
+        if quality == "UNREVIEWED":
+            continue
+        if str(reviewed_by or "").endswith("(aceptó sugerencia IA)"):
+            in_bulk.add(video_id)
+        else:
+            individual.setdefault(video_id, str(quality))
+    agreed = sum(1 for vid, quality in individual.items() if suggested.get(vid) == quality)
+    return {
+        "videos_with_suggestion": len(suggested),
+        "reviewed_individually": len(individual),
+        "accepted_in_bulk": len(in_bulk),
+        "agreed": agreed,
+        "agreement": None if not individual else round(agreed / len(individual), 3),
+    }
 
 
 def small_channel_access(session: Session, opportunity_id: str) -> dict[str, Any]:
@@ -436,7 +482,11 @@ def record_assessment(
     coverage = coverage_for(session, opportunity_id)
     settings = get_settings()
     demand = demand_state.summary(session, settings, opportunity_id, now)
-    result = spanish_market.assess(coverage, independent_signals=int(demand["independent_signals"]))
+    result = spanish_market.assess(
+        coverage,
+        independent_signals=int(demand["independent_signals"]),
+        min_review_share=min_review_share(),
+    )
     spanish = {
         "saturation_state": result.saturation_state,
         "spanish_demand_state": result.demand_state,
@@ -447,6 +497,13 @@ def record_assessment(
         "reviewed_matches": coverage.reviewed_matches,
         "exact_matches": coverage.exact_matches,
         "match_precision_reviewed": coverage.reviewed_matches > 0,
+        "review_coverage": {
+            "es_verified_videos": coverage.es_verified_videos,
+            "reviewed_videos": coverage.reviewed_matches,
+            "share": spanish_market.review_share(coverage),
+            "min_share": min_review_share(),
+        },
+        "ai_assist": ai_assist_stats(session, opportunity_id),
         "small_channel_access": small_channel_access(session, opportunity_id),
         "demand_signals": demand,
         "reason_codes": result.reason_codes,
@@ -473,8 +530,16 @@ def review_match(session: Session, match_id: str, quality: str, reviewer: str) -
     match = session.get(m.DiscoveryMatch, match_id)
     if match is None:
         raise ProblemError(404, "MATCH_NOT_FOUND", "Coincidencia no encontrada")
-    match.match_quality = quality
-    match.reviewed_by = reviewer
+    # La decisión es sobre el video: se aplica a todas las búsquedas que lo encontraron.
+    siblings = session.scalars(
+        select(m.DiscoveryMatch).where(
+            m.DiscoveryMatch.video_id == match.video_id,
+            m.DiscoveryMatch.opportunity_id == match.opportunity_id,
+        )
+    ).all()
+    for sibling in siblings or [match]:
+        sibling.match_quality = quality
+        sibling.reviewed_by = reviewer
     session.add(
         m.AuditEvent(
             id=str(uuid4()),
@@ -493,27 +558,50 @@ def review_match(session: Session, match_id: str, quality: str, reviewer: str) -
 
 
 def competition(session: Session, opportunity_id: str) -> list[dict[str, Any]]:
+    """Un renglón por video: la revisión es sobre el video, no sobre cada búsqueda que lo halló."""
     rows = session.execute(
         select(m.DiscoveryMatch, m.Video, m.Channel, m.SourceQuery)
         .join(m.Video, m.Video.id == m.DiscoveryMatch.video_id)
         .join(m.Channel, m.Channel.id == m.Video.channel_id)
         .join(m.SourceQuery, m.SourceQuery.id == m.DiscoveryMatch.query_id)
         .where(m.DiscoveryMatch.opportunity_id == opportunity_id)
-        .order_by(m.DiscoveryMatch.match_quality, m.DiscoveryMatch.position)
+        .order_by(m.DiscoveryMatch.position, m.DiscoveryMatch.id)
     ).all()
-    return [
-        {
-            "id": match.id,
-            "video_title": video.title,
-            "channel_title": channel.title_current,
-            "video_language": video.language_state,
-            "is_spanish_market": match.is_spanish_market,
-            "match_quality": match.match_quality,
-            "query": query.query_text,
-            "query_language": query.language_requested,
-            "region": query.region,
-            "position": match.position,
-            "run_id": match.run_id,
-        }
-        for match, video, channel, query in rows
-    ]
+    grouped: dict[str, dict[str, Any]] = {}
+    for match, video, channel, query in rows:
+        entry = grouped.get(match.video_id)
+        if entry is None:
+            grouped[match.video_id] = {
+                "id": match.id,
+                "video_title": video.title,
+                "channel_title": channel.title_current,
+                "video_language": video.language_state,
+                "is_spanish_market": match.is_spanish_market,
+                "match_quality": match.match_quality,
+                "query": query.query_text,
+                "queries_count": 1,
+                "query_language": query.language_requested,
+                "region": query.region,
+                "position": match.position,
+                "run_id": match.run_id,
+                "ai_quality": match.ai_quality,
+                "ai_confidence": match.ai_confidence,
+                "ai_reason": match.ai_reason,
+            }
+        else:
+            entry["queries_count"] += 1
+            if match.ai_quality and not entry["ai_quality"]:
+                entry.update(
+                    ai_quality=match.ai_quality,
+                    ai_confidence=match.ai_confidence,
+                    ai_reason=match.ai_reason,
+                )
+    order = {"UNREVIEWED": 0, "EXACT": 1, "ADJACENT": 2, "GENERIC": 3, "FALSE_POSITIVE": 4}
+    return sorted(
+        grouped.values(),
+        key=lambda r: (
+            not r["is_spanish_market"],
+            order.get(str(r["match_quality"]), 9),
+            int(r["position"]),
+        ),
+    )

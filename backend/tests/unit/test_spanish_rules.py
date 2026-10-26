@@ -222,3 +222,44 @@ def test_ai_is_off_by_default_and_needs_key_and_model() -> None:
         build_ai_client(Settings(ai_provider="anthropic", anthropic_api_key="", ai_model="m"))  # type: ignore[arg-type]
     with pytest.raises(ProviderNotConfigured):
         build_ai_client(Settings(ai_provider="anthropic", anthropic_api_key="TEST", ai_model=""))  # type: ignore[arg-type]
+
+
+# --- cobertura mínima de revisión (D-64) ----------------------------------------------------
+
+
+def test_a_partial_review_never_gives_a_favorable_saturation() -> None:
+    # 3 de 10 videos revisados y ningún exacto: lo no revisado podría ser competencia.
+    state, reasons = sm.saturation_state(cov(es_verified_videos=10, reviewed_matches=3))
+    assert state == "UNKNOWN"
+    assert reasons == ["ES_REVIEW_COVERAGE_LOW"]
+
+
+def test_partial_review_with_many_exact_competitors_is_still_high() -> None:
+    # Seguir revisando solo puede sumar competidores: HIGH es una cota inferior válida.
+    state, _ = sm.saturation_state(cov(es_verified_videos=40, reviewed_matches=6, exact_matches=5))
+    assert state == "HIGH"
+
+
+def test_medium_needs_the_minimum_review_share_too() -> None:
+    low_share = cov(es_verified_videos=10, reviewed_matches=5, exact_matches=2)
+    assert sm.saturation_state(low_share)[0] == "UNKNOWN"
+    enough = cov(es_verified_videos=10, reviewed_matches=8, exact_matches=2)
+    assert sm.saturation_state(enough)[0] == "MEDIUM"
+
+
+def test_the_share_threshold_is_configurable_and_inclusive() -> None:
+    boundary = cov(es_verified_videos=10, reviewed_matches=8)
+    assert sm.saturation_state(boundary)[0] == "LOW"  # 0,8 alcanza el mínimo por defecto
+    assert sm.saturation_state(boundary, min_review_share=0.9)[0] == "UNKNOWN"
+
+
+def test_review_share_is_none_without_spanish_videos() -> None:
+    assert sm.review_share(cov(es_verified_videos=0, reviewed_matches=0)) is None
+    assert sm.review_share(cov(es_verified_videos=10, reviewed_matches=4)) == 0.4
+
+
+def test_assess_reports_the_coverage_reason_and_insufficient_evidence() -> None:
+    result = sm.assess(cov(es_verified_videos=10, reviewed_matches=2), independent_signals=2)
+    assert result.saturation_state == "UNKNOWN"
+    assert "ES_REVIEW_COVERAGE_LOW" in result.reason_codes
+    assert result.entry_decision == "INSUFFICIENT_EVIDENCE"

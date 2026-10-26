@@ -137,6 +137,13 @@ class DiscoveryMatch(Base):
     is_spanish_market: Mapped[bool] = mapped_column(Boolean, default=False)
     opportunity_id: Mapped[str | None] = mapped_column(ForeignKey("opportunities.id"), index=True)
     reviewed_by: Mapped[str | None] = mapped_column(String(120))
+    # Sugerencia de la IA: nunca cuenta como revisión; solo una persona fija `match_quality`.
+    ai_quality: Mapped[str | None] = mapped_column(String(20))
+    ai_confidence: Mapped[str | None] = mapped_column(String(10))
+    ai_reason: Mapped[str | None] = mapped_column(String(300))
+    ai_model: Mapped[str | None] = mapped_column(String(60))
+    ai_prompt_version: Mapped[str | None] = mapped_column(String(20))
+    ai_suggested_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
 class DemandObservation(Base):

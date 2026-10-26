@@ -17,6 +17,7 @@ research:
   minimum_comparable_channel_videos_for_outlier: 5
   max_compare_items: 8
   # Señales de demanda en español (D-63). Umbrales heurísticos por calibrar.
+  spanish_review_min_share: 0.8           # parte de los videos en español que se debe revisar
   demand_trends_min_interest: 10          # promedio reciente mínimo del índice relativo (0-100)
   demand_trends_min_weeks: 26             # semanas con dato necesarias para opinar
   demand_trends_max_decline_ratio: 0.6    # reciente / base: por debajo se considera en caída

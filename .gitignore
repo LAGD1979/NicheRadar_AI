@@ -13,3 +13,6 @@ coverage/
 playwright-report/
 test-results/
 *.log
+
+# Respaldos locales de la base (pueden contener datos de terceros)
+backups/

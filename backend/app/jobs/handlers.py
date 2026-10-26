@@ -19,6 +19,7 @@ from app.providers.base import ProviderError
 from app.providers.factory import build_hasdata_source, build_vidiq_source
 from app.providers.vidiq_mcp import OutlierParams
 from app.services import (
+    competitor_ai_service,
     compliance_service,
     demand_service,
     persistence_service,
@@ -296,6 +297,36 @@ def run_vidiq_history(session: Session, task: m.RunTask, ctx: HandlerContext) ->
     return outcome.outcome
 
 
+def run_match_ai_review(session: Session, task: m.RunTask, ctx: HandlerContext) -> str:
+    """Pide a la IA una sugerencia de calidad para cada competidor en español sin revisar."""
+    run = session.get(m.ResearchRun, task.run_id)
+    if run is None:
+        raise LookupError(f"Corrida inexistente: {task.run_id}")
+    try:
+        client = ctx.make_ai()
+    except ProviderError as exc:
+        run.errors_json = [*run.errors_json, {"code": exc.code, "detail": str(exc)}]
+        return "FAILED"
+    try:
+        outcome = competitor_ai_service.classify(
+            session,
+            client,
+            str(task.payload_json["opportunity_id"]),
+            run_id=task.run_id,
+            now=datetime.now(UTC),
+        )
+    finally:
+        client.close()
+    run.errors_json = [*run.errors_json, *outcome.errors]
+    run.coverage_json = {
+        "batches": outcome.batches,
+        "suggested": outcome.suggested,
+        "pending_left": outcome.pending_left,
+    }
+    _audit(session, task.run_id, f"MATCH_AI_{outcome.outcome}", {"suggested": outcome.suggested})
+    return outcome.outcome
+
+
 def run_retention_purge(session: Session, task: m.RunTask, ctx: HandlerContext) -> str:
     run = session.get(m.ResearchRun, task.run_id)
     if run is None:
@@ -398,6 +429,7 @@ HANDLERS: dict[str, Callable[[Session, m.RunTask, HandlerContext], str]] = {
     "vidiq_discovery": run_vidiq_discovery,
     "demand_observation": run_demand_observation,
     "vidiq_history": run_vidiq_history,
+    "match_ai_review": run_match_ai_review,
     "retention_purge": run_retention_purge,
     "spanish_plan": run_spanish_plan,
     "spanish_validation": run_spanish_validation,

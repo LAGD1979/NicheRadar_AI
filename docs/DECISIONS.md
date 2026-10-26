@@ -295,6 +295,38 @@ Las observaciones se guardan en `demand_observations` (migración 0006) con proc
 - `traccion` sigue usando la replicación como sustituto (doble conteo con `replicabilidad`).
 - Las evaluaciones anteriores conservan los derivados aunque los datos de origen caduquen (como en D-61 y D-62).
 
+### D-64 · Revisión asistida de competidores y cobertura mínima de revisión (2026-10-26)
+La revisión de competidores era el cuello de botella de la validación en español (186 videos en la oportunidad de prueba) y tenía una falla: bastaba revisar cualquier coincidencia, sin ningún exacto, para que la saturación saliera «Baja».
+
+**Cobertura mínima de revisión.** `spanish_market.saturation_state` exige haber revisado al menos el **80 %** de los videos en español (`spanish_review_min_share` en `research.yaml`) para decir «Baja» o «Media»; con menos queda «Desconocida» con el motivo `ES_REVIEW_COVERAGE_LOW` y la decisión `INSUFFICIENT_EVIDENCE`. «Alta» (5 o más exactos confirmados) sí vale con una revisión parcial: seguir revisando solo puede sumar competidores, así que es una cota inferior. Las evaluaciones guardan `review_coverage` (videos, revisados, parte, mínimo).
+
+**Se cuenta por video, no por búsqueda.** Un mismo video hallado por dos búsquedas era dos «competidores exactos». Ahora la cobertura cuenta videos únicos y revisar una coincidencia aplica la decisión a todas las búsquedas que encontraron ese video. `GET /competition` devuelve un renglón por video (con `queries_count`).
+
+**La IA propone, una persona decide** (`domain/competitor_review.py`, `services/competitor_ai_service.py`, prompt `P3-1`).
+- Para cada video en español sin revisar, la IA sugiere `EXACT`, `ADJACENT`, `GENERIC` o `FALSE_POSITIVE`, con confianza `HIGH`, `MEDIUM` o `LOW` y un motivo breve. Decide solo con el título, el canal, la duración y el idioma; no afirma lo que se ve en pantalla.
+- La salida se valida con un esquema estricto: JSON válido, `source_id` entre los enviados (un ID inventado descarta el lote, T13), motivo sin enlaces. Los títulos viajan como datos dentro de un JSON y el prompt prohíbe obedecerlos (T14).
+- La sugerencia se guarda en columnas `ai_*` de `discovery_matches` (migración 0007) y **nunca cuenta como revisión**: no cambia la saturación ni los exactos.
+- Los lotes son de 20 videos. Si una respuesta se trunca por el límite de tokens (`ResponseTruncated`), el lote se parte en dos y se reintenta; si aun así falla, queda pendiente y se informa.
+- `POST /opportunities/{id}/competition/ai-review` encola la corrida (`match_review`); exige IA configurada (409 `AI_NOT_CONFIGURED`) y videos pendientes (409 `NO_PENDING_MATCHES`).
+- `POST /opportunities/{id}/competition/accept-ai` (`min_confidence` HIGH o MEDIUM) es la **aceptación en bloque**, una acción humana explícita con auditoría (`MATCHES_ACCEPTED_FROM_AI`). Nunca acepta confianza baja, marca la revisión como «aceptó sugerencia IA» y recalcula una sola vez.
+- Precisión medida: `ai_assist.agreement` compara la sugerencia con las revisiones **individuales**; lo aceptado en bloque no cuenta, porque coincide por construcción (spec §13.3).
+
+**Cohorte de costos sin datos sintéticos.** La normalización del costo usa solo oportunidades de la misma clase (reales con reales, demo con demo; el nicho sintético marca la demo). Con menos de dos costos no hay estrato y el costo no se puntúa: antes un único costo recibía 1,0 por defecto, contra la regla de D-51.
+
+**Prueba real** (oportunidad de D-60, IA `claude-haiku-5-5`): 186 videos en español clasificados en 9 lotes. Sugerencias: 18 exactos, 91 cercanos, 25 genéricos y 52 falsos positivos; 64 de confianza alta, 99 media y 23 baja. Los 18 exactos son análisis con tesis sobre series, películas y personajes (anime, Harry Potter, Game of Thrones, Avatar), y los falsos positivos de confianza alta son noticias, música o videos sin relación. **Nada se aceptó**: la revisión sigue en 0 %. Si se aceptan las sugerencias de confianza alta habría 6 exactos y la saturación pasaría a «Alta» (se necesitan 5), es decir, el mercado en español ya tiene competencia directa.
+
+**Límites.** La IA solo ve títulos y canales, no el contenido; su precisión real se mide cuando el responsable revise individualmente. El umbral del 80 % es una heurística por calibrar.
+
+### D-65 · La demo deja de convivir con los datos reales (2026-10-26)
+Los datos sintéticos (`synthetic_v1`) siguen existiendo, pero ya no tienen que estar en la base de trabajo.
+
+- **Sigue siendo necesaria** para las pruebas automáticas (que usan su propia base `nicheradar_test`), para los E2E y para el modo DEMO que exige `CLAUDE.md` (funcionar desconectado de servicios reales).
+- **`DEMO_MODE`** ahora controla la carga: con `DEMO_MODE=false` el servicio `migrate` no carga la demo (`seed_skipped`), la corrida DEMO responde 409 `DEMO_DISABLED`, el botón desaparece de Corridas y el proveedor sintético figura como desactivado. Por defecto sigue en `true` (una instalación nueva ve la demo). `docker-compose.yml` pasa `DEMO_MODE` al backend y una variable del entorno gana al `.env`.
+- **`python -m app.demo.purge`** quita la demo de una base existente. Por defecto **solo simula**; con `--apply` borra en una transacción. Borra los registros del fixture y todo lo que cuelga de sus oportunidades (evaluaciones, evidencia, anotaciones, planes, búsquedas, coincidencias, costos, demanda). **No toca** videos ni canales reales (un canal de la demo con videos reales se conserva), oportunidades reales ni corridas. Si una oportunidad real usa un nicho o formato de la demo, se detiene (`DETENIDO`) y la lista. Es idempotente.
+- **Los E2E** corren con `scripts/e2e.ps1`: proyecto de Compose propio (`nicheradar_e2e`), base y puertos propios (15433, 8001, 5174), demo cargada y sin claves reales; al terminar elimina el entorno. Antes corrían contra la base de trabajo y exigían que tuviera la demo.
+- **Aplicado el 2026-10-26** sobre la base local, con respaldo previo en `backups/nicheradar_antes_de_quitar_demo_*.sql` (carpeta fuera de Git). Se borraron 8 oportunidades, 20 videos, 10 canales, 5 nichos, 4 formatos, 12 evidencias, 10 evaluaciones, 4 planes, 100 coincidencias, 2 búsquedas, 1 anotación y la corrida de la carga. Se conservaron 417 videos reales, 288 canales reales, la oportunidad real y 16 corridas. El `.env` local fija `DEMO_MODE=false`. La base quedó en modo de datos REAL y sin banner.
+- **Para volver a tener la demo:** poner `DEMO_MODE=true` y reiniciar (el servicio `migrate` la carga de nuevo), o restaurar el respaldo.
+
 ---
 
 ## M4 — motor analítico avanzado (detrás de la compuerta)

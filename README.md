@@ -44,11 +44,11 @@ Si el puerto 15432, 8000 o 5173 ya está en uso, defina `DB_HOST_PORT`, `API_HOS
 docker compose run --rm --no-deps api pytest -q
 docker compose run --rm --no-deps api sh -c "ruff check app tests && ruff format --check app tests && mypy app"
 docker compose run --rm --no-deps frontend sh -c "npx eslint . && npx tsc --noEmit && npx vitest run"
-docker compose --profile e2e run --rm e2e
+powershell -File scripts\e2e.ps1   # entorno aislado con la demo; no toca su base de trabajo
 ```
 
 - `pytest` usa PostgreSQL real en la base `nicheradar_test`, que se recrea en cada sesión, y no llama a red.
-- `e2e` ejecuta tres flujos (demo → radar; ficha con pestañas; comparar cuatro) en escritorio y en móvil de 390 px. Requiere que el stack esté arriba.
+- `e2e` ejecuta tres flujos (demo → radar; ficha con pestañas; comparar cuatro) en escritorio y en móvil de 390 px. Corre en su propio entorno, con la demo cargada, y lo elimina al terminar.
 
 ## Reiniciar desde cero
 

@@ -24,15 +24,40 @@ def require_allowed(session: Session, settings: Settings, now: datetime) -> None
         raise ProblemError(403, "POLICY_RESTRICTED", "Puntuación no habilitada", decision.reason)
 
 
-def cohort_cost_bounds(session: Session) -> tuple[float | None, float | None]:
-    """Mínimo y máximo del costo base dentro de la cohorte (todas las oportunidades evaluadas)."""
+def synthetic_opportunity_ids(session: Session) -> set[str]:
+    """Oportunidades de la demo: su nicho es sintético (datos fabricados)."""
+    return set(
+        session.scalars(
+            select(m.Opportunity.id)
+            .join(m.Niche, m.Niche.id == m.Opportunity.niche_id)
+            .where(m.Niche.source_data_type == "SYNTHETIC")
+        )
+    )
+
+
+def is_synthetic(session: Session, opportunity_id: str) -> bool:
+    return opportunity_id in synthetic_opportunity_ids(session)
+
+
+def cohort_cost_bounds(
+    session: Session, *, synthetic: bool = False
+) -> tuple[float | None, float | None]:
+    """Mínimo y máximo del costo base dentro de la cohorte de la misma clase de datos.
+
+    Las oportunidades sintéticas y las reales no se mezclan: normalizar un costo real contra
+    costos inventados daría una puntuación sin sentido. Con menos de dos costos no hay estrato
+    y el costo no se puntúa (D-51); un único valor no recibe puntaje por defecto.
+    """
+    demo_ids = synthetic_opportunity_ids(session)
     values: list[float] = []
     for evaluation in latest_evaluations(session):
+        if (evaluation.opportunity_id in demo_ids) != synthetic:
+            continue
         scenarios = evaluation.feasibility_json.get("usd_per_video_scenarios") or {}
         base = scenarios.get("base")
         if isinstance(base, int | float):
             values.append(float(base))
-    if not values:
+    if len(values) < 2:
         return None, None
     return min(values), max(values)
 
@@ -126,7 +151,8 @@ def compute_and_store(
     current = evaluation_service.latest_evaluation(session, opportunity_id)
     if current is None:
         raise ProblemError(409, "NO_EVALUATION", "Esta oportunidad aún no tiene evaluación")
-    scores = compute_for_evaluation(current, cohort_cost_bounds(session))
+    bounds = cohort_cost_bounds(session, synthetic=is_synthetic(session, opportunity_id))
+    scores = compute_for_evaluation(current, bounds)
     return evaluation_service.append_evaluation(
         session, opportunity_id, now=now, source="CALCULATED", scores=scores
     )

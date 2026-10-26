@@ -171,6 +171,16 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  requestAiReview: (opportunityId: string) =>
+    request<{ id: string; status: string; pending: number }>(
+      `/opportunities/${encodeURIComponent(opportunityId)}/competition/ai-review`,
+      { method: "POST" },
+    ),
+  acceptAiSuggestions: (opportunityId: string, minConfidence: "HIGH" | "MEDIUM") =>
+    request<{ accepted: number; by_quality: Record<string, number>; left_for_manual_review: number }>(
+      `/opportunities/${encodeURIComponent(opportunityId)}/competition/accept-ai`,
+      { method: "POST", body: JSON.stringify({ min_confidence: minConfidence }) },
+    ),
   reviewMatch: (matchId: string, matchQuality: string) =>
     request<{ id: string; match_quality: string }>(`/matches/${encodeURIComponent(matchId)}`, {
       method: "PATCH",

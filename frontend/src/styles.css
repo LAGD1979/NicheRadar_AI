@@ -1137,3 +1137,24 @@ tr.row-selected td {
   color: var(--muted);
   opacity: 0.7;
 }
+
+/* ---- Revisión de competidores ---- */
+.competition {
+  margin: 18px 0;
+}
+
+.review-meter p {
+  margin: 4px 0;
+}
+
+.review-meter .meter {
+  margin: 6px 0;
+}
+
+.filters label.inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 500;
+  color: var(--text);
+}
