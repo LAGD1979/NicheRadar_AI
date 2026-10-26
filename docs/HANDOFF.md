@@ -19,6 +19,7 @@ Documento para cualquier sesión nueva (o para una persona). Complementa `CLAUDE
 
 ## 1b. Manuales
 
+- Guía de inicio rápido: `frontend/public/manual/inicio.html`.
 - Manual de uso (funcional): `frontend/public/manual/funcional.html`.
 - Manual técnico: `frontend/public/manual/tecnico.html`.
 - Índice de ambos: `frontend/public/manual/index.html`.

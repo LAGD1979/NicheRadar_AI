@@ -2,7 +2,7 @@
 
 Radar local de oportunidades de contenido para YouTube en español. **Estado: hitos M0 a M4 construidos** (ver [docs/IMPLEMENTATION_PROGRESS.md](docs/IMPLEMENTATION_PROGRESS.md)). Sin clave de YouTube la aplicación funciona solo con datos sintéticos rotulados DEMO; con clave puede buscar videos reales. No contiene investigación real de nichos.
 
-Manuales: [uso](frontend/public/manual/funcional.html) y [técnico](frontend/public/manual/tecnico.html) (también en http://localhost:5173/manual/). Para retomar el trabajo: [docs/HANDOFF.md](docs/HANDOFF.md).
+Manuales: [inicio rápido](frontend/public/manual/inicio.html), [uso](frontend/public/manual/funcional.html) y [técnico](frontend/public/manual/tecnico.html) (también en http://localhost:5173/manual/). Para retomar el trabajo: [docs/HANDOFF.md](docs/HANDOFF.md).
 
 Documentos de referencia: [ESPECIFICACION_NICHERADAR_AI.md](ESPECIFICACION_NICHERADAR_AI.md), [CLAUDE.md](CLAUDE.md), [docs/IMPLEMENTATION_PROGRESS.md](docs/IMPLEMENTATION_PROGRESS.md), [docs/DECISIONS.md](docs/DECISIONS.md), [docs/HANDOFF.md](docs/HANDOFF.md), [docs/TEST_PLAN.md](docs/TEST_PLAN.md).
 
