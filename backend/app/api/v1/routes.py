@@ -26,6 +26,7 @@ from app.api.v1.schemas import (
     RunOut,
     UsageOut,
     VideoItem,
+    VidIQUsageOut,
 )
 from app.core.config import Settings, get_settings
 from app.core.errors import ProblemError
@@ -34,8 +35,8 @@ from app.db import models as m
 from app.db.session import get_session
 from app.domain.rules import age_hours
 from app.services import opportunity_service as opp_svc
-from app.services import quota_service
-from app.services.compliance_service import all_decisions
+from app.services import quota_service, vidiq_service
+from app.services.compliance_service import all_decisions, decide
 from app.services.import_service import import_rows
 from app.services.providers_service import list_providers
 from app.services.research_service import (
@@ -94,6 +95,11 @@ def providers(settings: SettingsDep) -> list[ProviderOut]:
 @router.get("/usage", response_model=UsageOut)
 def usage(session: SessionDep, settings: SettingsDep) -> UsageOut:
     return UsageOut(**quota_service.snapshot(session, settings, datetime.now(UTC)))
+
+
+@router.get("/usage/vidiq", response_model=VidIQUsageOut)
+def usage_vidiq(session: SessionDep, settings: SettingsDep) -> VidIQUsageOut:
+    return VidIQUsageOut(**vidiq_service.snapshot(session, settings, datetime.now(UTC)))
 
 
 @router.get("/policy/capabilities", response_model=list[CapabilityOut])
@@ -368,6 +374,36 @@ def create_run(body: RunCreate, session: SessionDep, settings: SettingsDep) -> R
             },
             algorithm_version="m1-ingest-1",
             budget=_discovery_budget(body.payload),
+        )
+    elif body.kind == "vidiq":
+        if body.vidiq is None:
+            raise ProblemError(422, "PAYLOAD_REQUIRED", "La consulta a vidIQ necesita searches")
+        if not settings.vidiq_api_key.get_secret_value():
+            raise ProblemError(
+                409,
+                "PROVIDER_NOT_CONFIGURED",
+                "vidIQ no está configurado",
+                "Defina VIDIQ_API_KEY y reinicie la API y el worker.",
+            )
+        decision = decide("vidiq_api", settings, session)
+        if not decision.allowed:
+            raise ProblemError(403, "POLICY_RESTRICTED", "vidIQ está restringido", decision.reason)
+        vidiq_payload = body.vidiq.model_dump()
+        run = enqueue_run(
+            session,
+            kind="vidiq",
+            policy_mode=settings.compliance_mode,
+            payload=vidiq_payload,
+            params={
+                "searches_total": len(vidiq_payload["searches"]),
+                "max_calls": vidiq_payload["max_calls"],
+            },
+            algorithm_version="vidiq-outliers-1",
+            budget={
+                "vidiq_credits_estimate": vidiq_payload["max_calls"]
+                * settings.vidiq_credits_per_call,
+                "ai_usd": 0,
+            },
         )
     else:
         run = enqueue_run(

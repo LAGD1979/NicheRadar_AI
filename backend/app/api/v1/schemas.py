@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -179,6 +179,28 @@ class DiscoveryPayload(BaseModel):
     pages_per_query: int = Field(default=1, ge=1, le=3)
 
 
+class VidIQSearchSpec(BaseModel):
+    language: Literal[
+        "en", "es", "ko", "de", "hi", "ar", "th", "pl", "it", "ja", "fr", "tr", "ru", "pt", "uk"
+    ]
+    content_type: Literal["long", "short"] = "long"
+    published_within: (
+        Literal["thisWeek", "thisMonth", "threeMonths", "sixMonths", "oneYear"] | None
+    ) = None
+    trend_categories: list[Annotated[str, Field(pattern=r"^[a-z0-9_]{2,60}$")]] = Field(
+        default_factory=list, max_length=5
+    )
+    keyword: str | None = Field(default=None, min_length=2, max_length=200)
+    max_subscribers: int | None = Field(default=None, ge=0, le=100_000_000)
+    min_views: int | None = Field(default=None, ge=0, le=2_000_000_000)
+    limit: int = Field(default=20, ge=1, le=50)
+
+
+class VidIQPayload(BaseModel):
+    searches: list[VidIQSearchSpec] = Field(min_length=1, max_length=20)
+    max_calls: int = Field(default=5, ge=1, le=20)
+
+
 class ImportRequest(BaseModel):
     source_schema_version: str = Field(max_length=10)
     provider: Literal["vidiq_import", "manual_import"]
@@ -216,6 +238,15 @@ class UsageOut(BaseModel):
     units_remaining_soft: int
 
 
+class VidIQUsageOut(BaseModel):
+    provider: str
+    quota_bucket: str
+    day_start_utc: str
+    credits_used: int
+    credits_daily_limit: int
+    credits_remaining: int
+
+
 class RunOut(BaseModel):
     id: str
     kind: str
@@ -232,8 +263,9 @@ class RunOut(BaseModel):
 
 
 class RunCreate(BaseModel):
-    kind: Literal["demo", "discovery", "purge"]
+    kind: Literal["demo", "discovery", "vidiq", "purge"]
     payload: DiscoveryPayload | None = None
+    vidiq: VidIQPayload | None = None
 
 
 class RunAccepted(BaseModel):

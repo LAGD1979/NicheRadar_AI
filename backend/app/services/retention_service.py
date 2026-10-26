@@ -31,6 +31,7 @@ def purge_expired(session: Session, now: datetime) -> dict[str, int]:
         video.view_count = None
         video.duration_seconds = None
         video.url = None
+        video.provider_metrics = None
         video.video_type = "UNKNOWN"
         video.video_type_evidence = "Dato caducado y purgado"
 

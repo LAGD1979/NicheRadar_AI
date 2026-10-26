@@ -201,6 +201,24 @@ La primera llamada con `claude-haiku-5-5` falló con HTTP 400. Una llamada direc
 
 ---
 
+## vidIQ por MCP
+
+### D-57 · Adaptador de vidIQ (2026-10-25)
+vidIQ ofrece un servidor MCP remoto (`https://mcp.vidiq.com/mcp`) con claves de API de **solo lectura** para clientes que no pueden iniciar sesión. `providers/vidiq_mcp.py` es un cliente MCP (JSON-RPC sobre HTTP) con `Authorization: Bearer`; lee los datos estructurados de `_meta.widgetData`, no el texto en markdown. Solo implementa `vidiq_outliers` y `vidiq_balance` (gratis).
+
+- **Compuerta:** la corrida `kind=vidiq` exige la capacidad `vidiq_api` abierta (las tres condiciones de D-48), en la API (403) y otra vez en el worker. Sin `VIDIQ_API_KEY`, 409.
+- **Créditos:** cada consulta cuesta 5 créditos del plan. Hay un tope diario local (`VIDIQ_DAILY_CREDIT_LIMIT`, 200) y un tope por corrida (`max_calls`). Agotar el tope pausa la corrida (`PAUSED_QUOTA`) y se reanuda como la de YouTube. El saldo real del plan no se consulta antes de cada llamada.
+- **Datos:** se guardan como `PROVIDER`, `owner_authorized=false` y caducan a **29 días**, igual que YouTube. Las métricas de vidIQ (breakout, vistas por hora, categorías de formato) van en `videos.provider_metrics` bajo la clave `vidiq`, con `run_id` y `observed_at`; la purga las borra con el video (migración 0005).
+- **Procedencia:** si el video ya existe con otra procedencia, no se sobrescribe; solo se añade la clave `vidiq`.
+- **Idioma:** el filtro de idioma del título de vidIQ **no** es idioma verificado; los videos quedan `UNKNOWN`.
+- **Sin sesgo de tema:** una consulta puede ir sin palabra clave, solo con filtros de idioma, tamaño de canal y vistas, o con una categoría de formato.
+- **Registros inválidos:** se descartan, se cuentan y la corrida queda `PARTIAL` con `RECORDS_SKIPPED`.
+- **Pendiente de licencia:** los términos de vidIQ no dicen si se pueden almacenar y reutilizar estos datos. El responsable asume la decisión con la caducidad de 29 días como medida conservadora.
+- **Prueba en vivo:** una consulta (`language=es`, sin tema, canales de hasta 100 mil suscriptores, 3 meses, 50 mil vistas o más) devolvió 9 videos y costó 5 créditos.
+- **Fuera de alcance:** no hay pantalla en la interfaz para lanzar estas corridas, ni uso de más herramientas de vidIQ.
+
+---
+
 ## M4 — motor analítico avanzado (detrás de la compuerta)
 
 M4 es condicional (spec §13). Se construyó completo, pero **bloqueado**: no hay ninguna aprobación registrada, así que ningún índice se calcula ni se muestra.

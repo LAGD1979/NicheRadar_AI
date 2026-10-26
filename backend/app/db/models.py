@@ -87,6 +87,8 @@ class Video(Base):
     language_confidence: Mapped[str] = mapped_column(String(20))
     view_count: Mapped[int | None] = mapped_column(Integer)
     url: Mapped[str | None] = mapped_column(String(300))
+    # Métricas de proveedor con procedencia por clave ({"vidiq": {...}}). Se purgan con el video.
+    provider_metrics: Mapped[dict[str, Any] | None] = mapped_column(JSONB)
     provider: Mapped[str] = mapped_column(String(60))
     observed_at: Mapped[datetime] = mapped_column(DateTime(timezone=True))
     run_id: Mapped[str | None] = mapped_column(String(36))

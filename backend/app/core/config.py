@@ -20,6 +20,7 @@ class Settings(BaseSettings):
     youtube_api_key: SecretStr = SecretStr("")
     anthropic_api_key: SecretStr = SecretStr("")
     openai_api_key: SecretStr = SecretStr("")
+    vidiq_api_key: SecretStr = SecretStr("")
     app_secret_key: SecretStr = SecretStr("")
 
     # "restricted" por defecto. "approved_scope" solo abre capacidades con un registro vigente
@@ -39,6 +40,13 @@ class Settings(BaseSettings):
     youtube_max_retries: int = 3
     youtube_daily_units_limit: int = 10_000
     youtube_daily_units_soft_pct: float = 0.9
+    # vidIQ por MCP (D-57). Cada llamada de investigación cuesta créditos del plan del usuario;
+    # el tope diario es local y conservador, no el saldo real del plan.
+    vidiq_mcp_url: str = "https://mcp.vidiq.com/mcp"
+    vidiq_timeout_seconds: float = 30.0
+    vidiq_max_retries: int = 3
+    vidiq_credits_per_call: int = 5
+    vidiq_daily_credit_limit: int = 200
     # Datos de terceros no autorizados: plazo máximo de caché (spec §5.5, 30 días menos margen).
     unauthorized_cache_days: int = 29
 

@@ -8,6 +8,7 @@ Documento para cualquier sesión nueva (o para una persona). Complementa `CLAUDE
 - M4 (índices avanzados) **abierto** en este equipo: el modo `approved_scope` está en el `.env` local, y hay cuatro aprobaciones registradas por el responsable (D-54). No es una autorización emitida por YouTube.
 - Los índices siguen en NULL porque no existe resiliencia temporal (histórico licenciado). Es intencional.
 - Sin fuente de señales de demanda: ninguna oportunidad real llega a «listo para piloto».
+- **vidIQ (D-57):** adaptador MCP implementado y probado en vivo (`POST /research-runs` con `kind=vidiq`). Clave en la variable de usuario `VIDIQ_API_KEY`. Los términos de vidIQ no aclaran el almacenamiento: se asume la caducidad de 29 días. No hay pantalla en la interfaz todavía.
 - IA: los adaptadores de **OpenAI** (`gpt-4.1-mini`, D-55) y **Anthropic** (`claude-haiku-5-5`, D-56) se probaron en vivo el 2026-10-25 generando un plan de búsqueda. Las claves se leen de las variables de usuario `OPENAI_API_KEY` y `CLAUDE_API_KEY` (Compose acepta esta última como `ANTHROPIC_API_KEY`). El `.env` local deja activo Anthropic; para cambiar, editar `AI_PROVIDER` y `AI_MODEL` y recrear `api worker`.
 
 ## 1b. Manuales
@@ -32,7 +33,7 @@ Documento para cualquier sesión nueva (o para una persona). Complementa `CLAUDE
 - Lint y tipos backend: `… run --rm --no-deps api sh -c "ruff check app tests && ruff format --check app tests && mypy app"`
 - Frontend: `… run --rm --no-deps frontend sh -c "npx eslint . && npx tsc --noEmit && npx vitest run"`
 - E2E (con el stack arriba): `… --profile e2e run --rm e2e`
-- Estado esperado: 230 pruebas backend, 15 frontend, 7 E2E pasando y 1 omitido (el omitido es esperado).
+- Estado esperado: 257 pruebas backend, 15 frontend, 7 E2E pasando y 1 omitido (el omitido es esperado).
 
 Para ver cambios sin reconstruir la imagen: montar el código con `-v "<ruta>\backend:/app"` en `run`.
 

@@ -11,6 +11,7 @@ from app.db import models as m
 TASK_TYPES = {
     "demo": "demo_research",
     "discovery": "youtube_discovery",
+    "vidiq": "vidiq_discovery",
     "purge": "retention_purge",
     "spanish_plan": "spanish_plan",
     "spanish_validation": "spanish_validation",

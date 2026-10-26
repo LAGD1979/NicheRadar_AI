@@ -158,6 +158,8 @@
               <tr><td><code>AI_PROVIDER</code></td><td>none</td><td><code>none</code>, <code>anthropic</code> u <code>openai</code>.</td></tr>
               <tr><td><code>AI_MODEL</code></td><td>vacío</td><td>Nombre del modelo. Vacío = la IA no se ejecuta.</td></tr>
               <tr><td><code>ANTHROPIC_API_KEY</code> / <code>OPENAI_API_KEY</code></td><td>vacías</td><td>Claves del proveedor elegido. Nunca se muestran en respuestas ni en logs.</td></tr>
+              <tr><td><code>VIDIQ_API_KEY</code></td><td>vacía</td><td>Clave MCP de vidIQ (solo lectura). Vacía = sin consultas a vidIQ. Las corridas exigen además la compuerta de políticas.</td></tr>
+              <tr><td><code>VIDIQ_DAILY_CREDIT_LIMIT</code></td><td>200</td><td>Tope diario local de créditos de vidIQ (cada consulta cuesta 5). No es el saldo del plan.</td></tr>
               <tr><td><code>COMPLIANCE_MODE</code></td><td>restricted</td><td><code>restricted</code> cierra todo. <code>approved_scope</code> abre solo lo que tenga aprobación vigente.</td></tr>
               <tr><td><code>ADVANCED_ANALYTICS_ENABLED</code></td><td>false</td><td>Segunda condición de la compuerta de M4. Por sí sola no abre nada.</td></tr>
               <tr><td><code>YOUTUBE_DAILY_UNITS_LIMIT</code></td><td>10000</td><td>Límite duro de unidades diarias de YouTube.</td></tr>
@@ -262,7 +264,7 @@ docker compose --project-directory "&lt;ruta&gt;" run --rm --no-deps frontend sh
 
 # E2E de navegador (requiere el stack arriba)
 docker compose --project-directory "&lt;ruta&gt;" --profile e2e run --rm e2e</code></pre>
-        <p>Resultado de referencia: 229 pruebas de backend, 15 de frontend y 7 E2E pasando, con 1 E2E omitido a propósito (la comprobación de desbordamiento solo corre en móvil).</p>
+        <p>Resultado de referencia: 257 pruebas de backend, 15 de frontend y 7 E2E pasando, con 1 E2E omitido a propósito (la comprobación de desbordamiento solo corre en móvil).</p>
       </section>
 
       <section id="datos">
@@ -357,6 +359,7 @@ docker compose --project-directory "&lt;ruta&gt;" --profile e2e run --rm e2e</co
             <tr><td><code>youtube_discovery</code></td><td>Búsqueda en YouTube</td><td>Ejecuta consultas por idioma y ventana. Guarda el progreso por consulta.</td></tr>
             <tr><td><code>spanish_plan</code></td><td>Generar plan con IA</td><td>Pide el plan al proveedor, lo valida y lo guarda como pendiente de revisión.</td></tr>
             <tr><td><code>spanish_validation</code></td><td>Validar en español</td><td>Busca cada frase del plan aprobado y recalcula la evaluación.</td></tr>
+            <tr><td><code>vidiq_discovery</code></td><td>Corrida <code>vidiq</code> (API)</td><td>Consulta outliers a vidIQ por MCP, con tope de créditos y compuerta <code>vidiq_api</code>. Guarda videos como PROVEEDOR con caducidad de 29 días.</td></tr>
             <tr><td><code>retention_purge</code></td><td>Corrida <code>purge</code> (API)</td><td>Expira datos de terceros fuera de plazo.</td></tr>
           </tbody>
         </table>
@@ -380,6 +383,7 @@ docker compose --project-directory "&lt;ruta&gt;" --profile e2e run --rm e2e</co
               <tr><td>Índices (M4)</td><td><code>GET /opportunities/{id}/scores</code>, <code>POST /opportunities/{id}/scores</code>, <code>POST /cohorts/ranking</code></td></tr>
               <tr><td>Videos y canales</td><td><code>GET /videos</code>, <code>GET /channels/{id}</code></td></tr>
               <tr><td>Corridas</td><td><code>GET /research-runs</code>, <code>GET /research-runs/{id}</code>, <code>POST /research-runs</code> (<code>demo</code>, <code>discovery</code>, <code>purge</code>), <code>POST …/resume</code></td></tr>
+              <tr><td>vidIQ</td><td><code>POST /research-runs</code> con <code>kind=vidiq</code> y <code>vidiq.searches</code>, <code>GET /usage/vidiq</code></td></tr>
               <tr><td>Importación y exportación</td><td><code>POST /imports/provider-file</code>, <code>GET /exports/opportunities.csv</code>, <code>GET /exports/opportunities.json</code></td></tr>
             </tbody>
           </table>
@@ -454,7 +458,7 @@ Invoke-RestMethod -Method Post -Uri http://127.0.0.1:8000/api/v1/research-runs -
             <tr><td><code>backend/app/providers/</code></td><td>Adaptadores externos: YouTube, IA (Anthropic, OpenAI) y factoría.</td></tr>
             <tr><td><code>backend/app/jobs/</code></td><td>Worker, manejadores de tareas y CLI de aprobaciones.</td></tr>
             <tr><td><code>backend/app/db/models.py</code></td><td>Modelos SQLAlchemy.</td></tr>
-            <tr><td><code>backend/alembic/versions/</code></td><td>Migraciones 0001 a 0004.</td></tr>
+            <tr><td><code>backend/alembic/versions/</code></td><td>Migraciones 0001 a 0005.</td></tr>
             <tr><td><code>backend/tests/</code></td><td>Pruebas unitarias (<code>unit/</code>), de integración (<code>integration/</code>) y fakes sin red (<code>fakes.py</code>).</td></tr>
             <tr><td><code>frontend/src/pages/</code></td><td>Pantallas de la interfaz.</td></tr>
             <tr><td><code>frontend/public/manual/</code></td><td>Estos manuales.</td></tr>

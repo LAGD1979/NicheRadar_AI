@@ -5,6 +5,7 @@ from app.core.config import Settings
 def list_providers(settings: Settings) -> list[ProviderOut]:
     """Estado de adaptadores. Solo indica si hay credencial; nunca expone su valor."""
     youtube_configured = bool(settings.youtube_api_key.get_secret_value())
+    vidiq_configured = bool(settings.vidiq_api_key.get_secret_value())
     llm_key = {
         "anthropic": settings.anthropic_api_key.get_secret_value(),
         "openai": settings.openai_api_key.get_secret_value(),
@@ -34,9 +35,12 @@ def list_providers(settings: Settings) -> list[ProviderOut]:
         ProviderOut(
             id="vidiq_api",
             name="vidIQ API directa",
-            enabled=False,
-            status="DISABLED",
-            license_note="No disponible: no hay interfaz contractual verificada desde Claude Code.",
+            enabled=vidiq_configured,
+            status="CONFIGURED" if vidiq_configured else "NOT_CONFIGURED",
+            license_note=(
+                "MCP de solo lectura con clave; consume créditos del plan. Sujeto a la "
+                "compuerta de políticas (capacidad vidiq_api) y a la caducidad de 29 días."
+            ),
         ),
         ProviderOut(
             id="google_trends",

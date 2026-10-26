@@ -16,7 +16,9 @@ from app.core.config import Settings, get_settings
 from app.db import models as m
 from app.providers.ai import AIClient, build_ai_client
 from app.providers.base import ProviderError
-from app.services import retention_service, spanish_service
+from app.providers.factory import build_vidiq_source
+from app.providers.vidiq_mcp import OutlierParams
+from app.services import compliance_service, retention_service, spanish_service, vidiq_service
 from app.services.ingestion_service import DiscoverySource, QueryPlan, run_discovery
 
 
@@ -25,6 +27,9 @@ class HandlerContext:
     settings: Settings
     make_source: Callable[[], DiscoverySource]
     make_ai: Callable[[], AIClient] = field(default=lambda: build_ai_client(get_settings()))
+    make_vidiq: Callable[[], vidiq_service.OutlierSource] = field(
+        default=lambda: build_vidiq_source(get_settings())
+    )
 
 
 def _audit(session: Session, run_id: str, event_type: str, details: dict[str, Any]) -> None:
@@ -107,6 +112,69 @@ def run_youtube_discovery(session: Session, task: m.RunTask, ctx: HandlerContext
         "per_language": outcome.per_language,
     }
     _audit(session, task.run_id, f"DISCOVERY_{outcome.outcome}", {"searches": outcome.searches})
+    return outcome.outcome
+
+
+def run_vidiq_discovery(session: Session, task: m.RunTask, ctx: HandlerContext) -> str:
+    """Outliers de vidIQ por categoría/idioma. Exige la compuerta `vidiq_api` y gasta créditos."""
+    run = session.get(m.ResearchRun, task.run_id)
+    if run is None:
+        raise LookupError(f"Corrida inexistente: {task.run_id}")
+    decision = compliance_service.decide("vidiq_api", ctx.settings, session)
+    if not decision.allowed:
+        run.errors_json = [
+            *run.errors_json,
+            {"code": "POLICY_RESTRICTED", "detail": decision.reason},
+        ]
+        return "FAILED"
+    payload = task.payload_json
+    searches = [
+        vidiq_service.OutlierSearch(
+            OutlierParams(
+                language=str(s["language"]),
+                content_type=str(s.get("content_type", "long")),
+                published_within=s.get("published_within"),
+                trend_categories=tuple(s.get("trend_categories") or ()),
+                keyword=s.get("keyword"),
+                max_subscribers=s.get("max_subscribers"),
+                min_views=s.get("min_views"),
+                limit=int(s.get("limit", 20)),
+            )
+        )
+        for s in payload["searches"]
+    ]
+    try:
+        source = ctx.make_vidiq()
+    except ProviderError as exc:
+        run.errors_json = [*run.errors_json, {"code": exc.code, "detail": str(exc)}]
+        return "FAILED"
+    try:
+        outcome = vidiq_service.run_outlier_discovery(
+            session,
+            source,
+            ctx.settings,
+            run_id=task.run_id,
+            searches=searches,
+            completed_keys=set(task.result_json.get("completed", [])),
+            max_calls=int(payload["max_calls"]),
+            now=datetime.now(UTC),
+        )
+    finally:
+        close = getattr(source, "close", None)
+        if callable(close):
+            close()
+    task.result_json = {"completed": outcome.completed}
+    run.errors_json = [*run.errors_json, *outcome.errors]
+    run.coverage_json = {
+        "searches_total": len(searches),
+        "searches_completed": len(outcome.completed),
+        "calls": outcome.calls,
+        "credits": outcome.credits,
+        "videos_new": outcome.videos_new,
+        "videos_enriched": outcome.videos_enriched,
+        "records_skipped": outcome.skipped_records,
+    }
+    _audit(session, task.run_id, f"VIDIQ_{outcome.outcome}", {"credits": outcome.credits})
     return outcome.outcome
 
 
@@ -209,6 +277,7 @@ def run_spanish_validation(session: Session, task: m.RunTask, ctx: HandlerContex
 HANDLERS: dict[str, Callable[[Session, m.RunTask, HandlerContext], str]] = {
     "demo_research": run_demo_research,
     "youtube_discovery": run_youtube_discovery,
+    "vidiq_discovery": run_vidiq_discovery,
     "retention_purge": run_retention_purge,
     "spanish_plan": run_spanish_plan,
     "spanish_validation": run_spanish_validation,
