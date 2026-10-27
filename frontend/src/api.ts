@@ -1,5 +1,6 @@
 import type {
   AiFunctionSetting,
+  AiUsage,
   AlertItem,
   AlertsOut,
   PilotPlan,
@@ -199,6 +200,7 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ reason }),
     }),
+  aiUsage: () => request<AiUsage>("/usage/ai"),
   aiSettings: () => request<AiSettings>("/ai/settings"),
   setAiSetting: (fn: string, provider: string, model: string) =>
     request<AiFunctionSetting>(`/ai/settings/${fn}`, {

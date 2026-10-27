@@ -1,4 +1,4 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useState, type FormEvent } from "react";
 
 import { api, ApiError } from "../api";
@@ -34,6 +34,7 @@ interface Message {
 // Asesor de solo lectura: ve un resumen agregado de la oportunidad (sin títulos, canales ni
 // identificadores), cita de dónde sale cada dato y no cambia nada ni decide por la persona.
 export function AssistantPanel({ opportunityId }: { opportunityId: string }) {
+  const queryClient = useQueryClient();
   const [messages, setMessages] = useState<Message[]>([]);
   const [draft, setDraft] = useState("");
   const [showContext, setShowContext] = useState(false);
@@ -53,6 +54,7 @@ export function AssistantPanel({ opportunityId }: { opportunityId: string }) {
     onSuccess: (answer) => {
       setMessages((current) => [...current, { role: "assistant", text: answer.answer, answer }]);
       void status.refetch();
+      void queryClient.invalidateQueries({ queryKey: ["ai-usage"] });
     },
   });
 
@@ -155,7 +157,9 @@ export function AssistantPanel({ opportunityId }: { opportunityId: string }) {
         {ask.isError && (
           <p role="alert">
             {ask.error instanceof ApiError ? ask.error.message : "No se pudo consultar al asistente."}
-            {ask.error instanceof ApiError && ask.error.code === "ASSISTANT_LIMIT" && " Vuelva a intentarlo mañana."}
+            {ask.error instanceof ApiError &&
+              (ask.error.code === "ASSISTANT_LIMIT" || ask.error.code === "AI_BUDGET_EXHAUSTED") &&
+              " Vuelva a intentarlo mañana."}
           </p>
         )}
       </div>

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, ApiError } from "../api";
+import { compactNumber } from "../balance";
 import type { AiFunctionSetting, AiModelOption } from "../types";
 
 const DEFAULT_VALUE = "";
@@ -10,11 +11,17 @@ function optionValue(option: Pick<AiModelOption, "provider" | "model">): string 
 }
 
 const PROVIDER_NAMES: Record<string, string> = { anthropic: "Anthropic", openai: "OpenAI" };
+const FUNCTION_NAMES: Record<string, string> = {
+  assistant: "asistente",
+  classification: "clasificación",
+  plan: "plan",
+};
 
 // Elige la IA y el modelo de cada función. Sin elección rige el valor del entorno (.env).
 export function AiModelSettings() {
   const queryClient = useQueryClient();
   const settings = useQuery({ queryKey: ["ai-settings"], queryFn: api.aiSettings });
+  const usage = useQuery({ queryKey: ["ai-usage"], queryFn: api.aiUsage });
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ["ai-settings"] });
@@ -72,6 +79,16 @@ export function AiModelSettings() {
       {choose.isError && (
         <p role="alert">
           {choose.error instanceof ApiError ? choose.error.message : "No se pudo guardar la elección."}
+        </p>
+      )}
+      {usage.data && (
+        <p className="muted small">
+          Tokens de IA hoy: <strong>{compactNumber(usage.data.tokens_used)}</strong> de{" "}
+          {compactNumber(usage.data.tokens_daily_limit)} (tope por corrida: {compactNumber(usage.data.tokens_run_limit)}).
+          {Object.keys(usage.data.by_function).length > 0 && (
+            <> Por función: {Object.entries(usage.data.by_function).map(([fn, n]) => `${FUNCTION_NAMES[fn] ?? fn} ${compactNumber(n)}`).join(" · ")}.</>
+          )}{" "}
+          Son tokens reales que informa el proveedor; al llegar al tope la IA se detiene y conserva lo ya hecho.
         </p>
       )}
       <details>

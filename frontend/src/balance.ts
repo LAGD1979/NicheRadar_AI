@@ -25,3 +25,12 @@ export function binding(a: Balance, b: Balance): Balance {
   const ratio = (x: Balance) => (x.total > 0 ? x.remaining / x.total : 0);
   return ratio(b) < ratio(a) ? b : a;
 }
+
+/** Cantidades grandes en poco espacio: 850.000 → «850 k», 1.200.000 → «1,2 M». */
+export function compactNumber(value: number): string {
+  const abs = Math.abs(value);
+  const fmt = (n: number) => n.toLocaleString("es-CL", { maximumFractionDigits: 1 });
+  if (abs >= 1_000_000) return `${fmt(value / 1_000_000)} M`;
+  if (abs >= 1_000) return `${fmt(Math.round(value / 100) / 10)} k`;
+  return fmt(value);
+}

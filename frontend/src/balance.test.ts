@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { balanceLevel, balancePercent, binding } from "./balance";
+import { balanceLevel, balancePercent, binding, compactNumber } from "./balance";
 
 describe("balance", () => {
   it("clasifica el nivel por lo que queda", () => {
@@ -26,5 +26,13 @@ describe("balance", () => {
     expect(binding({ remaining: 3, total: 15, period: "hoy" }, { remaining: 5, total: 90, period: "este mes" }).period).toBe(
       "este mes",
     );
+  });
+
+  it("abrevia las cantidades grandes", () => {
+    expect(compactNumber(950)).toBe("950");
+    expect(compactNumber(1000)).toBe("1 k");
+    expect(compactNumber(850_000)).toBe("850 k");
+    expect(compactNumber(1_200_000)).toBe("1,2 M");
+    expect(compactNumber(0)).toBe("0");
   });
 });

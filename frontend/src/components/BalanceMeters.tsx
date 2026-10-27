@@ -2,7 +2,7 @@ import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
 
 import { api } from "../api";
-import { balanceLevel, balancePercent, binding, type Balance } from "../balance";
+import { balanceLevel, balancePercent, binding, compactNumber, type Balance } from "../balance";
 import { formatNumber } from "../format";
 
 interface Meter {
@@ -12,9 +12,11 @@ interface Meter {
   configured: boolean;
   balance: Balance | null;
   note: string;
+  /** Cómo escribir las cantidades; por defecto, el número completo. */
+  format?: (value: number) => string;
 }
 
-const BALANCE_KEYS = [["usage"], ["vidiq-usage"], ["hasdata-usage"], ["alerts"]];
+const BALANCE_KEYS = [["usage"], ["vidiq-usage"], ["hasdata-usage"], ["ai-usage"], ["alerts"]];
 const ACTIVE = new Set(["QUEUED", "RUNNING"]);
 
 // Saldo de cada herramienta, siempre visible. Son los contadores del sistema contra sus topes
@@ -44,6 +46,8 @@ export function BalanceMeters() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [runs.data]);
 
+  const aiUsage = useQuery({ queryKey: ["ai-usage"], queryFn: api.aiUsage });
+
   const configured = (id: string) => providers.data?.find((p) => p.id === id)?.status === "CONFIGURED";
 
   const meters: Meter[] = [
@@ -66,6 +70,17 @@ export function BalanceMeters() {
         ? { remaining: vidiq.data.credits_remaining, total: vidiq.data.credits_daily_limit, period: "hoy" }
         : null,
       note: "Créditos de vidIQ contra el tope diario del sistema.",
+    },
+    {
+      id: "ai",
+      name: "IA",
+      unit: "tokens",
+      configured: configured("llm_analysis"),
+      format: compactNumber,
+      balance: aiUsage.data
+        ? { remaining: aiUsage.data.tokens_remaining, total: aiUsage.data.tokens_daily_limit, period: "hoy" }
+        : null,
+      note: "Tokens de IA del día (reales, informados por el proveedor) contra el tope diario. Suma asistente, clasificación y plan.",
     },
     {
       id: "hasdata",
@@ -108,7 +123,8 @@ export function BalanceMeters() {
         }
         const { remaining, total, period } = meter.balance;
         const level = balanceLevel(remaining, total);
-        const text = `${formatNumber(Math.max(0, remaining))} de ${formatNumber(total)} ${meter.unit} · ${period}`;
+        const fmt = meter.format ?? formatNumber;
+        const text = `${fmt(Math.max(0, remaining))} de ${fmt(total)} ${meter.unit} · ${period}`;
         return (
           <li key={meter.id} className={`balance ${level}`} title={`${meter.note} Quedan ${text}.`}>
             <span className="balance-name">{meter.name}</span>
@@ -123,8 +139,8 @@ export function BalanceMeters() {
               <span style={{ width: `${String(balancePercent(remaining, total))}%` }} />
             </span>
             <span className="balance-text">
-              {formatNumber(Math.max(0, remaining))}
-              <small> / {formatNumber(total)} · {period}</small>
+              {fmt(Math.max(0, remaining))}
+              <small> / {fmt(total)} · {period}</small>
             </span>
           </li>
         );

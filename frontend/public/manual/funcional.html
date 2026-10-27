@@ -130,7 +130,7 @@
 
         <div class="tip">
           <strong>Saldo siempre a la vista</strong>
-          En la barra superior hay un indicador por herramienta (YouTube, vidIQ y HasData) con una barra y lo que queda: verde cuando hay saldo, ámbar cuando queda menos del 20 % y rojo cuando se agotó. Son los contadores del propio sistema contra sus topes, no el saldo que muestra cada proveedor en su panel; si el proveedor tiene menos, manda el proveedor. HasData muestra el tope que se agote primero, el diario o el mensual. Los saldos se leen al abrir la página y cada vez que termina una corrida; no se actualizan solos cada pocos segundos. Para verlos al momento, pulse <strong>Refrescar saldos</strong>.
+          En la barra superior hay un indicador por herramienta (YouTube, vidIQ, IA y HasData) con una barra y lo que queda: verde cuando hay saldo, ámbar cuando queda menos del 20 % y rojo cuando se agotó. Son los contadores del propio sistema contra sus topes, no el saldo que muestra cada proveedor en su panel; si el proveedor tiene menos, manda el proveedor. HasData muestra el tope que se agote primero, el diario o el mensual. El de IA cuenta <strong>tokens</strong> (los trozos de texto que procesa el modelo), no dólares: son los que informa el proveedor, y un modelo que razona gasta más de lo que parece. Al llegar al tope diario la IA se detiene hasta el día siguiente y conserva lo que ya hizo. Los saldos se leen al abrir la página y cada vez que termina una corrida; no se actualizan solos cada pocos segundos. Para verlos al momento, pulse <strong>Refrescar saldos</strong>.
         </div>
 
         <figure>
@@ -334,6 +334,7 @@
         <ul>
           <li><strong>Predeterminado</strong> usa lo que defina el sistema en su configuración. Puede volver a él cuando quiera.</li>
           <li>Un proveedor sin clave aparece deshabilitado («sin clave»).</li>
+          <li>Cada función tiene un <strong>tope de tokens</strong> por día y por corrida. Si clasificar competidores llega al tope, queda «parcial»: conserva las sugerencias ya hechas y le indica cuántos videos quedaron sin sugerencia. Puede volver a ejecutarla cuando haya saldo.</li>
           <li>Cada sugerencia de la IA conserva el nombre del modelo que la hizo, así que puede cambiar de modelo sin perder esa información.</li>
         </ul>
       </section>

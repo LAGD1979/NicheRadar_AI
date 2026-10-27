@@ -25,6 +25,12 @@ class QuotaExhausted(ProviderError):
     code = "PAUSED_QUOTA"
 
 
+class BudgetExhausted(QuotaExhausted):
+    """Tope local de tokens de IA alcanzado (diario o de una corrida): no se llama al proveedor."""
+
+    code = "PARTIAL_BUDGET_EXHAUSTED"
+
+
 class InvalidRequest(ProviderError):
     """4xx por entrada inválida: error definitivo, sin reintento."""
 

@@ -441,3 +441,11 @@ export interface WatchEntry {
   open_alerts: number;
   last_action: { action: string; reason: string | null; actor: string; created_at: string } | null;
 }
+
+export interface AiUsage {
+  tokens_used: number;
+  tokens_daily_limit: number;
+  tokens_remaining: number;
+  tokens_run_limit: number;
+  by_function: Record<string, number>;
+}

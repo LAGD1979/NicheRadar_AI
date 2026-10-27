@@ -34,6 +34,10 @@ class Settings(BaseSettings):
     ai_max_usd_per_run: float = 5.0
     # Asistente de IA por oportunidad (D-67): solo lectura, con contexto agregado.
     assistant_daily_message_limit: int = 100
+    # Topes de tokens de IA (D-70): no hay precios en el repositorio, así que el límite es en
+    # tokens reales informados por el proveedor, no en USD. El diario suma todas las funciones.
+    ai_daily_token_limit: int = 1_000_000
+    ai_run_token_limit: int = 300_000
     assistant_max_output_tokens: int = 4000
     demo_mode: bool = True
 

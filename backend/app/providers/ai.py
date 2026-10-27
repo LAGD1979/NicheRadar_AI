@@ -5,6 +5,7 @@ Anthropic y OpenAI comparten interfaz: `model`, `complete(system, user)` y `clos
 """
 
 import json
+from dataclasses import dataclass
 from typing import Any, Protocol
 
 import httpx
@@ -23,6 +24,36 @@ ANTHROPIC_VERSION = "2023-06-01"
 OPENAI_URL = "https://api.openai.com/v1/chat/completions"
 RETRYABLE = {429, 500, 502, 503, 529}
 MAX_ATTEMPTS = 3
+
+
+@dataclass(frozen=True)
+class TokenUsage:
+    """Tokens que el proveedor informó haber consumido en una llamada."""
+
+    input_tokens: int
+    output_tokens: int
+
+    @property
+    def total(self) -> int:
+        return self.input_tokens + self.output_tokens
+
+
+def _count(value: Any) -> int:
+    return value if isinstance(value, int) and not isinstance(value, bool) and value > 0 else 0
+
+
+def _anthropic_usage(payload: dict[str, Any]) -> TokenUsage | None:
+    usage = payload.get("usage")
+    if not isinstance(usage, dict):
+        return None
+    return TokenUsage(_count(usage.get("input_tokens")), _count(usage.get("output_tokens")))
+
+
+def _openai_usage(payload: dict[str, Any]) -> TokenUsage | None:
+    usage = payload.get("usage")
+    if not isinstance(usage, dict):
+        return None
+    return TokenUsage(_count(usage.get("prompt_tokens")), _count(usage.get("completion_tokens")))
 
 
 class AIClient(Protocol):
@@ -78,6 +109,7 @@ class AnthropicClient:
         self._model = model
         self._max_tokens = max_tokens
         self._http = httpx.Client(timeout=timeout, transport=transport)
+        self.last_usage: TokenUsage | None = None
 
     @property
     def model(self) -> str:
@@ -87,6 +119,7 @@ class AnthropicClient:
         self._http.close()
 
     def complete(self, system: str, user: str) -> str:
+        self.last_usage = None  # una llamada fallida no hereda el uso de la anterior
         body: dict[str, Any] = {
             "model": self._model,
             "max_tokens": self._max_tokens,
@@ -99,6 +132,7 @@ class AnthropicClient:
             "content-type": "application/json",
         }
         payload = _post_with_retries(self._http, ANTHROPIC_URL, headers, body, "IA (Anthropic)")
+        self.last_usage = _anthropic_usage(payload)  # también si la respuesta se truncó
         return _anthropic_text(payload)
 
 
@@ -123,6 +157,7 @@ class OpenAIClient:
         self._model = model
         self._max_output_tokens = max_output_tokens
         self._http = httpx.Client(timeout=timeout, transport=transport)
+        self.last_usage: TokenUsage | None = None
 
     @property
     def model(self) -> str:
@@ -132,6 +167,7 @@ class OpenAIClient:
         self._http.close()
 
     def complete(self, system: str, user: str) -> str:
+        self.last_usage = None
         body: dict[str, Any] = {
             "model": self._model,
             "max_completion_tokens": self._max_output_tokens,
@@ -146,6 +182,7 @@ class OpenAIClient:
             "content-type": "application/json",
         }
         payload = _post_with_retries(self._http, OPENAI_URL, headers, body, "IA (OpenAI)")
+        self.last_usage = _openai_usage(payload)
         return _openai_text(payload)
 
 

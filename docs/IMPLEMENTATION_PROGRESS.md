@@ -112,11 +112,11 @@ Configuración permite elegir proveedor y modelo para el asistente, la clasifica
 
 ## M5, primer tramo: programación, seguimiento y alertas (D-69)
 
-Rama `m5-programacion-y-seguimiento` (desde el tag `m4-listo-para-probar`). Trabajos programados en el worker (purga diaria, alertas, revisión semanal del seguimiento), alertas dentro de la aplicación, pantalla Seguimiento con plan de piloto y registro de decisiones. Pendiente de M5: límites de costo de IA, export licenciado, permisos, prueba de carga, backups y checklist de operación.
+Rama `m5-programacion-y-seguimiento` (desde el tag `m4-listo-para-probar`). Trabajos programados en el worker (purga diaria, alertas, revisión semanal del seguimiento), alertas dentro de la aplicación, pantalla Seguimiento con plan de piloto y registro de decisiones. Topes de tokens de IA con uso real del proveedor (D-70). Pendiente de M5: export licenciado, permisos, prueba de carga, backups y checklist de operación.
 
 ## Estado de verificación actual
 
-477 pruebas de backend, 26 de frontend y 15 E2E pasando (1 omitido a propósito); antes del tramo M5 eran 452 y 11 (11 E2E en la última corrida completa, anterior a D-66; 1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
+493 pruebas de backend, 27 de frontend y 15 E2E pasando (1 omitido a propósito); antes del tramo M5 eran 452 y 11 (11 E2E en la última corrida completa, anterior a D-66; 1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
 
 ## Siguiente paso
 

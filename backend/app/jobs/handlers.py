@@ -378,7 +378,7 @@ def run_spanish_plan(session: Session, task: m.RunTask, ctx: HandlerContext) -> 
         return "FAILED"
     try:
         plan = spanish_service.generate_plan_with_ai(
-            session, client, str(task.payload_json["opportunity_id"])
+            session, client, str(task.payload_json["opportunity_id"]), run_id=task.run_id
         )
     except ProviderError as exc:
         run.errors_json = [*run.errors_json, {"code": exc.code, "detail": str(exc)}]

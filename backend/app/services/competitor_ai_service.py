@@ -19,8 +19,13 @@ from app.db import models as m
 from app.domain import competitor_review as cr
 from app.prompts import competitor_review_v1 as prompt
 from app.providers.ai import AIClient
-from app.providers.base import ProviderAuthError, ProviderError, ResponseTruncated
-from app.services import spanish_service
+from app.providers.base import (
+    BudgetExhausted,
+    ProviderAuthError,
+    ProviderError,
+    ResponseTruncated,
+)
+from app.services import ai_budget_service, spanish_service
 
 BATCH_SIZE = 20
 MAX_BATCHES = 10
@@ -142,7 +147,21 @@ def classify(
         allowed = {f"V:{video.youtube_video_id}" for _m, video, _c in chunk}
         result.batches += 1
         try:
-            raw = client.complete(prompt.SYSTEM, prompt.build_user_message(context, videos))
+            raw = ai_budget_service.call(
+                session,
+                client,
+                function="classification",
+                system=prompt.SYSTEM,
+                user=prompt.build_user_message(context, videos),
+                run_id=run_id,
+                now=now,
+            )
+        except BudgetExhausted as exc:
+            # Presupuesto de tokens agotado: se conserva lo ya sugerido y no se llama más.
+            result.batches -= 1
+            result.outcome = "PARTIAL"
+            result.errors.append({"code": exc.code, "detail": str(exc)})
+            return False
         except ProviderAuthError as exc:
             result.outcome = "FAILED"
             result.errors.append({"code": exc.code, "detail": str(exc)})

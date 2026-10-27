@@ -20,12 +20,13 @@ from app.db import models as m
 from app.prompts import assistant_v1
 from app.providers.ai import AIClient
 from app.providers.base import (
+    BudgetExhausted,
     InvalidRequest,
     ProviderAuthError,
     ProviderUnavailable,
     QuotaExhausted,
 )
-from app.services import assistant_context, vidiq_service
+from app.services import ai_budget_service, assistant_context, vidiq_service
 from app.services.spanish_service import _strip_fences
 
 PROVIDER = "ai_assistant"
@@ -159,13 +160,31 @@ def ask(
     )
     session.commit()  # se cuenta aunque la llamada falle: puede haber gastado tokens
     try:
-        text = client.complete(assistant_v1.SYSTEM, user_message)
+        text = ai_budget_service.call(
+            session,
+            client,
+            function="assistant",
+            system=assistant_v1.SYSTEM,
+            user=user_message,
+            run_id=None,
+            now=now,
+            settings=settings,
+        )
+    except BudgetExhausted as exc:
+        session.commit()
+        raise ProblemError(
+            429, "AI_BUDGET_EXHAUSTED", "Tope diario de tokens de IA alcanzado", str(exc)
+        ) from exc
     except ProviderAuthError as exc:
+        session.commit()
         raise ProblemError(502, "AI_AUTH_ERROR", "La IA rechazó la clave", str(exc)) from exc
     except (QuotaExhausted, ProviderUnavailable) as exc:
+        session.commit()
         raise ProblemError(503, "AI_UNAVAILABLE", "La IA no está disponible", str(exc)) from exc
     except InvalidRequest as exc:
+        session.commit()
         raise ProblemError(502, "AI_BAD_RESPONSE", "La IA no pudo responder", str(exc)) from exc
+    session.commit()  # el uso de tokens queda registrado aunque la respuesta no sirva
     parsed = parse_answer(text)
     parsed["unsourced"] = bool(re.search(r"\d", parsed["answer"])) and not parsed["citations"]
     parsed.update(

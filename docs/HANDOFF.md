@@ -8,6 +8,7 @@ Documento para cualquier sesión nueva (o para una persona). Complementa `CLAUDE
 - M4 (índices avanzados) **abierto** en este equipo: el modo `approved_scope` está en el `.env` local, y hay cuatro aprobaciones registradas por el responsable (D-54). No es una autorización emitida por YouTube.
 - Los índices siguen en NULL porque no existe resiliencia temporal (histórico licenciado). Es intencional.
 - Revisión de competidores (D-64): en la pestaña «Mercado español» de la oportunidad de prueba hay 186 videos con sugerencia de la IA y ninguno revisado. «Aceptar sugerencias de confianza alta» pasa 6 exactos y deja la saturación en «Alta». La saturación exige revisar el 80 % de los videos en español.
+- Topes de tokens de IA (D-70): `AI_DAILY_TOKEN_LIMIT` (1.000.000) y `AI_RUN_TOKEN_LIMIT` (300.000), en tokens reales del proveedor, no en USD. Indicador «IA» en el encabezado.
 - M5, primer tramo (D-69): rama `m5-programacion-y-seguimiento`, creada desde el tag `m4-listo-para-probar` (el pull request de M4 va aparte). El worker ejecuta solo la purga diaria, las alertas y la revisión semanal del seguimiento; pantalla «Seguimiento»; alertas en el encabezado.
 - IA por función (D-68): Configuración → «IA y modelo por función» elige proveedor y modelo del asistente, la clasificación y el plan; el catálogo está en `config/research.yaml` (`ai.models`). Sin elección rige `AI_PROVIDER`/`AI_MODEL` de `.env` (hoy Claude Haiku 5.5).
 - Asistente de IA (D-67): pestaña «Asistente» en la ficha. Contexto agregado sin títulos ni canales; tope `ASSISTANT_DAILY_MESSAGE_LIMIT`=100.

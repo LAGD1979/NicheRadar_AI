@@ -391,6 +391,21 @@ Primer tramo del hito M5 (radar continuo). Se construyó en la rama `m5-programa
 
 **Pendiente de M5** (spec §13): límites de costo de IA por corrida con `PARTIAL_BUDGET_EXHAUSTED`, export licenciado, permisos de usuario y despliegue local seguro, prueba de carga pequeña, backup programado con restauración probada y checklist de operación. Tampoco se programa el descubrimiento semanal (`discover_international`) porque gasta cuota; si se quiere, debe ir con tope explícito.
 
+### D-70 · Topes de tokens de IA (M5) (2026-10-27)
+La especificación (§9.2) pide parar el gasto de IA al llegar a un presupuesto y mostrar `PARTIAL_BUDGET_EXHAUSTED`. Como **no hay precios de modelos en el repositorio** (y el responsable decidió no estimar saldo en USD), el presupuesto se mide en **tokens reales**, no en dólares.
+
+**Uso real.** Los clientes de Anthropic y OpenAI guardan en `last_usage` los tokens que informa el proveedor (entrada y salida), también cuando la respuesta se trunca (que sí cuesta) y sin heredar el uso de una llamada anterior que falló. Si un proveedor no informa el uso, se registra una estimación de 4 caracteres por token marcada `ESTIMATED`; nunca se inventa un costo para una llamada fallida sin uso informado. En la prueba real, una consulta del asistente gastó 4.208 tokens frente a unos 2.200 estimados: los modelos que razonan consumen más de lo que se ve en el texto, por eso el contador usa el dato del proveedor.
+
+**Dos topes** (`ai_budget_service`, una fila en `provider_usage` por llamada, función y modelo): `AI_DAILY_TOKEN_LIMIT` (1.000.000; suma de asistente, clasificación y plan) y `AI_RUN_TOKEN_LIMIT` (300.000 por corrida). Antes de cada llamada se revisan; si ya se alcanzaron, no se llama al proveedor y se lanza `BudgetExhausted` (`PARTIAL_BUDGET_EXHAUSTED`). Un tope se puede sobrepasar por la última llamada (se revisa antes, no después).
+
+**Efecto por función.** La clasificación se detiene, conserva los lotes ya sugeridos y termina `PARTIAL` con ese código y los videos que quedaron sin sugerencia. El plan de búsqueda falla con el mismo código. El asistente responde 429 `AI_BUDGET_EXHAUSTED`. Los topes se pueden subir en el `.env`.
+
+**Visibilidad.** El encabezado suma un indicador «IA» (tokens de hoy frente al tope diario, abreviados como «995,8 k / 1 M»), Configuración muestra el uso por función y el tope por corrida, `GET /usage/ai` lo expone y una alerta `QUOTA_WARNING` avisa al 80 % y al agotarse.
+
+**Corrección.** El asistente no confirmaba la transacción tras la llamada, así que el uso de tokens se perdía; ahora confirma también en los errores.
+
+**Límites.** No hay equivalencia en USD. El tope diario cuenta en días UTC, igual que los demás contadores locales; no es el saldo del proveedor.
+
 ---
 
 ## M4 — motor analítico avanzado (detrás de la compuerta)

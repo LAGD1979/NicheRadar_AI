@@ -26,7 +26,7 @@ from app.domain import spanish_market
 from app.domain.search_plan import SpanishSearchPlan, query_texts
 from app.prompts import spanish_plan_v1 as prompt_v1
 from app.providers.ai import AIClient
-from app.services import demand_state, evaluation_service
+from app.services import ai_budget_service, demand_state, evaluation_service
 from app.services.compliance_service import decide
 
 MATCH_QUALITIES = ("UNREVIEWED", "EXACT", "ADJACENT", "GENERIC", "FALSE_POSITIVE")
@@ -241,7 +241,7 @@ def create_manual_plan(
 
 
 def generate_plan_with_ai(
-    session: Session, client: AIClient, opportunity_id: str
+    session: Session, client: AIClient, opportunity_id: str, run_id: str | None = None
 ) -> m.SpanishSearchPlan:
     """Pide el plan a la IA. Si no pasa la validación, queda NEEDS_REVIEW sin hechos."""
     opp = session.get(m.Opportunity, opportunity_id)
@@ -270,7 +270,15 @@ def generate_plan_with_ai(
             for e in evidence
         ],
     )
-    raw = client.complete(prompt_v1.SYSTEM, user)
+    raw = ai_budget_service.call(
+        session,
+        client,
+        function="plan",
+        system=prompt_v1.SYSTEM,
+        user=user,
+        run_id=run_id,
+        now=datetime.now(UTC),
+    )
     plan = m.SpanishSearchPlan(
         id=str(uuid4()),
         opportunity_id=opportunity_id,

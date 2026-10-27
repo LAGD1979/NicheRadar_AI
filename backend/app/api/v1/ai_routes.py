@@ -1,5 +1,6 @@
 """Elección de IA y modelo por función (D-68). No expone claves."""
 
+from datetime import UTC, datetime
 from typing import Annotated, Any, Literal
 
 from fastapi import APIRouter, Depends
@@ -8,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.db.session import get_session
-from app.services import ai_selection_service
+from app.services import ai_budget_service, ai_selection_service
 
 router = APIRouter()
 
@@ -19,6 +20,12 @@ SettingsDep = Annotated[Settings, Depends(get_settings)]
 class SelectionBody(BaseModel):
     provider: Literal["anthropic", "openai"]
     model: str = Field(min_length=1, max_length=80)
+
+
+@router.get("/usage/ai")
+def usage_ai(session: SessionDep, settings: SettingsDep) -> dict[str, Any]:
+    """Tokens de IA gastados hoy (reales, informados por el proveedor) frente a los topes."""
+    return ai_budget_service.snapshot(session, settings, datetime.now(UTC))
 
 
 @router.get("/ai/settings")

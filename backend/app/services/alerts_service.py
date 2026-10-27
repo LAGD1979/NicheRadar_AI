@@ -20,7 +20,7 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings
 from app.core.errors import ProblemError
 from app.db import models as m
-from app.services import demand_service, quota_service, vidiq_service
+from app.services import ai_budget_service, demand_service, quota_service, vidiq_service
 
 QUOTA_WARN_SHARE = 0.8
 STALE_WINDOW_DAYS = 3
@@ -68,7 +68,16 @@ def _quota_alerts(session: Session, settings: Settings, now: datetime) -> int:
     youtube = quota_service.snapshot(session, settings, now)
     vidiq = vidiq_service.snapshot(session, settings, now)
     hasdata = demand_service.hasdata_snapshot(session, settings, now)
+    ai = ai_budget_service.snapshot(session, settings, now)
     checks = (
+        (
+            "IA",
+            f"ai:{day}",
+            ai["tokens_used"],
+            ai["tokens_daily_limit"],
+            "tokens",
+            "hoy",
+        ),
         (
             "YouTube",
             f"youtube:{day}",
