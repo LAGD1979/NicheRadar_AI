@@ -397,6 +397,22 @@ export interface SchedulerJob {
   last_status: string | null;
 }
 
+export interface BackupItem {
+  file: string;
+  created_at: string;
+  expires_at: string;
+  size_bytes: number;
+  rows: number;
+  verified: boolean;
+  present: boolean;
+}
+
+export interface BackupList {
+  directory: string;
+  retention_days: number;
+  items: BackupItem[];
+}
+
 export interface AlertItem {
   id: string;
   alert_type: string;

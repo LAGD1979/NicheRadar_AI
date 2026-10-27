@@ -91,6 +91,18 @@ export function label(code: string | null | undefined): string {
   return LABELS[code] ?? code;
 }
 
+export function formatBytes(bytes: number): string {
+  if (bytes < 1024) return `${String(bytes)} B`;
+  const units = ["KB", "MB", "GB"];
+  let value = bytes / 1024;
+  let unit = 0;
+  while (value >= 1024 && unit < units.length - 1) {
+    value /= 1024;
+    unit += 1;
+  }
+  return `${value.toLocaleString("es-CL", { maximumFractionDigits: 1 })} ${units[unit] ?? "GB"}`;
+}
+
 export function formatNumber(value: number): string {
   return value.toLocaleString("es-CL", { maximumFractionDigits: 2 });
 }

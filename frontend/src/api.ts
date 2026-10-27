@@ -4,6 +4,7 @@ import type {
   AlertItem,
   AlertsOut,
   PilotPlan,
+  BackupList,
   SchedulerJob,
   WatchEntry,
   AiSettings,
@@ -169,6 +170,7 @@ export const api = {
       { method: "POST", body: JSON.stringify({ max_calls: maxCalls }) },
     ),
   schedulerJobs: () => request<SchedulerJob[]>("/scheduler/jobs"),
+  backups: () => request<BackupList>("/backups"),
   updateJob: (jobType: string, body: { enabled?: boolean; interval_hours?: number }) =>
     request<SchedulerJob>(`/scheduler/jobs/${jobType}`, { method: "PATCH", body: JSON.stringify(body) }),
   runJob: (jobType: string) =>

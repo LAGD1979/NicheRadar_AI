@@ -18,6 +18,7 @@ TASK_TYPES = {
     "purge": "retention_purge",
     "alerts": "alerts_check",
     "watchlist": "watchlist_recheck",
+    "backup": "db_backup",
     "spanish_plan": "spanish_plan",
     "spanish_validation": "spanish_validation",
 }

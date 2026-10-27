@@ -39,6 +39,10 @@ class Settings(BaseSettings):
     ai_daily_token_limit: int = 1_000_000
     ai_run_token_limit: int = 300_000
     assistant_max_output_tokens: int = 4000
+    # Backups locales de la base (M5, D-71): carpeta y días que se conservan. Un backup caduca
+    # antes si contiene datos de terceros que vencen (29 días).
+    backup_dir: str = "/backups"
+    backup_retention_days: int = 14
     demo_mode: bool = True
 
     # Cuota de YouTube Data API: pool diario compartido en unidades (search.list = 100 u.).

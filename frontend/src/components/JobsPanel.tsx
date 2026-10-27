@@ -1,7 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { api, ApiError } from "../api";
-import { formatDateTime, label } from "../format";
+import { formatBytes, formatDateTime, label } from "../format";
 import type { SchedulerJob } from "../types";
 
 const INTERVALS: Array<[number, string]> = [
@@ -35,7 +35,14 @@ export function JobsPanel() {
       api.updateJob(job, body),
     onSuccess: refresh,
   });
-  const run = useMutation({ mutationFn: api.runJob, onSuccess: refresh });
+  const run = useMutation({
+    mutationFn: api.runJob,
+    onSuccess: () => {
+      refresh();
+      void queryClient.invalidateQueries({ queryKey: ["backups"] });
+    },
+  });
+  const backups = useQuery({ queryKey: ["backups"], queryFn: api.backups });
 
   if (jobs.isPending) return <p>Cargando trabajos…</p>;
   if (jobs.isError) return <p role="alert">No se pudieron cargar los trabajos programados.</p>;
@@ -82,6 +89,49 @@ export function JobsPanel() {
         </p>
       )}
       {run.isSuccess && <p role="status">Ejecución encolada: la verá en Corridas.</p>}
+
+      <h3>Backups de la base</h3>
+      <p className="hint">
+        Cada backup se guarda en la carpeta local <code>backups/</code> de este equipo (fuera de Git) y solo cuenta si
+        se restauró de prueba y las filas coinciden. Se borran a los {backups.data?.retention_days ?? 14} días o antes,
+        si contienen datos de terceros que vencen (29 días). No incluyen sus claves de API.
+      </p>
+      {backups.isError && <p role="alert">No se pudo leer la lista de backups.</p>}
+      {backups.data && backups.data.items.length === 0 && <p className="muted">Todavía no hay backups.</p>}
+      {backups.data && backups.data.items.length > 0 && (
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th scope="col">Archivo</th>
+                <th scope="col">Creado</th>
+                <th scope="col">Tamaño</th>
+                <th scope="col">Restauración</th>
+                <th scope="col">Se borra</th>
+              </tr>
+            </thead>
+            <tbody>
+              {backups.data.items.map((item) => (
+                <tr key={item.file}>
+                  <th scope="row">{item.file}</th>
+                  <td>{formatDateTime(item.created_at)}</td>
+                  <td>{formatBytes(item.size_bytes)}</td>
+                  <td>
+                    {!item.present ? (
+                      <span className="pill warn">Archivo ausente</span>
+                    ) : item.verified ? (
+                      <span className="pill ok">Probada</span>
+                    ) : (
+                      <span className="pill warn">No verificada</span>
+                    )}
+                  </td>
+                  <td>{formatDateTime(item.expires_at)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

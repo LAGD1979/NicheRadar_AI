@@ -20,6 +20,7 @@ x-backend: &backend
     PYTHONUTF8: "1"
   volumes:
     - ./config:/config:ro
+    - ./backups:/backups
   depends_on:
     db:
       condition: service_healthy

@@ -34,18 +34,23 @@ def _alerts(session: Session) -> list[m.Alert]:
 # --- trabajos programados ---------------------------------------------------------------------
 
 
-def test_defaults_create_the_three_jobs_enabled_and_due(seeded_db: Session) -> None:
+def test_defaults_create_the_four_jobs_enabled_and_due(seeded_db: Session) -> None:
     scheduler_service.ensure_defaults(seeded_db, NOW)
     jobs = {j.job_type: j for j in seeded_db.scalars(select(m.ScheduledJob))}
-    assert set(jobs) == {"retention_purge", "alerts_check", "watchlist_recheck"}
+    assert set(jobs) == {"retention_purge", "alerts_check", "watchlist_recheck", "db_backup"}
     assert all(j.enabled and j.next_run_at <= NOW for j in jobs.values())
     scheduler_service.ensure_defaults(seeded_db, NOW)  # idempotente
-    assert _count(seeded_db, m.ScheduledJob) == 3
+    assert _count(seeded_db, m.ScheduledJob) == 4
 
 
 def test_tick_enqueues_due_jobs_as_runs_and_reschedules_them(seeded_db: Session) -> None:
     enqueued = scheduler_service.tick(seeded_db, get_settings(), NOW)
-    assert sorted(enqueued) == ["alerts_check", "retention_purge", "watchlist_recheck"]
+    assert sorted(enqueued) == [
+        "alerts_check",
+        "db_backup",
+        "retention_purge",
+        "watchlist_recheck",
+    ]
     kinds = {r.kind for r in seeded_db.scalars(select(m.ResearchRun)) if r.status == "QUEUED"}
     assert {"purge", "alerts", "watchlist"} <= kinds
     purge = seeded_db.get(m.ScheduledJob, "retention_purge")
@@ -72,7 +77,7 @@ def test_after_downtime_a_job_runs_once_not_once_per_missed_interval(seeded_db: 
     long_ago = NOW - timedelta(days=10)
     for job in seeded_db.scalars(select(m.ScheduledJob)):
         job.next_run_at = long_ago
-    assert len(scheduler_service.tick(seeded_db, get_settings(), NOW)) == 3
+    assert len(scheduler_service.tick(seeded_db, get_settings(), NOW)) == 4
     assert _count(seeded_db, m.ResearchRun, m.ResearchRun.kind == "purge") == 1
 
 
@@ -111,15 +116,17 @@ def test_the_worker_tick_runs_the_jobs_end_to_end(seeded_db: Session) -> None:
     seeded_db.commit()
     factory = get_session_factory()
     enqueued = worker.run_scheduler_tick(factory, get_settings(), NOW)
-    assert len(enqueued) == 3
+    assert len(enqueued) == 4
     ctx = HandlerContext(settings=get_settings(), make_source=lambda: None)  # type: ignore[arg-type,return-value]
     while worker.process_once(factory, ctx):
         pass
     seeded_db.expire_all()
     runs = seeded_db.scalars(
-        select(m.ResearchRun).where(m.ResearchRun.kind.in_(("purge", "alerts", "watchlist")))
+        select(m.ResearchRun).where(
+            m.ResearchRun.kind.in_(("purge", "alerts", "watchlist", "backup"))
+        )
     ).all()
-    assert len(runs) == 3 and {r.status for r in runs} == {"COMPLETED"}
+    assert len(runs) == 4 and {r.status for r in runs} == {"COMPLETED"}
     assert _count(seeded_db, m.AuditEvent, m.AuditEvent.event_type == "RETENTION_PURGE") == 1
 
 
@@ -135,7 +142,12 @@ def test_a_failing_tick_never_stops_the_worker(
 
 def test_jobs_api_lists_updates_and_runs_now(client: TestClient) -> None:
     jobs = client.get("/api/v1/scheduler/jobs").json()
-    assert [j["job_type"] for j in jobs] == ["retention_purge", "alerts_check", "watchlist_recheck"]
+    assert [j["job_type"] for j in jobs] == [
+        "retention_purge",
+        "alerts_check",
+        "watchlist_recheck",
+        "db_backup",
+    ]
     patched = client.patch(
         "/api/v1/scheduler/jobs/alerts_check", json={"enabled": False, "interval_hours": 3}
     ).json()
@@ -160,7 +172,7 @@ def test_jobs_api_lists_updates_and_runs_now(client: TestClient) -> None:
 
 def test_nothing_to_report_means_no_alerts(seeded_db: Session) -> None:
     counts = alerts_service.check_system(seeded_db, get_settings(), NOW)
-    assert counts == {"quota": 0, "stale": 0, "policy": 0, "source": 0}
+    assert counts == {"quota": 0, "stale": 0, "policy": 0, "source": 0, "backup": 0}
     assert _alerts(seeded_db) == []
 
 

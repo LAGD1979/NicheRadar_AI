@@ -278,7 +278,8 @@ def test_the_plan_function_respects_the_budget(seeded_db: Session, limits: Any) 
     from app.services import spanish_service
 
     limits(daily=1)
-    _call(seeded_db, UsageAI(usage=TokenUsage(5, 5)))  # agota el tope
+    # La función del plan usa la hora real, así que el gasto que agota el tope también.
+    _call(seeded_db, UsageAI(usage=TokenUsage(5, 5)), now=datetime.now(UTC))
     ai = UsageAI()
     with pytest.raises(BudgetExhausted):
         spanish_service.generate_plan_with_ai(seeded_db, ai, OPP, run_id="run-plan")

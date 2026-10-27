@@ -9,7 +9,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings, get_settings
 from app.db.session import get_session
-from app.services import alerts_service, scheduler_service, watchlist_service
+from app.services import alerts_service, backup_service, scheduler_service, watchlist_service
 
 router = APIRouter()
 
@@ -52,6 +52,19 @@ def scheduler_job_run(job_type: str, session: SessionDep, settings: SettingsDep)
     run = scheduler_service.run_now(session, settings, job_type, by=ACTOR, now=datetime.now(UTC))
     session.commit()
     return {"id": run.id, "kind": run.kind, "status": run.status}
+
+
+# --- backups ----------------------------------------------------------------------------------
+
+
+@router.get("/backups")
+def backups(settings: SettingsDep) -> dict[str, Any]:
+    """Backups de la carpeta local. Solo lee los manifiestos; no toca la base."""
+    return {
+        "directory": settings.backup_dir,
+        "retention_days": settings.backup_retention_days,
+        "items": backup_service.list_backups(settings),
+    }
 
 
 # --- alertas ----------------------------------------------------------------------------------

@@ -21,6 +21,7 @@ from app.providers.vidiq_mcp import OutlierParams
 from app.services import (
     ai_selection_service,
     alerts_service,
+    backup_service,
     competitor_ai_service,
     compliance_service,
     demand_service,
@@ -357,6 +358,34 @@ def run_alerts_check(session: Session, task: m.RunTask, ctx: HandlerContext) -> 
     return "COMPLETED"
 
 
+def run_db_backup(session: Session, task: m.RunTask, ctx: HandlerContext) -> str:
+    """Copia la base a la carpeta local, prueba la restauración y borra los backups caducados."""
+    run = session.get(m.ResearchRun, task.run_id)
+    if run is None:
+        raise LookupError(f"Corrida inexistente: {task.run_id}")
+    now = datetime.now(UTC)
+    try:
+        manifest = backup_service.create_backup(session, ctx.settings, now)
+    except backup_service.BackupError as exc:
+        run.errors_json = [*run.errors_json, {"code": exc.code, "detail": str(exc)}]
+        return "FAILED"
+    removed = backup_service.prune(ctx.settings, now)
+    check = manifest["restore_check"]
+    run.coverage_json = {
+        "file": manifest["file"],
+        "size_bytes": manifest["size_bytes"],
+        "rows": manifest["rows"],
+        "expires_at": manifest["expires_at"],
+        "restore_ok": manifest["verified"],
+        "removed": len(removed),
+    }
+    if not manifest["verified"]:
+        detail = check.get("error") or f"filas distintas en {sorted(check.get('mismatched', {}))}"
+        run.errors_json = [*run.errors_json, {"code": "BACKUP_RESTORE_FAILED", "detail": detail}]
+        return "FAILED"
+    return "COMPLETED"
+
+
 def run_watchlist_recheck(session: Session, task: m.RunTask, ctx: HandlerContext) -> str:
     """Recalcula las oportunidades en seguimiento con datos guardados y avisa de cambios."""
     run = session.get(m.ResearchRun, task.run_id)
@@ -463,6 +492,7 @@ HANDLERS: dict[str, Callable[[Session, m.RunTask, HandlerContext], str]] = {
     "retention_purge": run_retention_purge,
     "alerts_check": run_alerts_check,
     "watchlist_recheck": run_watchlist_recheck,
+    "db_backup": run_db_backup,
     "spanish_plan": run_spanish_plan,
     "spanish_validation": run_spanish_validation,
 }

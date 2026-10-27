@@ -55,6 +55,15 @@ JOBS: dict[str, dict[str, Any]] = {
         "interval_hours": 168,
         "algorithm_version": "m5-watchlist-1",
     },
+    "db_backup": {
+        "label": "Backup de la base",
+        "description": (
+            "Guarda una copia de la base en la carpeta local de backups y comprueba que restaura."
+        ),
+        "kind": "backup",
+        "interval_hours": 24,
+        "algorithm_version": "m5-backup-1",
+    },
 }
 
 

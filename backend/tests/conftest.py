@@ -5,6 +5,7 @@ aparte `nicheradar_test`. Ningún test llama a red ni a APIs externas.
 """
 
 import os
+import tempfile
 from collections.abc import Callable, Iterator
 from datetime import UTC, datetime, timedelta
 
@@ -54,6 +55,8 @@ def test_database_url() -> Iterator[str]:
     # Las pruebas fijan el modo de cumplimiento: no heredan la configuración local (.env).
     os.environ["COMPLIANCE_MODE"] = "restricted"
     os.environ["ADVANCED_ANALYTICS_ENABLED"] = "false"
+    # Los backups de las pruebas van a una carpeta temporal, nunca a la carpeta real del equipo.
+    os.environ["BACKUP_DIR"] = tempfile.mkdtemp(prefix="nicheradar_test_backups_")
     _reset_settings()
     command.upgrade(Config("alembic.ini"), "head")
     yield url

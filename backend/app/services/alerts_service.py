@@ -221,6 +221,47 @@ def _source_alerts(session: Session, now: datetime) -> int:
     return created
 
 
+def _backup_alerts(session: Session, now: datetime) -> int:
+    """Avisa si el último backup falló o si el trabajo lleva el doble de su intervalo sin uno."""
+    job = session.get(m.ScheduledJob, "db_backup")
+    if job is None or not job.enabled:
+        return 0
+    runs = session.scalars(
+        select(m.ResearchRun)
+        .where(m.ResearchRun.kind == "backup")
+        .order_by(m.ResearchRun.created_at.desc())
+        .limit(1)
+    ).all()
+    last = runs[0] if runs else None
+    if last is not None and last.status == "FAILED":
+        detail = str(last.errors_json[0].get("detail", "")) if last.errors_json else ""
+        return raise_alert(
+            session,
+            alert_type="BACKUP_FAILED",
+            severity="CRITICAL",
+            message=f"El último backup de la base falló: {detail[:200]}",
+            dedupe_key=f"backup-failed:{last.id}",
+            now=now,
+            details={"run_id": last.id},
+        )
+    done = session.scalar(
+        select(func.max(m.ResearchRun.finished_at)).where(
+            m.ResearchRun.kind == "backup", m.ResearchRun.status == "COMPLETED"
+        )
+    )
+    if done is None or now - done <= timedelta(hours=2 * job.interval_hours):
+        return 0
+    return raise_alert(
+        session,
+        alert_type="BACKUP_STALE",
+        severity="WARNING",
+        message=f"Hace más de {2 * job.interval_hours} horas que no hay un backup correcto.",
+        dedupe_key=f"backup-stale:{done.date().isoformat()}",
+        now=now,
+        details={"last_ok_at": done.isoformat()},
+    )
+
+
 def check_system(session: Session, settings: Settings, now: datetime) -> dict[str, int]:
     """Alertas que no dependen de una oportunidad. Solo lee datos guardados."""
     return {
@@ -228,6 +269,7 @@ def check_system(session: Session, settings: Settings, now: datetime) -> dict[st
         "stale": _stale_alert(session, now),
         "policy": _policy_alerts(session, now),
         "source": _source_alerts(session, now),
+        "backup": _backup_alerts(session, now),
     }
 
 

@@ -406,6 +406,21 @@ La especificación (§9.2) pide parar el gasto de IA al llegar a un presupuesto 
 
 **Límites.** No hay equivalencia en USD. El tope diario cuenta en días UTC, igual que los demás contadores locales; no es el saldo del proveedor.
 
+### D-71 · Backup local con restauración probada (M5) (2026-10-27)
+La base se copia a una **carpeta local** del equipo (`./backups`, montada en `/backups` de la API y el worker; fuera de Git). Es una decisión del responsable: no hay copia en la nube ni en Dropbox, para no sacar datos de terceros del equipo.
+
+**Qué se guarda.** `pg_dump` en formato personalizado (`nicheradar_AAAAMMDDTHHMMSSZ.dump`) y un manifiesto `.json` al lado con fecha, tamaño, huella sha256, versión de migración, filas por tabla y resultado de la prueba de restauración. No contiene claves de API (no están en la base). El trabajo programado `db_backup` corre cada 24 horas y se puede lanzar a mano desde Configuración; la API lista los backups en `GET /backups`.
+
+**Restauración probada.** Un backup solo cuenta como bueno si, tras el volcado, se restaura en una base temporal (`nicheradar_restore_check_*`, que se borra siempre) y coinciden las filas de cada tabla y la versión de migración. El volcado es una foto consistente y la base viva puede cambiar un instante antes o después, así que se admite cualquier valor entre las cuentas de antes y de después. Si no coincide, la corrida queda `FAILED` (`BACKUP_RESTORE_FAILED`), el archivo se conserva marcado «No verificada» y salta una alerta crítica `BACKUP_FAILED`. Una alerta `BACKUP_STALE` avisa si pasan más de dos intervalos sin un backup correcto.
+
+**Datos de terceros (D-63).** Un volcado copia datos de YouTube que no pueden conservarse más de 29 días. Cada backup caduca en `BACKUP_RETENTION_DAYS` (14) o, si antes, cuando vence el primer dato de terceros que contiene; el mismo trabajo borra los caducados. Es más estricto que un plazo fijo: con datos reales de hoy el primer backup caduca el 9-nov.
+
+**Cliente de PostgreSQL.** La imagen instala `postgresql-client-16` desde el repositorio oficial PGDG, igual que el servidor: con el cliente 17 de Debian el volcado incluía `SET transaction_timeout` y el servidor 16 no lo restauraba (lo detectó la prueba).
+
+**Restaurar de verdad** (no automatizado a propósito, porque sobrescribe la base viva): detener `api` y `worker`, recrear la base y ejecutar `pg_restore --clean --if-exists --no-owner -h db -U nicheradar -d nicheradar /backups/<archivo>.dump`. Va en el checklist de operación.
+
+**Límites.** Es una copia en el mismo equipo: protege de errores y de actualizaciones fallidas, no de perder el disco. Copiar la carpeta fuera del equipo es decisión del responsable y debe respetar los 29 días.
+
 ---
 
 ## M4 — motor analítico avanzado (detrás de la compuerta)
