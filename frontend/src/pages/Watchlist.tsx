@@ -23,6 +23,8 @@ const ALERT_TYPES: Record<string, string> = {
   DATA_STALE: "Datos por caducar",
   POLICY_REVIEW_REQUIRED: "Autorización",
   SOURCE_UNAVAILABLE: "Fuente no disponible",
+  BACKUP_FAILED: "Backup fallido",
+  BACKUP_STALE: "Backup atrasado",
   NEW_INTERNATIONAL_PATTERN: "Patrón internacional",
   SPANISH_DEMAND_SIGNAL: "Demanda en español",
   OPPORTUNITY_CONFIDENCE_UPGRADE: "Confianza",

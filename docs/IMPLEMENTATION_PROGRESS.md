@@ -112,7 +112,7 @@ Configuración permite elegir proveedor y modelo para el asistente, la clasifica
 
 ## M5, primer tramo: programación, seguimiento y alertas (D-69)
 
-Rama `m5-programacion-y-seguimiento` (desde el tag `m4-listo-para-probar`). Trabajos programados en el worker (purga diaria, alertas, revisión semanal del seguimiento), alertas dentro de la aplicación, pantalla Seguimiento con plan de piloto y registro de decisiones. Topes de tokens de IA con uso real del proveedor (D-70). Backup diario a carpeta local con restauración probada y procedimiento de restauración `scripts/restore.ps1` (D-71). Pendiente de M5: export licenciado, permisos y despliegue local seguro, y checklist de operación. La prueba de carga pequeña se descartó por decisión del responsable (uso local de una sola persona).
+Rama `m5-programacion-y-seguimiento` (desde el tag `m4-listo-para-probar`). Trabajos programados en el worker (purga diaria, alertas, revisión semanal del seguimiento), alertas dentro de la aplicación, pantalla Seguimiento con plan de piloto y registro de decisiones. Topes de tokens de IA con uso real del proveedor (D-70). Backup diario a carpeta local con restauración probada y procedimiento de restauración `scripts/restore.ps1` (D-71). Checklist de operación como cuarto manual (`/manual/operacion.html`). Pendiente de M5 (opcional según el uso): export licenciado y permisos con despliegue local seguro. La prueba de carga pequeña se descartó por decisión del responsable (uso local de una sola persona).
 
 ## Estado de verificación actual
 

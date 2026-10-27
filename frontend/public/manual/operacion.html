@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Checklist de operación · NicheRadar AI</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="hero">
+    <div class="hero-inner">
+      <span class="kicker">Checklist de operación</span>
+      <h1>Mantener NicheRadar AI sano, semana a semana</h1>
+      <p>Qué mirar cada día, cada semana y antes de actualizar; qué significa cada aviso y qué hacer si algo falla. Para quien usa la herramienta de forma continua.</p>
+      <a class="back" href="index.html">← Volver a los manuales</a>
+    </div>
+  </header>
+
+  <div class="layout">
+    <nav class="toc" aria-label="Índice">
+      <h2>Contenido</h2>
+      <ol>
+        <li><a href="#diario">Cada vez que la abre</a></li>
+        <li><a href="#semanal">Cada semana</a></li>
+        <li><a href="#avisos">Qué significa cada aviso</a></li>
+        <li><a href="#actualizar">Antes de actualizar</a></li>
+        <li><a href="#restaurar">Si hay que volver atrás</a></li>
+        <li><a href="#claves">Claves de acceso</a></li>
+        <li><a href="#limites">Lo que no hace por usted</a></li>
+      </ol>
+    </nav>
+
+    <main>
+      <section id="diario">
+        <h2>Cada vez que la abre (1 minuto)</h2>
+        <ul>
+          <li><strong>Etiqueta de datos</strong> en la barra superior: debe decir «reales» (o «mixtos» si aún queda demo). Si dice «demostración», lo que ve es inventado.</li>
+          <li><strong>Indicadores de saldo</strong> (YouTube, vidIQ, IA y HasData): ninguno en rojo antes de lanzar una búsqueda o una medición. Si hay dudas, pulse <em>Refrescar saldos</em>; los saldos no se actualizan solos.</li>
+          <li><strong>Campana de avisos:</strong> sin avisos abiertos, o con los abiertos leídos y atendidos (siguiente sección). Un aviso atendido se marca como leído.</li>
+        </ul>
+      </section>
+
+      <section id="semanal">
+        <h2>Cada semana (10 minutos)</h2>
+        <ul>
+          <li><strong>Backups:</strong> en <em>Configuración → Trabajos programados</em>, el último backup debe estar «Probada» y ser de las últimas 24 horas. Si el trabajo «Backup de la base» está desactivado o no corrió, ejecútelo con <em>Ejecutar ahora</em>.</li>
+          <li><strong>Datos por caducar:</strong> los datos de terceros (YouTube, vidIQ, HasData) no pueden guardarse más de 29 días. Lo que no refresque se vacía solo y queda como «Caducada»; el aviso «datos por caducar» le da 3 días de margen. Refresque lo que le importe antes.</li>
+          <li><strong>Seguimiento:</strong> abra <em>Seguimiento</em> y lea los cambios que detectó la revisión semanal (más canales independientes, señal de demanda en español, mayor competencia exacta). Anote su decisión.</li>
+          <li><strong>Saldos del mes:</strong> HasData tiene un tope mensual propio; vidIQ, un saldo de créditos. Planee las mediciones para que no se agoten a mitad de mes.</li>
+          <li><strong>Autorizaciones:</strong> si algún proveedor avanzado tiene una autorización por vencer, el sistema avisa 30 días antes. Renuévela o acepte que ese módulo quede restringido.</li>
+        </ul>
+      </section>
+
+      <section id="avisos">
+        <h2>Qué significa cada aviso</h2>
+        <table class="table">
+            <thead>
+              <tr><th scope="col">Aviso</th><th scope="col">Qué ocurrió</th><th scope="col">Qué hacer</th></tr>
+            </thead>
+            <tbody>
+              <tr>
+                <th scope="row">Cuota</th>
+                <td>Un saldo (YouTube, vidIQ, HasData o tokens de IA) llegó al 80 % o se agotó.</td>
+                <td>Pause lo que gasta de esa herramienta. La cuota de YouTube y los topes diarios se renuevan al día siguiente (UTC); HasData, al mes. Los tokens de IA se pueden subir con <code>AI_DAILY_TOKEN_LIMIT</code>.</td>
+              </tr>
+              <tr>
+                <th scope="row">Datos por caducar</th>
+                <td>En 3 días vencen datos de terceros.</td>
+                <td>Refresque lo que le importe (una corrida de demanda o de descubrimiento sobre esa oportunidad). Si no lo hace, se vacían: no se convierten en cero, quedan «Caducada».</td>
+              </tr>
+              <tr>
+                <th scope="row">Autorización</th>
+                <td>Una autorización de proveedor está por vencer o ya está bloqueada.</td>
+                <td>Renueve el registro de autorización (línea de comandos, con quien instaló el sistema). Mientras tanto la capacidad queda restringida.</td>
+              </tr>
+              <tr>
+                <th scope="row">Fuente no disponible</th>
+                <td>Una corrida fue rechazada por una credencial.</td>
+                <td>Revise la clave de esa herramienta (ver «Claves de acceso») y reinicie la aplicación.</td>
+              </tr>
+              <tr>
+                <th scope="row">Backup fallido</th>
+                <td>El último backup falló o no se pudo restaurar de prueba (en Corridas aparece como «Backup de la base»). <strong>Es crítico:</strong> no hay copia confiable.</td>
+                <td>Abra <em>Corridas</em>, lea el error de la corrida «Backup de la base», corrija la causa (espacio en disco, Docker detenido) y pulse <em>Ejecutar ahora</em>. No actualice la aplicación hasta tener un backup «Probada».</td>
+              </tr>
+              <tr>
+                <th scope="row">Backup atrasado</th>
+                <td>Hace más del doble de la frecuencia sin un backup correcto (por defecto, 48 horas).</td>
+                <td>Compruebe que la aplicación estuvo encendida; el trabajo corre solo mientras está en marcha. Ejecute el backup a mano.</td>
+              </tr>
+              <tr>
+                <th scope="row">Patrón internacional, Demanda en español, Confianza, Competencia en español</th>
+                <td>Nuevo patrón internacional, señal de demanda en español, subida de confianza o aumento de competencia exacta.</td>
+                <td>Son avisos del seguimiento: informativos, salvo «Competencia en español», que es una advertencia. Abra la oportunidad, revise la evidencia y decida; el sistema no decide por usted.</td>
+              </tr>
+            </tbody>
+          </table>
+      </section>
+
+      <section id="actualizar">
+        <h2>Antes de actualizar la aplicación</h2>
+        <ol class="steps">
+          <li><strong>Backup nuevo:</strong> ejecute <em>Backup de la base → Ejecutar ahora</em> y espere a que aparezca «Probada».</li>
+          <li><strong>Nada en marcha:</strong> en <em>Corridas</em> no debe haber corridas en cola ni ejecutándose.</li>
+          <li><strong>Actualice:</strong> descargue la versión nueva y ejecute <code>docker compose up -d --build</code> desde la carpeta del proyecto. Las migraciones se aplican solas al arrancar.</li>
+          <li><strong>Compruebe:</strong> la aplicación abre, la etiqueta de datos es la misma y sus oportunidades siguen ahí.</li>
+          <li><strong>Si algo salió mal:</strong> vuelva al backup del paso 1 (siguiente sección).</li>
+        </ol>
+        <div class="note">
+          <strong>Importante</strong>
+          Un backup hecho con una versión <em>más nueva</em> no se puede restaurar en una más vieja: el sistema lo rechaza. Por eso conviene hacer el backup antes de actualizar, no después.
+        </div>
+      </section>
+
+      <section id="restaurar">
+        <h2>Si hay que volver atrás</h2>
+        <ol class="steps">
+          <li>Abra PowerShell en la carpeta del proyecto y ejecute <code>powershell -File scripts\restore.ps1</code>. Lista los backups con su fecha y si están «probada».</li>
+          <li>Elija uno y haga un <strong>simulacro</strong>: <code>powershell -File scripts\restore.ps1 -Backup NOMBRE.dump</code>. Comprueba que restaura y no cambia nada.</li>
+          <li>Restaure: <code>powershell -File scripts\restore.ps1 -Backup NOMBRE.dump -Apply</code>. Pide escribir <code>RESTAURAR</code>. Detiene la aplicación, guarda una copia de seguridad de lo actual, restaura y vuelve a arrancar.</li>
+          <li>Compruebe que la aplicación abre y que sus oportunidades están.</li>
+        </ol>
+        <div class="warn">
+          <strong>Se pierde lo escrito después del backup elegido</strong>
+          Notas, costos o decisiones posteriores no estarán. Si se equivocó, la copia de seguridad de lo anterior queda en la misma lista de backups y se puede restaurar igual.
+        </div>
+      </section>
+
+      <section id="claves">
+        <h2>Claves de acceso</h2>
+        <ul>
+          <li><strong>Dónde están:</strong> como variables de entorno de su usuario de Windows. Nunca dentro del proyecto, de un backup ni de un registro. La base de datos tampoco las guarda.</li>
+          <li><strong>Para cambiar una:</strong> cambie la variable de entorno y reinicie con <code>docker compose up -d</code> desde una consola nueva, para que lea el valor actual.</li>
+          <li><strong>Si sospecha que una clave se filtró:</strong> revóquela en el sitio del proveedor y cree otra. No basta con cambiarla en su equipo.</li>
+          <li><strong>La aplicación solo escucha en su equipo</strong> y no tiene usuario ni contraseña. No abra sus puertos a la red sin antes añadir control de acceso.</li>
+        </ul>
+      </section>
+
+      <section id="limites">
+        <h2>Lo que no hace por usted</h2>
+        <ul>
+          <li><strong>Los backups están en el mismo equipo.</strong> Protegen de errores y de actualizaciones fallidas, no de perder el disco. Si los copia fuera, hágalo con cuidado: llevan datos de terceros que no pueden conservarse más de 29 días.</li>
+          <li><strong>Lo que gasta saldo no es automático:</strong> las búsquedas, mediciones de demanda y consultas a la IA solo se ejecutan cuando usted las pide. El trabajo programado se limita a purga, avisos, revisión del seguimiento y backup.</li>
+          <li><strong>Con el equipo apagado nada corre.</strong> Al volver a encender, los trabajos vencidos se ejecutan una vez, no una por cada día perdido.</li>
+        </ul>
+      </section>
+    </main>
+  </div>
+
+  <footer class="footer">NicheRadar AI · Checklist de operación</footer>
+</body>
+</html>

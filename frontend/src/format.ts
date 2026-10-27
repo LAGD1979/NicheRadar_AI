@@ -62,6 +62,7 @@ const LABELS: Record<string, string> = {
   youtube_official: "YouTube oficial",
   demo: "Corrida DEMO",
   purge: "Purga de caducados",
+  backup: "Backup de la base",
   OK: "Correcta",
   ERROR: "Con error",
   QUEUED: "En cola",
