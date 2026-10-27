@@ -11,6 +11,8 @@ $root = Split-Path -Parent $PSScriptRoot
 $project = 'nicheradar_e2e'
 
 $env:DEMO_MODE = 'true'
+# Los backups del entorno de pruebas no deben mezclarse con los reales de ./backups.
+$env:BACKUPS_DIR = Join-Path ([IO.Path]::GetTempPath()) 'nicheradar_e2e_backups'
 $env:DB_HOST_PORT = '15433'
 $env:API_HOST_PORT = '8001'
 $env:FRONTEND_HOST_PORT = '5174'

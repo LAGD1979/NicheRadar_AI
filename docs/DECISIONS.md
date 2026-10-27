@@ -417,7 +417,9 @@ La base se copia a una **carpeta local** del equipo (`./backups`, montada en `/b
 
 **Cliente de PostgreSQL.** La imagen instala `postgresql-client-16` desde el repositorio oficial PGDG, igual que el servidor: con el cliente 17 de Debian el volcado incluía `SET transaction_timeout` y el servidor 16 no lo restauraba (lo detectó la prueba).
 
-**Restaurar de verdad** (no automatizado a propósito, porque sobrescribe la base viva): detener `api` y `worker`, recrear la base y ejecutar `pg_restore --clean --if-exists --no-owner -h db -U nicheradar -d nicheradar /backups/<archivo>.dump`. Va en el checklist de operación.
+**Restaurar** con `scripts/restore.ps1` (módulo `app.ops.backups`). Sin parámetros lista los backups; con `-Backup NOMBRE.dump` hace un **simulacro** que solo comprueba que restaura; con `-Apply` reemplaza la base y pide escribir `RESTAURAR` (o `-Confirmar RESTAURAR`). Orden de seguridad: (1) huella sha256, (2) la migración del backup debe ser conocida por este código (uno de una versión más nueva se rechaza), (3) restauración de prueba en base temporal, (4) recién entonces se detienen `api` y `worker`, (5) backup de seguridad verificado de la base actual (si falla, no se toca nada), (6) se recrea la base y se restaura, (7) se purgan los datos de terceros vencidos (y queda auditoría), (8) `docker compose up -d` aplica migraciones pendientes y arranca todo. Si falla después de recrear la base, la aplicación queda detenida y la base anterior está en el backup de seguridad.
+
+**Probada de punta a punta** en un entorno aislado (proyecto Compose propio, base y carpeta de backups propias): lista, simulacro y `-Apply` dejaron la API sana, con las 8 oportunidades de la demo y un backup de seguridad nuevo. No se ejecutó sobre la base de trabajo para no pisar sus datos. `BACKUPS_DIR` permite apuntar la carpeta de backups de un entorno aparte; `scripts/e2e.ps1` lo usa para no mezclar copias de la demo con las reales.
 
 **Límites.** Es una copia en el mismo equipo: protege de errores y de actualizaciones fallidas, no de perder el disco. Copiar la carpeta fuera del equipo es decisión del responsable y debe respetar los 29 días.
 

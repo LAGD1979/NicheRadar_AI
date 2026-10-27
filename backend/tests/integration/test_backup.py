@@ -232,3 +232,170 @@ def test_the_api_lists_backups_from_the_local_folder(
     (tmp_path / manifest["file"]).unlink()
     assert client.get("/api/v1/backups").json()["items"][0]["present"] is False
     get_settings.cache_clear()
+
+
+# --- restauración ------------------------------------------------------------------------------
+
+
+@pytest.fixture
+def scratch_target() -> Any:
+    """Base de destino aparte: la restauración nunca pisa la base de pruebas en uso."""
+    from sqlalchemy import create_engine
+    from sqlalchemy.engine import make_url
+
+    name = f"nicheradar_restore_target_{uuid4().hex[:8]}"
+    url = make_url(get_settings().database_url)
+    admin = create_engine(url.set(database="postgres"), isolation_level="AUTOCOMMIT")
+    yield name
+    with admin.connect() as conn:
+        conn.execute(text(f'DROP DATABASE IF EXISTS "{name}" WITH (FORCE)'))
+    admin.dispose()
+
+
+def _rows_in(name: str) -> dict[str, int]:
+    from sqlalchemy import create_engine
+    from sqlalchemy.engine import make_url
+
+    engine = create_engine(make_url(get_settings().database_url).set(database=name))
+    try:
+        return backup_service.table_counts(engine)
+    finally:
+        engine.dispose()
+
+
+def test_restore_recreates_the_database_from_a_backup(
+    seeded_db: Session, tmp_path: Path, scratch_target: str
+) -> None:
+    manifest = _make(seeded_db, tmp_path)
+    result = backup_service.restore_backup(
+        get_settings(), manifest["file"], NOW, directory=tmp_path, database=scratch_target
+    )
+    assert result["database"] == scratch_target and result["safety_backup"] is None
+    # Tras restaurar se purga lo vencido, y la purga deja una auditoría (+1 en audit_events).
+    expected = {
+        **manifest["counts_after"],
+        "audit_events": manifest["counts_after"]["audit_events"] + 1,
+    }
+    assert _rows_in(scratch_target) == expected and result["rows"] == manifest["rows"]
+
+
+def test_restore_replaces_existing_content(
+    seeded_db: Session, tmp_path: Path, scratch_target: str
+) -> None:
+    manifest = _make(seeded_db, tmp_path)
+    settings = get_settings()
+    backup_service.restore_backup(
+        settings, manifest["file"], NOW, directory=tmp_path, database=scratch_target
+    )
+    from sqlalchemy import create_engine
+    from sqlalchemy.engine import make_url
+
+    engine = create_engine(make_url(settings.database_url).set(database=scratch_target))
+    with engine.begin() as conn:
+        conn.execute(text("DELETE FROM alerts"))
+        conn.execute(text("DELETE FROM provider_usage"))
+    engine.dispose()
+    backup_service.restore_backup(
+        settings, manifest["file"], NOW, directory=tmp_path, database=scratch_target
+    )
+    again = _rows_in(scratch_target)
+    assert again["alerts"] == manifest["counts_after"]["alerts"]
+    assert again["provider_usage"] == manifest["counts_after"]["provider_usage"]
+
+
+def test_restore_makes_a_safety_backup_of_the_current_database_first(
+    seeded_db: Session, tmp_path: Path, scratch_target: str
+) -> None:
+    manifest = _make(seeded_db, tmp_path)
+    settings = get_settings()
+    backup_service.restore_backup(
+        settings, manifest["file"], NOW, directory=tmp_path, database=scratch_target
+    )
+    # La base «viva» de este caso es la de destino: así se prueba la rama con copia de seguridad
+    # sin pisar la base de pruebas.
+    url = backup_service.make_url(settings.database_url).set(database=scratch_target)
+    live = settings.model_copy(update={"database_url": url.render_as_string(hide_password=False)})
+    later = NOW + timedelta(hours=1)
+    result = backup_service.restore_backup(live, manifest["file"], later, directory=tmp_path)
+    safety = result["safety_backup"]
+    assert safety is not None and safety != manifest["file"]
+    stored = json.loads((tmp_path / safety).with_suffix(".json").read_text("utf-8"))
+    assert stored["verified"] is True  # la copia de seguridad también se restauró de prueba
+    assert result["database"] == scratch_target
+
+
+def test_restore_refuses_damaged_unknown_and_newer_backups(
+    seeded_db: Session, tmp_path: Path, scratch_target: str
+) -> None:
+    settings = get_settings()
+    manifest = _make(seeded_db, tmp_path)
+    path = tmp_path / manifest["file"]
+
+    manifest_path = path.with_suffix(".json")
+    data = json.loads(manifest_path.read_text("utf-8"))
+    data["revision"] = "9999_del_futuro"
+    manifest_path.write_text(json.dumps(data), encoding="utf-8")
+    with pytest.raises(BackupError) as newer:
+        backup_service.restore_backup(
+            settings, manifest["file"], NOW, directory=tmp_path, database=scratch_target
+        )
+    assert newer.value.code == "BACKUP_FROM_NEWER_VERSION"
+
+    with pytest.raises(BackupError) as missing:
+        backup_service.restore_backup(
+            settings, "nicheradar_no_existe.dump", NOW, directory=tmp_path, database=scratch_target
+        )
+    assert missing.value.code == "BACKUP_NOT_FOUND"
+
+    with path.open("ab") as handle:
+        handle.write(b"basura")
+    with pytest.raises(BackupError) as damaged:
+        backup_service.restore_backup(
+            settings, manifest["file"], NOW, directory=tmp_path, database=scratch_target
+        )
+    assert damaged.value.code == "BACKUP_DAMAGED"
+    # Nada se tocó: la base de destino ni siquiera se creó.
+    with pytest.raises(Exception):  # noqa: B017, PT011
+        _rows_in(scratch_target)
+
+
+def test_restore_purges_third_party_data_that_expired_meanwhile(
+    seeded_db: Session, tmp_path: Path, scratch_target: str
+) -> None:
+    video = seeded_db.scalars(select(m.Video)).first()
+    assert video is not None
+    video.owner_authorized = False
+    video.availability = "AVAILABLE"
+    video.retention_deadline = NOW + timedelta(days=2)
+    seeded_db.commit()
+    manifest = _make(seeded_db, tmp_path)
+    result = backup_service.restore_backup(
+        get_settings(),
+        manifest["file"],
+        NOW + timedelta(days=3),  # el backup ya habría caducado; lo vencido no vuelve a la vida
+        directory=tmp_path,
+        database=scratch_target,
+    )
+    assert result["purged_expired"]["videos_expired"] >= 1
+
+
+def test_the_cli_lists_verifies_and_simulates(
+    seeded_db: Session,
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    from app.ops import backups as cli
+
+    monkeypatch.setenv("BACKUP_DIR", str(tmp_path))
+    get_settings.cache_clear()
+    assert cli.main(["list"]) == 0
+    assert "No hay backups" in capsys.readouterr().out
+    manifest = _make(seeded_db, tmp_path)
+    assert cli.main(["list"]) == 0 and manifest["file"] in capsys.readouterr().out
+    assert cli.main(["verify", manifest["file"]]) == 0
+    assert "restaura bien" in capsys.readouterr().out
+    assert cli.main(["restore", manifest["file"]]) == 0  # sin --apply no cambia nada
+    assert "Simulacro" in capsys.readouterr().out
+    assert cli.main(["restore", "../x.dump"]) == 2
+    get_settings.cache_clear()

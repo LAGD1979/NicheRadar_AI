@@ -27,6 +27,7 @@ from sqlalchemy.orm import Session
 
 from app.core.config import Settings
 from app.db import models as m
+from app.services import retention_service
 
 PREFIX = "nicheradar_"
 DUMP_SUFFIX = ".dump"
@@ -270,19 +271,112 @@ def verify_file(
 ) -> dict[str, Any]:
     """Comprueba un backup existente: el archivo íntegro (sha256) y que restaura."""
     folder = directory or Path(settings.backup_dir)
+    try:
+        dump, manifest = _load(folder, name)
+    except BackupError as exc:
+        if exc.code == "BACKUP_DAMAGED":
+            return {"ok": False, "error": str(exc)}
+        raise
+    url = make_url(settings.database_url)
+    return verify_restore(
+        dump, url, manifest["counts_before"], manifest["counts_after"], manifest.get("revision")
+    )
+
+
+def _load(folder: Path, name: str) -> tuple[Path, dict[str, Any]]:
+    """Archivo y manifiesto de un backup, con el nombre validado y la huella comprobada."""
     if Path(name).name != name or not name.startswith(PREFIX) or not name.endswith(DUMP_SUFFIX):
         raise BackupError("BACKUP_NAME_INVALID", "Nombre de backup no válido")
     dump = folder / name
     manifest_path = dump.with_suffix(MANIFEST_SUFFIX)
     if not dump.is_file() or not manifest_path.is_file():
         raise BackupError("BACKUP_NOT_FOUND", "No existe ese backup")
-    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest: dict[str, Any] = json.loads(manifest_path.read_text(encoding="utf-8"))
     if _sha256(dump) != manifest.get("sha256"):
-        return {"ok": False, "error": "El archivo no coincide con su huella: está dañado."}
+        raise BackupError("BACKUP_DAMAGED", "El archivo no coincide con su huella: está dañado.")
+    return dump, manifest
+
+
+def _known_revisions() -> set[str]:
+    from alembic.config import Config
+    from alembic.script import ScriptDirectory
+
+    script = ScriptDirectory.from_config(Config("alembic.ini"))
+    return {rev.revision for rev in script.walk_revisions()}
+
+
+def restore_backup(
+    settings: Settings,
+    name: str,
+    now: datetime,
+    *,
+    directory: Path | None = None,
+    database: str | None = None,
+    safety_backup: bool = True,
+) -> dict[str, Any]:
+    """Reemplaza la base por el contenido de un backup. **Destructivo** sobre la base destino.
+
+    Antes de tocar nada: comprueba la huella, que la versión de migración sea conocida por este
+    código y que el backup restaure de verdad en una base temporal. Después hace un backup de
+    seguridad de la base actual y recién entonces la recrea. Quien llama debe haber detenido la
+    API y el worker. Terminada la restauración se purgan los datos de terceros vencidos.
+    """
+    folder = directory or Path(settings.backup_dir)
+    dump, manifest = _load(folder, name)
+    revision = manifest.get("revision")
+    if revision is not None and revision not in _known_revisions():
+        raise BackupError(
+            "BACKUP_FROM_NEWER_VERSION",
+            f"El backup es de una versión más nueva ({revision}): actualice la aplicación antes.",
+        )
     url = make_url(settings.database_url)
-    return verify_restore(
-        dump, url, manifest["counts_before"], manifest["counts_after"], manifest.get("revision")
-    )
+    target = database or str(url.database)
+    check = verify_restore(dump, url, manifest["counts_before"], manifest["counts_after"], revision)
+    if not check["ok"]:
+        raise BackupError(
+            "BACKUP_NOT_RESTORABLE", "El backup no restaura bien; la base actual no se tocó."
+        )
+
+    safety: str | None = None
+    if safety_backup and target == url.database:
+        live = create_engine(url)
+        try:
+            with Session(live) as session:
+                made = create_backup(session, settings, now, directory=folder)
+        finally:
+            live.dispose()
+        if not made["verified"]:
+            raise BackupError(
+                "SAFETY_BACKUP_FAILED",
+                "No se pudo hacer un backup de seguridad verificado; la base actual no se tocó.",
+            )
+        safety = str(made["file"])
+
+    pg_restore = _tool("pg_restore")
+    admin = create_engine(url.set(database="postgres"), isolation_level="AUTOCOMMIT")
+    try:
+        with admin.connect() as conn:
+            conn.execute(text(f'DROP DATABASE IF EXISTS "{target}" WITH (FORCE)'))
+            conn.execute(text(f'CREATE DATABASE "{target}"'))
+    finally:
+        admin.dispose()
+    _run([pg_restore, "--no-owner", "--exit-on-error", *_conn_args(url, target), str(dump)], url)
+
+    engine = create_engine(url.set(database=target))
+    try:
+        counts = table_counts(engine)
+        with Session(engine) as session:
+            purged = retention_service.purge_expired(session, now)
+            session.commit()
+    finally:
+        engine.dispose()
+    return {
+        "restored_from": name,
+        "safety_backup": safety,
+        "database": target,
+        "rows": sum(counts.values()),
+        "purged_expired": purged,
+    }
 
 
 def prune(settings: Settings, now: datetime, *, directory: Path | None = None) -> list[str]:
