@@ -274,6 +274,7 @@ def list_videos(
     source_data_type: Annotated[str | None, Query(max_length=20)] = None,
     provider: Annotated[str | None, Query(max_length=60)] = None,
     annotated: Annotated[bool | None, Query()] = None,
+    run_id: Annotated[str | None, Query(max_length=36)] = None,
     sort: Annotated[Literal["recent", "breakout"], Query()] = "recent",
 ) -> Page[VideoItem]:
     stmt = select(m.Video, m.Channel).join(m.Channel, m.Channel.id == m.Video.channel_id)
@@ -292,6 +293,10 @@ def list_videos(
         stmt = stmt.where(m.Video.source_data_type == source_data_type)
     if provider:
         stmt = stmt.where(m.Video.provider == provider)
+    if run_id:
+        in_run = select(m.RunVideo.video_id).where(m.RunVideo.run_id == run_id)
+        in_matches = select(m.DiscoveryMatch.video_id).where(m.DiscoveryMatch.run_id == run_id)
+        stmt = stmt.where(or_(m.Video.id.in_(in_run), m.Video.id.in_(in_matches)))
     if annotated is not None:
         has_annotation = select(m.VideoAnnotation.id).where(
             m.VideoAnnotation.video_id == m.Video.id

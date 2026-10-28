@@ -107,6 +107,34 @@ def test_stores_videos_as_provider_data_with_29_day_retention(empty_db: Session)
     assert channel.region_declared == "US"
 
 
+def test_each_run_keeps_the_videos_it_observed(empty_db: Session) -> None:
+    settings: Settings = get_settings()
+    for run, video_id in (("run-a", "VID000001"), ("run-b", "VID000002"), ("run-c", "VID000001")):
+        vidiq_service.run_outlier_discovery(
+            empty_db,
+            FakeVidIQ([_outlier(video_id)]),
+            settings,
+            run_id=run,
+            searches=_searches("video_essay"),
+            completed_keys=set(),
+            max_calls=10,
+            now=NOW,
+        )
+    links = {
+        run: {
+            v
+            for (v,) in empty_db.execute(
+                select(m.Video.youtube_video_id)
+                .join(m.RunVideo, m.RunVideo.video_id == m.Video.id)
+                .where(m.RunVideo.run_id == run)
+            )
+        }
+        for run in ("run-a", "run-b", "run-c")
+    }
+    # run-a no pierde su video aunque run-c lo volvió a observar después.
+    assert links == {"run-a": {"VID000001"}, "run-b": {"VID000002"}, "run-c": {"VID000001"}}
+
+
 def test_null_values_stay_null_not_zero(empty_db: Session) -> None:
     item = _outlier(
         subscriber_count=None, view_count=None, breakout_score=None, duration_seconds=None
@@ -317,6 +345,11 @@ def test_end_to_end_run_through_the_worker(
     assert run["coverage"]["videos_new"] == 1
     assert source.closed is True
     assert client.get("/api/v1/usage/vidiq").json()["credits_used"] == 5
+    # «Ver videos» de la corrida muestra solo lo que ella trajo, no toda la tabla.
+    mine = client.get("/api/v1/videos", params={"run_id": run_id}).json()
+    assert [v["youtube_video_id"] for v in mine["items"]] == ["E2EVID001"]
+    assert client.get("/api/v1/videos", params={"run_id": "otra"}).json()["total"] == 0
+    assert client.get("/api/v1/videos").json()["total"] > 1
     with get_session_factory()() as session:
         stored = session.scalars(
             select(m.Video).where(m.Video.youtube_video_id == "E2EVID001")

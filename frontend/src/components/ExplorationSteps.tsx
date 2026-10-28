@@ -10,8 +10,15 @@ const STEPS: Array<{ key: StepKey; to: string; title: string; hint: string }> = 
   { key: "decide", to: "/compare", title: "Comparar y decidir", hint: "De 2 a 8 oportunidades" },
 ];
 
-// Guía de la ruta de exploración. Marca el paso actual y enlaza con los demás.
-export function ExplorationSteps({ current }: { current: StepKey }) {
+// Guía de la ruta de exploración. Marca el paso actual y enlaza con los demás. Con `onSelect`,
+// la página puede atender un paso ella misma (p. ej. cambiar de pestaña en la ficha) en lugar de navegar.
+export function ExplorationSteps({
+  current,
+  onSelect,
+}: {
+  current: StepKey;
+  onSelect?: (key: StepKey) => boolean;
+}) {
   const currentIndex = STEPS.findIndex((step) => step.key === current);
   return (
     <nav className="steps" aria-label="Ruta de exploración">
@@ -20,7 +27,13 @@ export function ExplorationSteps({ current }: { current: StepKey }) {
           const state = index < currentIndex ? "done" : index === currentIndex ? "current" : "todo";
           return (
             <li key={step.key} className={`step ${state}`}>
-              <Link to={step.to} aria-current={state === "current" ? "step" : undefined}>
+              <Link
+                to={step.to}
+                aria-current={state === "current" ? "step" : undefined}
+                onClick={(event) => {
+                  if (onSelect?.(step.key)) event.preventDefault();
+                }}
+              >
                 <span className="step-number" aria-hidden="true">
                   {index + 1}
                 </span>

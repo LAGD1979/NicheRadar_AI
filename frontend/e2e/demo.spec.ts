@@ -52,7 +52,7 @@ test("la ruta de exploración guía de Corridas a Videos y ofrece agrupar", asyn
 
   await page.goto("/videos");
   await expect(page.getByRole("navigation", { name: "Ruta de exploración" })).toBeVisible();
-  await page.locator('tbody input[type="checkbox"]:not([disabled])').first().check();
+  await page.locator('.video-card input[type="checkbox"]:not([disabled])').first().check();
   await expect(page.getByText(/1 video elegido/)).toBeVisible();
   await page.getByRole("button", { name: /Agrupar en una oportunidad/ }).click();
   await expect(page.getByRole("heading", { name: "Agrupar en una oportunidad" })).toBeVisible();
@@ -71,6 +71,16 @@ test("la ficha ofrece medir demanda y persistencia sin enviar nada", async ({ pa
   await page.getByRole("tab", { name: "Evidencia internacional" }).click();
   await expect(page.getByRole("button", { name: /Medir persistencia/ })).toBeVisible();
   // Sin enviar los formularios: no se gastan créditos.
+});
+
+test("en la ficha, los pasos 3 y 4 de la ruta cambian de pestaña", async ({ page }) => {
+  await page.goto("/opportunities/syn-opp-01");
+  const steps = page.getByRole("navigation", { name: "Ruta de exploración" });
+  await steps.getByRole("link", { name: /Costo y factibilidad/ }).click();
+  await expect(page.getByRole("tab", { name: "Producción IA" })).toHaveAttribute("aria-selected", "true");
+  await steps.getByRole("link", { name: /Validar en español/ }).click();
+  await expect(page.getByRole("tab", { name: "Mercado español" })).toHaveAttribute("aria-selected", "true");
+  await expect(page).toHaveURL(/\/opportunities\/syn-opp-01$/);
 });
 
 test("se puede añadir una oportunidad al seguimiento y verla con sus notas", async ({ page }) => {

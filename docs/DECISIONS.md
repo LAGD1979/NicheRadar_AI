@@ -466,3 +466,8 @@ Estado actual: el responsable autorizó abrir la compuerta. La configuración lo
 - Diferenciación editorial y mantenibilidad: requieren juicio humano registrado.
 - Análisis de sensibilidad y evolución temporal.
 - Cualquier cálculo real sobre datos de la API: solo cuando exista una aprobación documentada.
+
+### D-72 · «Ver videos» por corrida y miniaturas (2026-10-28)
+
+- `Video.run_id` solo guarda la última corrida que observó un video, así que «Ver videos» no podía distinguir corridas y mostraba toda la lista de un proveedor. Se añade `run_videos(run_id, video_id)` (migración 0010; relleno desde `provider_metrics.vidiq.run_id`, por lo que las corridas anteriores solo conservan los videos que ninguna corrida posterior volvió a ver). `GET /videos?run_id=` también incluye los `discovery_matches` de la corrida (YouTube oficial).
+- Miniaturas: se piden a `i.ytimg.com/vi/{id}/mqdefault.jpg` desde el navegador; no se descargan ni se guardan (sin efecto sobre la regla de 29 días). Los videos `synthetic_fixture` no tienen miniatura. La descripción no se muestra: no se ingiere hoy.

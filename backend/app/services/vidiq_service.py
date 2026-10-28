@@ -14,6 +14,7 @@ from typing import Any, Protocol
 from uuid import uuid4
 
 from sqlalchemy import func, select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import Session
 
 from app.core.config import Settings
@@ -126,6 +127,12 @@ def _metrics(
     }
 
 
+def _link_run(session: Session, run_id: str, video_id: str) -> None:
+    session.execute(
+        pg_insert(m.RunVideo).values(run_id=run_id, video_id=video_id).on_conflict_do_nothing()
+    )
+
+
 def _store(
     session: Session,
     settings: Settings,
@@ -147,6 +154,7 @@ def _store(
         }
         outcome.videos_enriched += 1
         session.flush()
+        _link_run(session, run_id, video.id)
         return
     channel = session.scalars(
         select(m.Channel).where(m.Channel.youtube_channel_id == item.youtube_channel_id)
@@ -190,6 +198,8 @@ def _store(
         provider=PROVIDER,
     )
     stored.provider_metrics = {"vidiq": _metrics(item, search, run_id, now)}
+    session.flush()
+    _link_run(session, run_id, stored.id)
     if is_new:
         outcome.videos_new += 1
     else:

@@ -193,8 +193,8 @@ function resultText(run: RunOut): string {
 
 function videosLink(run: RunOut): string | null {
   if (run.status !== "COMPLETED" && run.status !== "PARTIAL") return null;
-  if (run.kind === "vidiq") return "/videos?provider=vidiq_api&sort=breakout&annotated=false";
-  if (run.kind === "discovery") return "/videos?provider=youtube_official&annotated=false";
+  if (run.kind === "vidiq") return `/videos?run_id=${run.id}&sort=breakout`;
+  if (run.kind === "discovery") return `/videos?run_id=${run.id}`;
   return null;
 }
 

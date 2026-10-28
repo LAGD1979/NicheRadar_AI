@@ -40,7 +40,15 @@ export function OpportunityDetail() {
 
   return (
     <article aria-labelledby="titulo-ficha">
-      <ExplorationSteps current={tab === "Producción IA" ? "produce" : "validate"} />
+      <ExplorationSteps
+        current={tab === "Producción IA" ? "produce" : "validate"}
+        onSelect={(key) => {
+          if (key === "validate") setTab("Mercado español");
+          else if (key === "produce") setTab("Producción IA");
+          else return false;
+          return true;
+        }}
+      />
       <p className="crumbs">
         <Link to="/opportunities">Oportunidades</Link> / {opp.niche.name}
       </p>

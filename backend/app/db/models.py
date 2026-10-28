@@ -168,6 +168,15 @@ class DemandObservation(Base):
     retention_deadline: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
 
+class RunVideo(Base):
+    """Videos que una corrida observó. `Video.run_id` solo guarda la última; esto conserva todas."""
+
+    __tablename__ = "run_videos"
+
+    run_id: Mapped[str] = mapped_column(String(36), primary_key=True)
+    video_id: Mapped[str] = mapped_column(ForeignKey("videos.id"), primary_key=True, index=True)
+
+
 class VideoAnnotation(Base):
     """Etiqueta de un video para un nicho y formato. Solo cuenta si tiene evidencia y autor."""
 

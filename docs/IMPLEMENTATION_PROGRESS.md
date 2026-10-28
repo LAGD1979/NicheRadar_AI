@@ -114,9 +114,11 @@ Configuración permite elegir proveedor y modelo para el asistente, la clasifica
 
 Rama `m5-programacion-y-seguimiento` (desde el tag `m4-listo-para-probar`). Trabajos programados en el worker (purga diaria, alertas, revisión semanal del seguimiento), alertas dentro de la aplicación, pantalla Seguimiento con plan de piloto y registro de decisiones. Topes de tokens de IA con uso real del proveedor (D-70). Backup diario a carpeta local con restauración probada y procedimiento de restauración `scripts/restore.ps1` (D-71). Checklist de operación como cuarto manual (`/manual/operacion.html`). Pendiente de M5 (opcional según el uso): export licenciado y permisos con despliegue local seguro. La prueba de carga pequeña se descartó por decisión del responsable (uso local de una sola persona).
 
+Revisión de botones y enlaces (2026-10-28): «Ver videos» de cada corrida filtra por esa corrida (tabla `run_videos`, migración 0010; antes abría la lista general de vidIQ); lista de Videos en cuadrícula con miniatura 320×180 (desde la CDN de YouTube, sin guardar nada; los videos DEMO no tienen); los pasos 3 y 4 de la ruta, dentro de una ficha, cambian de pestaña en lugar de ir al radar.
+
 ## Estado de verificación actual
 
-493 pruebas de backend, 27 de frontend y 15 E2E pasando (1 omitido a propósito); antes del tramo M5 eran 452 y 11 (11 E2E en la última corrida completa, anterior a D-66; 1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
+516 pruebas de backend, 27 de frontend y 15 E2E pasando (1 omitido a propósito); antes del tramo M5 eran 452 y 11 (11 E2E en la última corrida completa, anterior a D-66; 1 omitido a propósito). Detalle de comandos en `docs/HANDOFF.md`.
 
 ## Siguiente paso
 
