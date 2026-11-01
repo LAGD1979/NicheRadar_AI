@@ -194,6 +194,15 @@ def test_bad_input_and_unexpected_bodies_are_invalid_requests() -> None:
         not_json.interest_over_time("x")
 
 
+def test_empty_timeline_means_no_data_not_an_error() -> None:
+    body = {"requestMetadata": {"status": "ok"}, "interestOverTime": {"timelineData": []}}
+    client = _client(lambda _r: httpx.Response(200, json=body))
+    assert client.compare_interest(["término raro", "otro raro"]) == {
+        "término raro": [],
+        "otro raro": [],
+    }
+
+
 def test_every_request_sends_a_fixed_utc_offset() -> None:
     seen: list[httpx.Request] = []
 

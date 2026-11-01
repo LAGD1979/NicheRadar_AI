@@ -3,7 +3,7 @@ import { useState, type FormEvent } from "react";
 
 import { api, ApiError } from "../api";
 import { formatDateTime, formatNumber, label } from "../format";
-import type { DemandSignal } from "../types";
+import type { DemandSignal, RunOut } from "../types";
 
 const GEOS: Array<[string, string]> = [
   ["", "Todos los países"],
@@ -55,6 +55,31 @@ function detail(signal: DemandSignal): string {
   return `${String(num(d.strong_competitors) ?? 0)} de ${String(num(d.exact_competitors) ?? 0)} competidores exactos con vistas altas`;
 }
 
+function LastDemandRun({ run }: { run: RunOut }) {
+  const hasdata = run.coverage.hasdata_calls;
+  const credits = run.coverage.vidiq_credits;
+  const sources = Array.isArray(run.coverage.sources) ? run.coverage.sources.map(String) : [];
+  const parts = [
+    sources.includes("trends") && `HasData: ${String(typeof hasdata === "number" ? hasdata : 0)} consulta(s)`,
+    sources.includes("vidiq") && `vidIQ: ${String(typeof credits === "number" ? credits : 0)} créditos`,
+  ].filter(Boolean);
+  return (
+    <div className="hint" role="status">
+      <strong>Última medición</strong> ({formatDateTime(run.started_at ?? "")}): {label(run.status)}
+      {parts.length > 0 && <> · {parts.join(" · ")}</>}
+      {run.errors.length > 0 && (
+        <ul>
+          {run.errors.map((e, i) => (
+            <li key={i}>
+              {String(e.code)}: {typeof e.detail === "string" ? e.detail : JSON.stringify(e.detail)}
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
 // Mide la demanda con fuentes externas. Cada medida caduca a los 29 días.
 export function DemandPanel({ opportunityId }: { opportunityId: string }) {
   const queryClient = useQueryClient();
@@ -74,6 +99,10 @@ export function DemandPanel({ opportunityId }: { opportunityId: string }) {
   const providers = useQuery({ queryKey: ["providers"], queryFn: api.providers });
   const capabilities = useQuery({ queryKey: ["capabilities"], queryFn: api.capabilities });
   const usage = useQuery({ queryKey: ["hasdata-usage"], queryFn: api.hasdataUsage });
+  const runs = useQuery({ queryKey: ["runs"], queryFn: api.runs, refetchInterval: 8000 });
+  const lastRun = runs.data?.items.find(
+    (r) => r.kind === "demand" && r.params.opportunity_id === opportunityId,
+  );
 
   const run = useMutation({
     mutationFn: () =>
@@ -179,6 +208,8 @@ export function DemandPanel({ opportunityId }: { opportunityId: string }) {
           )}
         </>
       )}
+
+      {lastRun && <LastDemandRun run={lastRun} />}
 
       <form onSubmit={submit} aria-label="Medir demanda" className="filters">
         <label className="wide-field">

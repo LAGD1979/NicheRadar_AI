@@ -194,7 +194,10 @@ class HasDataClient:
                 series[term].append(
                     TrendPoint(timestamp=moment, value=value, partial=bool(item.get("isPartial")))
                 )
-        if not any(series.values()):
+        # Una serie vacía es una respuesta válida: Google Trends no tiene datos de un término poco
+        # buscado. Es «sin datos» (UNKNOWN), no un error. Solo es inválida una serie con puntos
+        # que no se pudieron atribuir a ningún término.
+        if timeline and not any(series.values()):
             raise InvalidRequest("HasData: la respuesta no trae los términos pedidos.")
         return series
 
